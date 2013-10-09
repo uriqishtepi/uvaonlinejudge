@@ -14,14 +14,17 @@ int main()
     {
         if(nheads > nknights) {
             printf("Loowater is doomed!\n");
+            int d = 0;
+            forl(i, 0, nheads) scanf("%d\n",&d);
+            forl(i, 0, nknights) scanf("%d\n",&d);
             continue;
         }
-
-        si heads;
+        vi heads;
+        heads.reserve(20000);
         forl(i, 0, nheads) {
             int d = 0;
             scanf("%d\n",&d);
-            heads[d] += 1;
+            heads.push_back(d);
         }
 
         si knights;

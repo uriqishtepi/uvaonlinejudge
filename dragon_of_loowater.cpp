@@ -12,12 +12,16 @@ int main()
     while(EOF != scanf("%d %d\n", &nheads, &nknights) && 
             nheads != 0 && nknights != 0) 
     {
-        vi heads;
-        heads.reserve(20000);
+        if(nheads > nknights) {
+            printf("Loowater is doomed!\n");
+            continue;
+        }
+
+        si heads;
         forl(i, 0, nheads) {
             int d = 0;
             scanf("%d\n",&d);
-            heads.push_back(d);
+            heads[d] += 1;
         }
 
         si knights;

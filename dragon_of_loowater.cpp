@@ -1,4 +1,6 @@
 #include<stdio.h>
+#include<iostream>
+#include<algorithm>
 #include<vector>
 #include<map>
 #define forl(i,init, max) for(int i = init; i < max; i++) 
@@ -19,34 +21,44 @@ int main()
             forl(i, 0, nknights) scanf("%d\n",&d);
             continue;
         }
+
         vi heads;
-        heads.reserve(20000);
         forl(i, 0, nheads) {
             int d = 0;
             scanf("%d\n",&d);
             heads.push_back(d);
         }
 
-        si knights;
+        vi knights;
         forl(i, 0, nknights) {
             int d = 0;
             scanf("%d\n",&d);
-            knights[d] += 1;
+            knights.push_back(d);
         }
+
+        std::sort(heads.begin(), heads.end());
+        std::sort(knights.begin(), knights.end());
 
         long long min = 0;
         bool solvable = true;
+        vi::iterator last = knights.begin();
+
         for(vi::iterator it = heads.begin(); it!=heads.end(); ++it) {
-            si::iterator jt = knights.lower_bound(*it);
-            if(jt == knights.end()) {
+            //std::cout << "considering " << *it << std::endl;
+            last = std::lower_bound(last, knights.end(), *it);
+            //std::cout << "distance h " << distance(it, heads.end())<< std::endl;
+            //std::cout << "distance k " << distance(last, knights.end())<< std::endl;
+
+            if(last == knights.end() || heads.end() - it > knights.end() - last)
+            {
                 solvable = false;
                 break;
             }
 
-            min += jt->first;
-            if(--jt->second == 0)
-                knights.erase(jt);
+            min += *last;
+            ++last;
         }
+
         if(solvable)
             printf("%d\n", min);
         else

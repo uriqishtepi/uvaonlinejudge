@@ -1,6 +1,4 @@
-#include<iostream>
 #include<stdio.h>
-
 #define forl(i,init, max) for(int i = init; i < max; i++) 
 #define maxN 1025
 int main()
@@ -26,7 +24,9 @@ int main()
             int minx = x - d;
             minx = minx < 0 ? 0 : minx;
             int maxx = x + d+1;
-            maxx = maxx > maxN ? maxN : maxx;
+            //maxx = maxx > maxN ? maxN : maxx;
+            int tmp = (maxx - maxN);
+            maxx = maxN + ((maxx - maxN) & (tmp >> 31));
 
             int miny = y - d;
             miny = miny < 0 ? 0 : miny;

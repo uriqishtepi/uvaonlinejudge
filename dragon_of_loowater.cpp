@@ -71,7 +71,7 @@ int main(int argc, char **argv)
             out("distance h %d\n", distance(it, heads.end()));
             out("distance k %d\n", distance(last, knights.end()));
 
-            if(last == knights.end() || distance(it, heads.end()) > distance(last, knights.end()))
+            if(last == knights.end())
             {
                 solvable = false;
                 break;

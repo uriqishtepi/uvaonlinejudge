@@ -10,7 +10,7 @@
 #define msi std::multiset<int, std::greater<int> >
 #define si std::set<int>
 #define mi std::map<int, int>
-#define DEBUG true
+//#define DEBUG true
 #ifdef DEBUG
 #define out printf
 #else
@@ -45,19 +45,25 @@ int main(int argc, char **argv)
             heads.insert(d);
         }
 
+        vi knights;
         out("knights\n");
-        forl(i, 0, nknights) { 
+        forl(i, 0, nknights) {
             int d = 0;
             scanf("%d\n",&d);
             out("d=%d\n",d);
-            if(!heads.empty()) {
-                msi::iterator it = heads.lower_bound(d);
-                if(it != heads.end()) { //we can get rid of exact values immediately
-                    out("found, erasing from heads d=%d *it=%d\n",d, *it);
-                    heads.erase(it);
-                    min += d;
+            knights.push_back(d);
+        }        
+        std::sort(knights.begin(), knights.end());
+        
+        for(vi::iterator it = knights.begin(); 
+                    it != knights.end() && !heads.empty(); ++it) 
+        { 
+                msi::iterator jt = heads.lower_bound(*it);
+                if(jt != heads.end()) { //we can get rid of exact values immediately
+                    out("found, erasing from heads *it=%d *jt=%d\n",*it, *jt);
+                    heads.erase(jt);
+                    min += *it;
                 }
-            }
         }
 
         if(heads.empty())

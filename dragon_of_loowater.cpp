@@ -20,6 +20,8 @@ int main(int argc, char **argv)
 {
     int nheads = 0;
     int nknights = 0;
+    vi heads;
+    vi knights;
 
     out("Starting...\n");
     while(EOF != scanf("%d %d\n", &nheads, &nknights) && 
@@ -30,43 +32,59 @@ int main(int argc, char **argv)
             out("Got more heads than knights\n");
             printf("Loowater is doomed!\n");
             int d = 0;
-            forl(i, 0, nheads) scanf("%d\n",&d);
-            forl(i, 0, nknights) scanf("%d\n",&d);
+            char * temp = NULL;
+            size_t n;
+            forl(i, 0, nheads) getline(&temp, &n, stdin);
+
+            forl(i, 0, nknights) getline(&temp, &n, stdin);
             continue;
         }
 
         int min = 0;
-        msi heads;
+        heads.clear();
+        heads.reserve(20000);
         out("heads\n");
         forl(i, 0, nheads) {
             int d = 0;
             scanf("%d\n",&d);
             out("d=%d\n",d);
-            heads.insert(d);
+            heads.push_back(d);
         }
+        std::sort(heads.begin(), heads.end());
 
-        vi knights;
+        knights.clear();
+        knights.reserve(20000);
         out("knights\n");
         forl(i, 0, nknights) {
             int d = 0;
             scanf("%d\n",&d);
             out("d=%d\n",d);
-            knights.push_back(d);
+            if(d >= *heads.begin())
+                knights.push_back(d);
         }        
-        std::sort(knights.begin(), knights.end());
         
-        for(vi::iterator it = knights.begin(); 
-                    it != knights.end() && !heads.empty(); ++it) 
+        if(heads.size() > knights.size())
+            printf("Loowater is doomed!\n");
+
+        std::sort(knights.begin(), knights.end());
+        vi::iterator last = knights.begin();
+        
+        bool solvable = true;
+        for(vi::iterator it = heads.begin(); it != heads.end(); ++it) 
         { 
-                msi::iterator jt = heads.lower_bound(*it);
-                if(jt != heads.end()) { //we can get rid of exact values immediately
-                    out("found, erasing from heads *it=%d *jt=%d\n",*it, *jt);
-                    heads.erase(jt);
-                    min += *it;
-                }
+            out("considering %d ", *it);
+            last = std::lower_bound(last, knights.end(), *it);
+            if(last == knights.end()) {
+                out("Not found \n");
+                solvable = false;
+                break;
+            }
+            out("found %d\n", *last);
+            min += *last;
+            ++last;
         }
 
-        if(heads.empty())
+        if(solvable)
             printf("%d\n", min);
         else
             printf("Loowater is doomed!\n");

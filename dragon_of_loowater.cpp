@@ -40,7 +40,7 @@ int main(int argc, char **argv)
             continue;
         }
 
-        int min = 0;
+        int hmin = 2000000000;
         heads.clear();
         heads.reserve(20000);
         out("heads\n");
@@ -49,8 +49,9 @@ int main(int argc, char **argv)
             scanf("%d\n",&d);
             out("d=%d\n",d);
             heads.push_back(d);
+            hmin = std::min(hmin, d);
         }
-        std::sort(heads.begin(), heads.end());
+        //std::sort(heads.begin(), heads.end());
 
         knights.clear();
         knights.reserve(20000);
@@ -59,7 +60,7 @@ int main(int argc, char **argv)
             int d = 0;
             scanf("%d\n",&d);
             out("d=%d\n",d);
-            if(d >= *heads.begin())
+            if(d >= hmin)
                 knights.push_back(d);
         }        
         
@@ -69,6 +70,7 @@ int main(int argc, char **argv)
         std::sort(knights.begin(), knights.end());
         vi::iterator last = knights.begin();
         
+        int min = 0;
         bool solvable = true;
         for(vi::iterator it = heads.begin(); it != heads.end(); ++it) 
         { 

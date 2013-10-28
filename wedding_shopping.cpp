@@ -28,6 +28,15 @@ int main(int argc, char **argv)
     scanf("%d\n",&Ntests);
     out("Ntests = %d \n", Ntests);
 
+    #define MAXMONEY 201
+    vi newdistinct;
+    newdistinct.reserve(MAXMONEY);
+    bool sum[MAXMONEY] = {0};
+    vi distinct;
+    distinct.reserve(MAXMONEY);
+    int lastmax = 0;
+
+
     while(0 < Ntests--) 
     {
         int M = 0;
@@ -57,10 +66,7 @@ int main(int argc, char **argv)
             out("\n");
         }
 
-        #define MAXMONEY 201
-
-        bool sum[MAXMONEY] = {0};
-        int lastmax = 0;
+        lastmax = 0;
 
         //populate with first garment
         forl(i, 0, counts[0]) {
@@ -76,18 +82,33 @@ int main(int argc, char **argv)
 
 
         //go through next garment, and update sum
-        forl(i, 1, C) {
-            bool newsum[MAXMONEY] = {0};
-            forl(k,0,lastmax+1) {
-                if(sum[k]) {
-                    forl(j, 0, counts[i]) {
-                        int l = k + garments[i][j];
-                        perfcounter++;
+        forl(i, 1, C) 
+        {
+            distinct.clear();
+            forl(k,0,M+1) {
+                if(sum[k])
+                    distinct.push_back(k);
+                perfcounter++;
+            }
 
-                        if(l <= M) { 
-                            newsum[l] = true;
-                            perfcounter++;
-                        }
+            perfcounter++;
+            newdistinct.clear();
+
+            for(vi::iterator it = distinct.begin(); it < distinct.end(); ++it) 
+            {
+                perfcounter++;
+                forl(j, 0, counts[i]) 
+                {
+                    int l = *it + garments[i][j];
+                    perfcounter++;
+
+                    if(l == M) { 
+                        lastmax = M;
+                        goto ENDOFITEM; //done
+                    }
+                    else if(l < M) { 
+                        newdistinct.push_back(l);
+                        perfcounter++;
                     }
                 }
             }
@@ -95,18 +116,24 @@ int main(int argc, char **argv)
             lastmax = 0;
             //copy sum to next iteration
             forl(k,0,M+1) {
-                sum[k] = newsum[k];
+                sum[k] = false;
+                perfcounter++;
+            }
+
+            for(vi::iterator it = newdistinct.begin(); it < newdistinct.end(); ++it) 
+            {
+                sum[*it] = true;
                 perfcounter++;
 
-                if(sum[k] && lastmax < k) {
-                    lastmax = k;
+                if(lastmax < *it) {
+                    lastmax = *it;
                     perfcounter++;
                 }
-                if(lastmax == MAXMONEY) break;
             }
             //forl(i, 0, MAXMONEY) { out("%d ", sum[i]); } out("\n");
         }
 
+ENDOFITEM:
         out("Perfcounter: %d\n", perfcounter);
         if(lastmax > 0)
             printf("%d\n", lastmax);

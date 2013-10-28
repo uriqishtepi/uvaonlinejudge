@@ -1,3 +1,40 @@
+Starting...
+Ntests = 6 
+M = 100 C =4
+K = 3  g0 = 8  g1 = 6  g2 = 4 
+K = 2  g0 = 5  g1 = 10 
+K = 4  g0 = 1  g1 = 3  g2 = 3  g3 = 7 
+K = 4  g0 = 50  g1 = 14  g2 = 23  g3 = 8 
+Perfcounter: 516
 75
+M = 100 C =4
+K = 3  g0 = 8  g1 = 6  g2 = 4 
+K = 2  g0 = 5  g1 = 10 
+K = 4  g0 = 1  g1 = 3  g2 = 3  g3 = 7 
+K = 4  g0 = 50  g1 = 14  g2 = 23  g3 = 8 
+Perfcounter: 516
+75
+M = 20 C =3
+K = 3  g0 = 4  g1 = 6  g2 = 8 
+K = 2  g0 = 5  g1 = 10 
+K = 4  g0 = 1  g1 = 3  g2 = 5  g3 = 5 
+Perfcounter: 114
 19
+M = 5 C =3
+K = 3  g0 = 6  g1 = 4  g2 = 8 
+K = 2  g0 = 10  g1 = 6 
+K = 4  g0 = 7  g1 = 3  g2 = 1  g3 = 7 
+Perfcounter: 15
 no solution
+M = 6 C =5
+K = 3  g0 = 1  g1 = 1  g2 = 1 
+K = 4  g0 = 1  g1 = 1  g2 = 1  g3 = 1 
+K = 4  g0 = 1  g1 = 1  g2 = 1  g3 = 1 
+K = 3  g0 = 1  g1 = 1  g2 = 1 
+K = 2  g0 = 1  g1 = 1 
+Perfcounter: 59
+5
+M = 6 C =1
+K = 4  g0 = 1  g1 = 2  g2 = 3  g3 = 4 
+Perfcounter: 4
+4

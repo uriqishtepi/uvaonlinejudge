@@ -13,7 +13,7 @@
 #define si std::set<int>
 #define mi std::map<int, int>
 
-//#define DEBUG true
+#define DEBUG true
 #ifdef DEBUG
 #define out printf
 #else
@@ -34,6 +34,8 @@ int main(int argc, char **argv)
         int C = 0;
         scanf("%d %d\n",&M, &C);
         out("M = %d C =%d\n", M, C);
+
+        int perfcounter = 0;
 
         int garments[20][20] = {0}; //20 garments, 20 of each
         int counts[20] = {0}; //20 garments
@@ -65,7 +67,10 @@ int main(int argc, char **argv)
             int l = garments[0][i];
             if(l <= M) {
                 sum[l] = true;
-                if(lastmax < l) lastmax = l;
+                if(lastmax < l) { 
+                    lastmax = l;
+                    perfcounter++;
+                }
             }
         }
 
@@ -73,11 +78,16 @@ int main(int argc, char **argv)
         //go through next garment, and update sum
         forl(i, 1, C) {
             bool newsum[MAXMONEY] = {0};
-            forl(j, 0, counts[i]) {
-                forl(k,0,lastmax+1) {
-                    if(sum[k]) {
+            forl(k,0,lastmax+1) {
+                if(sum[k]) {
+                    forl(j, 0, counts[i]) {
                         int l = k + garments[i][j];
-                        if(l <= M) newsum[l] = true;
+                        perfcounter++;
+
+                        if(l <= M) { 
+                            newsum[l] = true;
+                            perfcounter++;
+                        }
                     }
                 }
             }
@@ -86,12 +96,18 @@ int main(int argc, char **argv)
             //copy sum to next iteration
             forl(k,0,M+1) {
                 sum[k] = newsum[k];
-                if(sum[k] && lastmax < k) lastmax = k;
+                perfcounter++;
+
+                if(sum[k] && lastmax < k) {
+                    lastmax = k;
+                    perfcounter++;
+                }
                 if(lastmax == MAXMONEY) break;
             }
             //forl(i, 0, MAXMONEY) { out("%d ", sum[i]); } out("\n");
         }
 
+        out("Perfcounter: %d\n", perfcounter);
         if(lastmax > 0)
             printf("%d\n", lastmax);
         else

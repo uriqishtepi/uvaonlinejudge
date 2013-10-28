@@ -93,7 +93,7 @@ int main(int argc, char **argv)
                     int l = *it + garments[i][j];
                     perfcounter++;
 
-                    if(l == M) { 
+                    if(l == M && i == C) { 
                         lastmax = M;
                         goto ENDOFITEM; //found, get out
                     }

@@ -29,9 +29,6 @@ int main(int argc, char **argv)
     out("Ntests = %d \n", Ntests);
 
     #define MAXMONEY 201
-    vi newdistinct;
-    newdistinct.reserve(MAXMONEY);
-    bool sum[MAXMONEY] = {0};
     vi distinct;
     distinct.reserve(MAXMONEY);
     int lastmax = 0;
@@ -67,12 +64,13 @@ int main(int argc, char **argv)
         }
 
         lastmax = 0;
+        distinct.clear();
 
         //populate with first garment
         forl(i, 0, counts[0]) {
             int l = garments[0][i];
             if(l <= M) {
-                sum[l] = true;
+                distinct.push_back(l);
                 if(lastmax < l) { 
                     lastmax = l;
                     perfcounter++;
@@ -84,15 +82,9 @@ int main(int argc, char **argv)
         //go through next garment, and update sum
         forl(i, 1, C) 
         {
-            distinct.clear();
-            forl(k,0,M+1) {
-                if(sum[k])
-                    distinct.push_back(k);
-                perfcounter++;
-            }
 
             perfcounter++;
-            newdistinct.clear();
+            bool sum[MAXMONEY] = {0};
 
             for(vi::iterator it = distinct.begin(); it < distinct.end(); ++it) 
             {
@@ -107,30 +99,21 @@ int main(int argc, char **argv)
                         goto ENDOFITEM; //done
                     }
                     else if(l < M) { 
-                        newdistinct.push_back(l);
+                        sum[l] = true;
                         perfcounter++;
                     }
                 }
             }
 
             lastmax = 0;
-            //copy sum to next iteration
+
+            distinct.clear();
             forl(k,0,M+1) {
-                sum[k] = false;
+                if(sum[k])
+                    distinct.push_back(k);
                 perfcounter++;
             }
-
-            for(vi::iterator it = newdistinct.begin(); it < newdistinct.end(); ++it) 
-            {
-                sum[*it] = true;
-                perfcounter++;
-
-                if(lastmax < *it) {
-                    lastmax = *it;
-                    perfcounter++;
-                }
-            }
-            //forl(i, 0, MAXMONEY) { out("%d ", sum[i]); } out("\n");
+            lastmax = distinct.back();
         }
 
 ENDOFITEM:

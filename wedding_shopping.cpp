@@ -82,7 +82,6 @@ int main(int argc, char **argv)
         //go through next garment, and update sum
         forl(i, 1, C) 
         {
-
             perfcounter++;
             bool sum[MAXMONEY] = {0};
 
@@ -96,7 +95,7 @@ int main(int argc, char **argv)
 
                     if(l == M) { 
                         lastmax = M;
-                        goto ENDOFITEM; //done
+                        goto ENDOFITEM; //found, get out
                     }
                     else if(l < M) { 
                         sum[l] = true;
@@ -108,17 +107,21 @@ int main(int argc, char **argv)
             lastmax = 0;
 
             distinct.clear();
+            out("sum: ");
             forl(k,0,M+1) {
-                if(sum[k])
+                if(sum[k]) {
+                    out(" %d", k);
                     distinct.push_back(k);
+                }
                 perfcounter++;
             }
+            out("\n");
             lastmax = distinct.back();
         }
 
 ENDOFITEM:
         out("Perfcounter: %d\n", perfcounter);
-        if(lastmax > 0)
+        if(lastmax > 0 && lastmax < M)
             printf("%d\n", lastmax);
         else
             printf("no solution\n");

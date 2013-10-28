@@ -74,7 +74,7 @@ int main(int argc, char **argv)
         forl(i, 1, C) {
             bool newsum[MAXMONEY] = {0};
             forl(j, 0, counts[i]) {
-                forl(k,0,M+1) {
+                forl(k,0,lastmax+1) {
                     if(sum[k]) {
                         int l = k + garments[i][j];
                         if(l <= M) newsum[l] = true;
@@ -87,6 +87,7 @@ int main(int argc, char **argv)
             forl(k,0,M+1) {
                 sum[k] = newsum[k];
                 if(sum[k] && lastmax < k) lastmax = k;
+                if(lastmax == MAXMONEY) break;
             }
             //forl(i, 0, MAXMONEY) { out("%d ", sum[i]); } out("\n");
         }

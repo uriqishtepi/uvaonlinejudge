@@ -71,6 +71,8 @@ int main(int argc, char **argv)
                 int d = 0;
                 scanf("%d",&d);
                 out(" g%d = %d ", i, d);
+                if(d + s1.front() > M)
+                    continue;
 
                 for(vi::iterator it = s1.begin(); it != s1.end(); ++it) 
                 {

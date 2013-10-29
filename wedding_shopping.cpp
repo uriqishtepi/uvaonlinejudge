@@ -13,7 +13,7 @@
 #define si std::set<int>
 #define mi std::map<int, int>
 
-#define DEBUG true
+//#define DEBUG true
 #ifdef DEBUG
 #define out printf
 #else
@@ -97,7 +97,7 @@ int main(int argc, char **argv)
                         lastmax = M;
                         goto ENDOFITEM; //found, get out
                     }
-                    else if(l < M) { 
+                    else if(l <= M) { 
                         sum[l] = true;
                         perfcounter++;
                     }
@@ -121,7 +121,7 @@ int main(int argc, char **argv)
 
 ENDOFITEM:
         out("Perfcounter: %d\n", perfcounter);
-        if(lastmax > 0 && lastmax < M)
+        if(lastmax > 0 && lastmax <= M)
             printf("%d\n", lastmax);
         else
             printf("no solution\n");

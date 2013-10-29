@@ -41,7 +41,7 @@ int main(int argc, char **argv)
 
         int perfcounter = 0;
 
-        int slots[MAXMONEY] = {0};
+        si slots;
         s1.clear();
 
         //first element
@@ -60,6 +60,7 @@ int main(int argc, char **argv)
         }
 
         std::sort(s1.begin(), s1.end());
+
         while (--C > 0) 
         {
             int K = 0;
@@ -76,7 +77,7 @@ int main(int argc, char **argv)
                 {
                     int l = *it + d;
                     if(l <= M) {
-                        slots[l] = 1;
+                        slots.insert(l);
                         perfcounter++;
                     }
                     perfcounter++;
@@ -85,16 +86,15 @@ int main(int argc, char **argv)
             out("\n");
 
             s1.clear();
-            forl(i,0,M+1) {
-                if(slots[i])
-                    s1.push_back(i);
-                slots[i]=0;
+            for(si::iterator it = slots.begin(); it != slots.end(); ++it) {
+                s1.push_back(*it);
             }
+            slots.clear();
         }
 
         out("Perfcounter: %d\n", perfcounter);
-        if(!s1.empty() && s1.back() <= M)
-            printf("%d\n", s1.back());
+        if(!s1.empty() && *s1.rbegin() <= M)
+            printf("%d\n", *s1.rbegin());
         else
             printf("no solution\n");
     }

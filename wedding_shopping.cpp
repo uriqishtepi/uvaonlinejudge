@@ -29,8 +29,6 @@ int main(int argc, char **argv)
     out("Ntests = %d \n", Ntests);
 
     #define MAXMONEY 201
-    vi s1;
-    s1.reserve(MAXMONEY);
 
     while(0 < Ntests--) 
     {
@@ -42,7 +40,8 @@ int main(int argc, char **argv)
         int perfcounter = 0;
 
         int slots[MAXMONEY] = {0};
-        s1.clear();
+        int s1[MAXMONEY] = {0};
+        int size = 0;
 
         //first element
         {
@@ -55,11 +54,11 @@ int main(int argc, char **argv)
                 int d = 0;
                 scanf("%d",&d);
                 out(" g%d = %d ", i, d);
-                s1.push_back(d);
+                s1[size++] = d;
             }
         }
 
-        std::sort(s1.begin(), s1.end());
+        std::sort(s1, s1+size);
         while (--C > 0) 
         {
             int K = 0;
@@ -71,12 +70,13 @@ int main(int argc, char **argv)
                 int d = 0;
                 scanf("%d",&d);
                 out(" g%d = %d ", i, d);
-                if(d + s1.front() > M)
+                if(d + s1[0] > M)
                     continue;
 
-                for(vi::iterator it = s1.begin(); it != s1.end(); ++it) 
+                out("size %d\n", size);
+                forl(j,0,size)
                 {
-                    int l = *it + d;
+                    int l = s1[j] + d;
                     if(l <= M) {
                         slots[l] = 1;
                         perfcounter++;
@@ -86,17 +86,18 @@ int main(int argc, char **argv)
             }
             out("\n");
 
-            s1.clear();
+            memset(s1, 0, sizeof(s1));
+            size = 0;
             forl(i,0,M+1) {
                 if(slots[i])
-                    s1.push_back(i);
+                    s1[size++] = i;
                 slots[i]=0;
             }
         }
 
         out("Perfcounter: %d\n", perfcounter);
-        if(!s1.empty() && s1.back() <= M)
-            printf("%d\n", s1.back());
+        if(size > 0 && s1[size-1] <= M)
+            printf("%d\n", s1[size-1]);
         else
             printf("no solution\n");
     }

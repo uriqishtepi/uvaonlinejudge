@@ -44,85 +44,76 @@ int main(int argc, char **argv)
         int perfcounter = 0;
 
         int garments[20][20] = {0}; //20 garments, 20 of each
-        int counts[20] = {0}; //20 garments
+        si s1;
 
-        int count = 0;
-        while (C > count++) {
+
+        //first element
+        {
             int K = 0;
             scanf("%d\n",&K);
             out("K = %d ", K);
-            counts[count-1] = K;
 
             forl(i,0,K) {
                 //push v into vector
                 int d = 0;
                 scanf("%d",&d);
-                garments[count-1][i] = d;
                 out(" g%d = %d ", i, d);
-            }
-            out("\n");
-        }
-
-        lastmax = 0;
-        distinct.clear();
-
-        //populate with first garment
-        forl(i, 0, counts[0]) {
-            int l = garments[0][i];
-            if(l <= M) {
-                distinct.push_back(l);
-                if(lastmax < l) { 
-                    lastmax = l;
-                    perfcounter++;
-                }
+                s1.insert(d);
             }
         }
 
 
-        //go through next garment, and update sum
-        forl(i, 1, C) 
+        out("s1: ");
+        for(si::iterator it = s1.begin(); it != s1.end(); ++it) 
+            out(" %d ", *it);
+        out("\n");
+
+
+
+        int count = 1;
+
+        while (C > count++) 
         {
-            perfcounter++;
-            bool sum[MAXMONEY] = {0};
+            int K = 0;
+            scanf("%d\n",&K);
+            out("K = %d ", K);
+            si s2;
 
-            for(vi::iterator it = distinct.begin(); it < distinct.end(); ++it) 
-            {
-                perfcounter++;
-                forl(j, 0, counts[i]) 
+            forl(i,0,K) {
+                //push v into vector
+                int d = 0;
+                scanf("%d",&d);
+                out(" g%d = %d ", i, d);
+
+                for(si::iterator it = s1.begin(); it != s1.end(); ++it) 
                 {
-                    int l = *it + garments[i][j];
-                    perfcounter++;
-
-                    if(l == M && i == C) { 
-                        lastmax = M;
-                        goto ENDOFITEM; //found, get out
-                    }
-                    else if(l <= M) { 
-                        sum[l] = true;
+                    int l = *it + d;
+                    if(l <= M) {
+                        s2.insert(l);
                         perfcounter++;
                     }
+                    perfcounter++;
                 }
             }
-
-            lastmax = 0;
-
-            distinct.clear();
-            out("sum: ");
-            forl(k,0,M+1) {
-                if(sum[k]) {
-                    out(" %d", k);
-                    distinct.push_back(k);
-                }
-                perfcounter++;
-            }
+            s1 = s2;
             out("\n");
-            lastmax = distinct.back();
+
+            out("s1: ");
+            for(si::iterator it = s1.begin(); it != s1.end(); ++it) 
+                out(" %d ", *it);
+            out("\n");
+
+
         }
 
-ENDOFITEM:
+        out("s1: ");
+        for(si::iterator it = s1.begin(); it != s1.end(); ++it) 
+            out(" %d ", *it);
+        out("\n");
+
         out("Perfcounter: %d\n", perfcounter);
-        if(lastmax > 0 && lastmax <= M)
-            printf("%d\n", lastmax);
+        if(!s1.empty() && *s1.rbegin() <= M)
+            printf("%d\n", *s1.rbegin());
         else
             printf("no solution\n");
     }

@@ -42,10 +42,7 @@ int main(int argc, char **argv)
         out("M = %d C =%d\n", M, C);
 
         int perfcounter = 0;
-
-        int garments[20][20] = {0}; //20 garments, 20 of each
         si s1;
-
 
         //first element
         {
@@ -61,14 +58,6 @@ int main(int argc, char **argv)
                 s1.insert(d);
             }
         }
-
-
-        out("s1: ");
-        for(si::iterator it = s1.begin(); it != s1.end(); ++it) 
-            out(" %d ", *it);
-        out("\n");
-
-
 
         int count = 1;
 
@@ -97,19 +86,7 @@ int main(int argc, char **argv)
             }
             s1 = s2;
             out("\n");
-
-            out("s1: ");
-            for(si::iterator it = s1.begin(); it != s1.end(); ++it) 
-                out(" %d ", *it);
-            out("\n");
-
-
         }
-
-        out("s1: ");
-        for(si::iterator it = s1.begin(); it != s1.end(); ++it) 
-            out(" %d ", *it);
-        out("\n");
 
         out("Perfcounter: %d\n", perfcounter);
         if(!s1.empty() && *s1.rbegin() <= M)

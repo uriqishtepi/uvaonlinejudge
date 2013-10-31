@@ -4,6 +4,7 @@
 #include<algorithm>
 #include<functional>
 #include<vector>
+#include<bitset>
 #include<set>
 #include<map>
 #include <string.h>
@@ -24,7 +25,7 @@
 
 #define Nmax 8
 float P[1 << 2*Nmax];
-bool  F[1 << 2*Nmax];
+std::bitset <1 << 2*Nmax> F;
 
 float findMin(int c)
 {
@@ -44,13 +45,17 @@ float findMin(int c)
         int next = (-rem) & rem;
         int pair = first | next;
         int withoutpair = c ^ pair;
-        float newval = P[pair] + findMin(withoutpair);
+        float newval = P[pair];
+        if(F[withoutpair])
+            newval += P[withoutpair];
+        else
+            newval += findMin(withoutpair);
 
         P[c] = std::min(P[c], newval);
         rem = rem ^ next;
     }
 
-    F[c] = true;
+    F[c] = 1;
     return P[c];
 }
 
@@ -65,7 +70,7 @@ int main(int argc, char **argv)
 
         forl(i,0,sizeof(P)/sizeof(P[0]))
             P[i] = INF;
-        memset(F, 0, sizeof(F));
+        F.reset();
 
         out("N= %d \n", N);
         int M = 2*N;
@@ -77,7 +82,7 @@ int main(int argc, char **argv)
             loc[i][0] = x;
             loc[i][1] = y;
             out("%s %d %d \n", name, x, y);
-            P[ (1<<i) | (1<<i)] = 0;
+            P[ (1<<i) ] = 0;
 
             forl(j,0,i) {
                 int x2 = loc[j][0];
@@ -89,7 +94,7 @@ int main(int argc, char **argv)
                 int offset = (1<<i) | (1<<j);
                 out("offset %d\n",offset);
                 P[offset] = d;
-                F[offset] = true;
+                F[offset] = 1;
             }
         }
 

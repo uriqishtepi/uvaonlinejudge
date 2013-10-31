@@ -39,9 +39,9 @@ int main(int argc, char **argv)
 
         int perfcounter = 0;
 
-        int slots[MAXMONEY] = {0};
-        int s1[MAXMONEY] = {0};
-        int size = 0;
+        char slots[MAXMONEY] = {0};
+        short s1[MAXMONEY] = {0};
+        short size = 0;
 
         //first element
         {

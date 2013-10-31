@@ -23,10 +23,10 @@
 #endif
 
 #define Nmax 8
-int P[2 << 2*Nmax];
-bool  F[2 << 2*Nmax];
+float P[1 << 2*Nmax];
+bool  F[1 << 2*Nmax];
 
-int findMin(int c)
+float findMin(int c)
 {
     if(c == 0) {
         printf("ERROR c = 0\n");
@@ -44,7 +44,7 @@ int findMin(int c)
         int next = (-rem) & rem;
         int pair = first | next;
         int withoutpair = c ^ pair;
-        int newval = P[pair] + findMin(withoutpair);
+        float newval = P[pair] + findMin(withoutpair);
 
         P[c] = std::min(P[c], newval);
         rem = rem ^ next;
@@ -84,7 +84,7 @@ int main(int argc, char **argv)
                 int y2 = loc[j][1];
                 int dx = (x - x2);
                 int dy = (y - y2);
-                int d = sqrt(dx*dx + dy*dy) * 100;
+                float d = sqrt(dx*dx + dy*dy);
                 out("setting %d %d = %f\n",i,j,d);
                 int offset = (1<<i) | (1<<j);
                 out("offset %d\n",offset);
@@ -95,7 +95,7 @@ int main(int argc, char **argv)
 
         //compute min distances
         int s = ((unsigned int)(-1) << (32-M)) >> (32-M);
-        printf("Case %d: %.2f\n", ++count, (float)findMin(s)/100);
+        printf("Case %d: %.2f\n", ++count, findMin(s));
     }
 
     return 0;

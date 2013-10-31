@@ -45,11 +45,7 @@ float findMin(int c)
         int next = (-rem) & rem;
         int pair = first | next;
         int withoutpair = c ^ pair;
-        float newval = P[pair];
-        if(F[withoutpair])
-            newval += P[withoutpair];
-        else
-            newval += findMin(withoutpair);
+        float newval = P[pair] + findMin(withoutpair);
 
         P[c] = std::min(P[c], newval);
         rem = rem ^ next;
@@ -82,7 +78,7 @@ int main(int argc, char **argv)
             loc[i][0] = x;
             loc[i][1] = y;
             out("%s %d %d \n", name, x, y);
-            P[ (1<<i) ] = 0;
+            P[ (1<<i) | (1<<i)] = 0;
 
             forl(j,0,i) {
                 int x2 = loc[j][0];

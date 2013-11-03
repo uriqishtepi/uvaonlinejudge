@@ -1,0 +1,2 @@
+make $1 && $1 < $1.in | tee /tmp/myout.txt && diff -q $1.out /tmp/myout.txt
+

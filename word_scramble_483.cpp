@@ -1,0 +1,47 @@
+#include<stdio.h>
+#include<math.h>
+#include<iostream>
+#include<sstream>
+#include<algorithm>
+#include<functional>
+#include<vector>
+#include<bitset>
+#include<set>
+#include<map>
+#include <string.h>
+
+#define forl(i,init, max) for(int i = init; i < max; i++) 
+#define vi std::vector<int>
+#define msi std::multiset<int, std::greater<int> >
+#define si std::set<int>
+#define mi std::map<int, int>
+#define INF 1<<30;
+
+//#define DEBUG true
+#ifdef DEBUG
+#define out printf
+#else
+#define out
+#endif
+
+int main(int argc, char **argv)
+{
+    out("Starting...\n");
+
+    char *line = NULL;
+    size_t n;
+    while(getline(&line, &n, stdin) >= 0) 
+    {
+        std::istringstream ss (line);
+        std::string sg;
+        while( ss >> sg ) {
+            reverse(sg.begin(), sg.end());
+            std::cout << sg << " ";
+        }
+
+        std::cout << std::endl;
+    }
+
+    free(line);
+    return 0;
+}

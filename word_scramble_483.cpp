@@ -34,9 +34,17 @@ int main(int argc, char **argv)
     {
         std::istringstream ss (line);
         std::string sg;
-        while( ss >> sg ) {
+        ss >> sg;
+        while(!ss.eof()) {
             reverse(sg.begin(), sg.end());
-            std::cout << sg << " ";
+            std::string next;
+            ss >> next;
+            if(ss.eof())
+                std::cout << sg;
+            else
+                std::cout << sg << " ";
+
+            sg = next;
         }
 
         std::cout << std::endl;

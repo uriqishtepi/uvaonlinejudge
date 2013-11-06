@@ -28,32 +28,27 @@
 int main(int argc, char **argv)
 {
     out("Starting...\n");
-    unsigned char code[26] = {0};
-    code['I'] = 0;
-    code['U'] = 0;
-    code['A'] = 0;
-    code['E'] = 0;
-    code['O'] = 0;
-    code['Y'] = 0;
-    code['W'] = 0;
-    code['H'] = 0;
-    code['B'-'A'] = 1;
-    code['P'-'A'] = 1;
-    code['F'-'A'] = 1;
-    code['V'-'A'] = 1;
-    code['S'-'A'] = 2;
-    code['K'-'A'] = 2;
-    code['G'-'A'] = 2;
-    code['J'-'A'] = 2;
-    code['Q'-'A'] = 2;
-    code['X'-'A'] = 2;
-    code['Z'-'A'] = 2;
-    code['D'-'A'] = 3;
-    code['T'-'A'] = 3;
-    code['L'-'A'] = 4;
-    code['M'-'A'] = 5;
-    code['N'-'A'] = 5;
-    code['R'-'A'] = 6;
+    unsigned char code[99] = {0};
+    code['B'] = '1';
+    code['P'] = '1';
+    code['F'] = '1';
+    code['V'] = '1';
+
+    code['C'] = '2';
+    code['S'] = '2';
+    code['K'] = '2';
+    code['G'] = '2';
+    code['J'] = '2';
+    code['Q'] = '2';
+    code['X'] = '2';
+    code['Z'] = '2';
+
+    code['D'] = '3';
+    code['T'] = '3';
+    code['L'] = '4';
+    code['M'] = '5';
+    code['N'] = '5';
+    code['R'] = '6';
 
     char str[21] = {0};
     int n, m, c;
@@ -66,18 +61,19 @@ int main(int argc, char **argv)
         char ltr = str[0];
         std::string enc;
         enc.push_back(str[0]);
-        char prev = code[str[0]-'A'];
+        char prev = code[str[0]];
         forl(i,1,strnlen(str,sizeof(str)-1)) {
             //if len already 3 break;
             if(enc.size() >= 4) break;
-            char curr = code[str[i] - 'A'];
-            if(curr == 0 || curr == prev) { 
-                prev = curr;
+            char curr = code[str[i]];
+            if(curr == prev)
                 continue;
-            }
 
-            enc.push_back(curr+'0');
             prev = curr;
+            if(curr == 0)
+                continue;
+
+            enc.push_back(curr);
         }
         while(enc.size() < 4) enc.push_back('0');
 

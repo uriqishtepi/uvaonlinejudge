@@ -53,8 +53,8 @@ int main(int argc, char **argv)
     //with the possible ones from the previous notes
     //whene possible ones are empty break
     
-    mmi full; //note to chord
-    std::map<int, std::set<int> > initial;
+    std::map<int, si > initial; //note to all notes in that chord
+    std::map<int, si > full; //note to all chords that nodes is part
     int blah;
     enum { tone = 2, semi_tone = 1};
     int chord[] = { 0, tone, tone, semi_tone, tone, tone, tone, semi_tone};
@@ -65,7 +65,8 @@ int main(int argc, char **argv)
         out("full %s: ",notes[i]);
         forl(j,0,sizeof(chord)/sizeof(int)) {
             next += chord[j];
-            full.insert(std::make_pair(next%12,i)); //chords that i takes part in, to i
+            full[next%12].insert(i); //chords that i takes part in, to i
+            initial[i].insert(next%12);
             out( " %s" , notes[next%12] );
         }
         out("\n");
@@ -93,12 +94,7 @@ int main(int argc, char **argv)
         out("curr %d\n", curr);
 
         //this is the first note, populate the possible set
-        mmi::iterator it = full.find(curr);
-        while(it != full.end() && it->first == curr) {
-            out("possible %d\n", it->second);
-            possible.insert(it->second); //possible chords
-            it++;
-        }
+        possible = initial[curr];
 
         out("possible size %d: ", possible.size());
         for(si::iterator it = possible.begin();it!=possible.end();++it) {
@@ -120,6 +116,7 @@ int main(int argc, char **argv)
             {
                 bool found = false;
                 mmi::iterator it = full.find(*jt);
+                si chords = it->second;
                 while(it != full.end() && it->first == *jt) {
                     if(curr == it->second) {
                         found = true;

@@ -99,10 +99,10 @@ int main(int argc, char **argv)
         si possible;
         int count = 0;
 
-        char * cptr = strtok(buff, " ");
+        char * cptr = strtok(buff, " \n");
         if(cptr == NULL || strncmp(cptr, "END",3) == 0)
             continue;
-        out("note %s\n", cptr);
+        out("note '%s'\n", cptr);
 
         int curr = revmap[cptr];
         out("curr %d\n", curr);

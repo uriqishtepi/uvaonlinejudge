@@ -21,33 +21,40 @@
 #define msi std::map<std::string, int>
 #define INF 1<<30;
 
-#define DEBUG true
+//#define DEBUG true
 #ifdef DEBUG
 #define out printf
 #else
 #define out
 #endif
 
-struct fourpts {
-    int x1;
-    int y1;
-    int x2;
-    int y2;
-};
+char matrix[500+1][500+1];
 
-struct ltf {
-    bool operator() (const fourpts & p1, const fourpts &p2)
-    {
-        if(p1.x1 != p2.x1)
-            return p1.x1 < p2.x1;
-        else if(p1.y1 != p2.y1)
-            return p1.y1 < p2.y1;
-        else if(p1.x2 != p2.x2)
-            return p1.x2 < p2.x2;
-        else
-            return p1.y2 < p2.y2;
+//get offset for x, y coordinates
+inline int xyOff(int x, int y)
+{
+    return x*20000 + y; 
+}
+
+void printMat(int w, int h)
+{
+    forl(i,0,w+1) {
+        forl(j,0,h+1)
+            out("%d",matrix[i][j]);
+        out("\n");
     }
-};
+}
+
+void setWidth(int x, int y1, int y2, char val)
+{
+    static int count = 0;
+    //out("set values from %d, + %d\n", xyOff(x,y1), y2 - y1 + 1);
+    //memset(matrix + xyOff(x,y1), val, y2 - y1 + 1);
+    //out("after memset\n");
+    forl(i,y1,y2+1) {
+        matrix[x][i]++;
+    }
+}
 
 int main(int argc, char **argv)
 {
@@ -57,43 +64,32 @@ int main(int argc, char **argv)
     int w, h, n;
     while( scanf("%d %d %d\n",&w,&h,&n) != EOF && w != 0) {
         out("%d %d %d\n",w,h,n);
+        memset(matrix, 0, sizeof(matrix));
 
-        std::set <fourpts, ltf> v;
         forl(i,0,n) {
             int x1,y1,x2,y2;
             scanf("%d %d %d %d\n",&x1,&y1,&x2,&y2);
-            out("%d %d %d %d\n",x1,y1,x2,y2);
-            fourpts pt;
-            pt.x1 = x1;
-            pt.y1 = y1;
-            pt.x2 = x2;
-            pt.y2 = y2;
-            v.insert(pt);
+            out("Red %d %d %d %d\n",x1,y1,x2,y2);
+            int xmin = std::min(x1,x2);
+            int xmax = std::max(x1,x2);
+            int ymin = std::min(y1,y2);
+            int ymax = std::max(y1,y2);
+            out("Act %d %d %d %d\n",xmin,ymin,xmax,ymax);
+            forl(j,xmin,xmax+1) {
+                out("set width %d %d %d\n",j,ymin,ymax);
+                setWidth(j,ymin,ymax,1);
+            }
         }
 
-        out("v size %d\n", v.size());
-        std::set <fourpts, ltf> goodpts;
-        goodpts.insert(*v.begin());
-        //populate goodpts 
+        int occup = 0;
+        forl(i,1,w+1)
+            forl(j,1,h+1)
+                occup += (matrix[i][j] > 0);
 
-        for(std::set <fourpts, ltf>::iterator it = v.begin(); 
-                it != v.end(); ++it) 
-        {
-            out("%d %d %d %d\n",it->x1,it->y1,it->x2,it->y2);
-            //for jt in goodpoints
-            //if *it intersects *jt then break up *it in several parts
-            //and insert them in goodpts
-        }
+        printMat(w+1,h+1);
 
-        int surface = 0;
-        for(std::set <fourpts, ltf>::iterator it = v.begin(); 
-                it != v.end(); ++it) 
-        {
-            surface += (1+it->x2 - it->x1) * (1+it->y2 - it->y1);
-        }
-
-        out("tot surface = %d, occup surface = %d\n",w*h,surface);
-        int diff = w * h - surface;
+        out("tot surface = %d, occup surface = %d\n",w*h,occup);
+        int diff = w * h - occup;
         if(diff == 0)
             printf("There is no empty spots.\n");
         else if(diff == 1)

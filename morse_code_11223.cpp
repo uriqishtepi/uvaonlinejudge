@@ -22,7 +22,7 @@
 #define mss std::map<std::string, std::string>
 #define INF 1<<30;
 
-#define DEBUG true
+//#define DEBUG true
 #ifdef DEBUG
 #define out printf
 #else
@@ -74,7 +74,7 @@ fmap["G"]="--.";
 fmap["P"]=".--.";
 fmap["Y"]="-.--";
 fmap["7"]="--...";
-fmap["("]="-.- -.";
+fmap["("]="-.--.";
 fmap["\""]=".-..-.";
 fmap["H"]="....";
 fmap["Q"]="--.-";
@@ -100,28 +100,37 @@ fmap["&"]=".-...";
 
     while( getline(&buff, &n, stdin) != -1)
     {
+        forl(i,0,n-1) {
+            if(buff[i] == ' ' && buff[i+1] == ' ')
+                    buff[i+1] = '<';
+        }
         std::string msg;
-        int len = 0;
-        char * tok = strtok(buff, " \n");
+        char * tok = strtok(buff, " \n\t");
         while(tok) {
-            out("%s\n",tok);
+            out("tok=`%s'\n",tok);
             mss::iterator it;
-            len += strlen(tok);
-            out("len = %d, buff len = '%c', buff=%s\n", len, buff[len], buff);
-            if(buff[len] == ' ') {
+            if(tok[0] == '<') {
                 msg += " ";
-                len += 1;
+                tok++;
             }
 
-            if((it = revmap.find(tok)) != revmap.end())
+            if(tok[0] != '.' && tok[0] != '-') {
+                //msg = msg+ " `" + tok+"' ";
+                //out("strange char %d from tok `%s'\n",tok[0],tok);
+            }
+            else if((it = revmap.find(tok)) != revmap.end())
                 msg += it->second;
-            else
+            else {
                 out("token %s not found\n",tok);
+                //msg = msg+ " `" + tok+"' ";
+            }
 
-            tok = strtok(NULL, " \n");
+            tok = strtok(NULL, " \n\t");
         }
-        std::cout << "Message " << ++count << std::endl;
-        std::cout << msg << std::endl << std::endl;
+
+        std::cout << "Message #" << ++count << std::endl;
+        std::cout << msg << std::endl;
+        if(count < m) std::cout << std::endl;
     }
     return 0;
 }

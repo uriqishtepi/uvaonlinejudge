@@ -72,7 +72,7 @@ void DFS_follow(int node, const graphtp & g, vi &visited, std::string sofar)
     }
 }
 
-void DFS(const graphtp & g)
+void recursive_DFS(const graphtp & g)
 {
     out("DFS: size of g %d\n",g.size());
     vi visited(g.size());
@@ -91,40 +91,42 @@ void DFS(const graphtp & g)
 }
 
 
-void nonrecursive_DFS(const graphtp & g)
+void DFS(const graphtp & g)
 {
     vi visited(g.size());
-    std::stack<int> k;
-    int counter = 0;
 
-    for(counter = g.size()-1; counter >= 0; counter--) 
+    for(int n = 0; n < g.size(); n++)
     {
-        k.push(counter);
-    }
-
-    counter = 0;
-    while(!k.empty()) 
-    {
-        //pop first
-        int node = k.top();
-        k.pop();
-        
-        if(visited[node])
+        if(visited[n])
             continue;
-   
-        printf("%d: %d \n", counter++, node);
-        visited[node] = true;
 
-        for(vi::const_reverse_iterator it = g[node].rbegin(); it != g[node].rend(); ++it)
+        std::stack<int> k;
+        k.push(n);
+
+        int counter = 0;
+        while(!k.empty()) 
         {
-            if(!visited[*it])
-                k.push(*it);
+            //pop first
+            int node = k.top();
+            k.pop();
+
+            if(visited[node])
+                continue;
+
+            printf("%d: %d \n", counter++, node);
+            visited[node] = true;
+
+            for(vi::const_reverse_iterator it = g[node].rbegin(); it != g[node].rend(); ++it)
+            {
+                if(!visited[*it])
+                    k.push(*it);
+            }
         }
     }
 }
 
 
-// connected components is effectivly DFS or BFS but assigns to visited for each
+// connected components is effectivly DFS but assigns to visited for each
 // element the id of its component; it assigns different ids
 // for each distinct componnent
 void connected_components(const graphtp &g)
@@ -197,8 +199,8 @@ int main(void)
     DFS(g);
     std::cout << std::endl;
 
-    std::cout << " DFS " << std::endl;
-    nonrecursive_DFS(g);
+    std::cout << " recursive DFS " << std::endl;
+    recursive_DFS(g);
     std::cout << std::endl;
 
     std::cout << " BFS " << std::endl;

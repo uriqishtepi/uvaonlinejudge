@@ -129,6 +129,10 @@ void DFS(const graphtp & g)
 // connected components is effectivly DFS but assigns to visited for each
 // element the id of its component; it assigns different ids
 // for each distinct componnent
+// it works fine like this for a undirected graph because dfs (or bfs) 
+// will find all the nodes in a component connected to the first node.
+// however this does not work like so for directed graphs
+// (does connected components make sense in directed graphs?)
 void connected_components(const graphtp &g)
 {
     vi visited(g.size());

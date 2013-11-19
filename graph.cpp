@@ -23,30 +23,33 @@
 void BFS(const graphtp & g)
 {
     vi visited(g.size());
-    std::queue<int> q;
 
-    int counter = 0;
-    //enque all
-    for(graphtp::const_iterator it = g.begin(); it!=g.end();++it,++counter)
+    //consider all
+    for(int n = 0; n < g.size(); n++)
     {
-        q.push(counter);
-    }
-
-    counter = 0;
-    while(!q.empty())
-    {
-        int el = q.front();
-        q.pop();
-        if(visited[el])
+        if(visited[n])
             continue;
-        
-        printf("%d -> ", el);
-        visited[el] = true;
 
-        for(vi::const_iterator it = g[el].begin(); it != g[el].end(); ++it)
+        //start with current in queue
+        std::queue<int> q;
+        q.push(n);
+
+        int counter = 0;
+        while(!q.empty())
         {
-            if(!visited[*it])
-                q.push(*it);
+            int el = q.front();
+            q.pop();
+            if(visited[el])
+                continue;
+
+            printf("%d -> ", el);
+            visited[el] = true;
+
+            for(vi::const_iterator it = g[el].begin(); it != g[el].end(); ++it)
+            {
+                if(!visited[*it])
+                    q.push(*it);
+            }
         }
     }
 }
@@ -127,33 +130,39 @@ void nonrecursive_DFS(const graphtp & g)
 void connected_components(const graphtp &g)
 {
     vi visited(g.size());
-    std::queue<int> q;
+    int compcntr = 0;
 
-    int counter = 0;
     //enque all
-    for(graphtp::const_iterator it = g.begin(); it!=g.end();++it,++counter)
+    for(int n = 0; n < g.size(); n++)
     {
-        q.push(counter);
-    }
-
-    counter = 0;
-    while(!q.empty())
-    {
-        int el = q.front();
-        q.pop();
-        if(visited[el])
+        if(visited[n])
             continue;
-        
-        printf("%d -> ", el);
-        visited[el] = true;
 
-        for(vi::const_iterator it = g[el].begin(); it != g[el].end(); ++it)
+        std::queue<int> q;
+        q.push(n);
+        ++compcntr;
+
+        int counter = 0;
+        while(!q.empty())
         {
-            if(!visited[*it])
-                q.push(*it);
+            int el = q.front();
+            q.pop();
+            if(visited[el])
+                continue;
+
+            printf("%d (%d)-> \n", el,compcntr);
+            visited[el] = compcntr;
+
+            for(vi::const_iterator it = g[el].begin(); it != g[el].end(); ++it)
+            {
+                if(!visited[*it])
+                    q.push(*it);
+            }
         }
     }
 }
+
+
 
 int main(void)
 {
@@ -194,6 +203,10 @@ int main(void)
 
     std::cout << " BFS " << std::endl;
     BFS(g);
+    std::cout << std::endl;
+
+    std::cout << " Connected Components " << std::endl;
+    connected_components(g);
     std::cout << std::endl;
 
     return 0;

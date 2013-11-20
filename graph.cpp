@@ -33,6 +33,7 @@ void BFS(const graphtp & g)
         //start with current in queue
         std::queue<int> q;
         q.push(n);
+        printf("\n");
 
         int counter = 0;
         while(!q.empty())
@@ -76,17 +77,16 @@ void recursive_DFS(const graphtp & g)
 {
     out("DFS: size of g %d\n",g.size());
     vi visited(g.size());
-    int counter = 0;
 
-    for(graphtp::const_iterator it = g.begin(); it!=g.end();++it,++counter)
+    for(int node=0; node < g.size(); node++)
     {
-        out("DFS element %d\n",counter);
-        if(visited[counter])
+        out("DFS element %d\n",node);
+        if(visited[node])
             continue;
    
-        printf("%d ", counter);
-        visited[counter] = true;
-        DFS_follow(counter, g, visited, "    ");
+        printf("%d ", node);
+        visited[node] = true;
+        DFS_follow(node, g, visited, "    ");
     }
 }
 
@@ -126,7 +126,8 @@ void DFS(const graphtp & g)
 }
 
 
-// connected components is effectivly DFS but assigns to visited for each
+// Find connected components for a undirected graph
+// connected components is effectivly BFS but assigns to visited for each
 // element the id of its component; it assigns different ids
 // for each distinct componnent
 // it works fine like this for a undirected graph because dfs (or bfs) 
@@ -167,6 +168,46 @@ void connected_components(const graphtp &g)
         }
     }
 }
+
+
+//will print the nodes in the graph, starting with the one that does not point
+//to any node first, then the others
+//DFS print the one that has no neighbors
+//note that if graph has cycles, there is no topological sort
+void topological_sort(const graphtp &g)
+{
+    vi visited(g.size());
+    int counter = 0;
+
+    for(int n = 0; n < g.size(); n++)
+    {
+        if(visited[n])
+            continue;
+
+        std::stack<int> k;
+        k.push(n);
+
+        while(!k.empty()) 
+        {
+            //pop first
+            int node = k.top();
+            k.pop();
+
+            if(visited[node])
+                continue;
+
+            printf("%d: %d \n", counter++, node);
+            visited[node] = true;
+
+            for(vi::const_reverse_iterator it = g[node].rbegin(); it != g[node].rend(); ++it)
+            {
+                if(!visited[*it])
+                    k.push(*it);
+            }
+        }
+    }
+}
+
 
 
 
@@ -213,6 +254,10 @@ int main(void)
 
     std::cout << " Connected Components " << std::endl;
     connected_components(g);
+    std::cout << std::endl;
+
+    std::cout << " topogogical sort " << std::endl;
+    topological_sort(g);
     std::cout << std::endl;
 
     return 0;

@@ -34,22 +34,23 @@ void BFS(const graphtp & g)
         std::queue<int> q;
         q.push(n);
         printf("\n");
+        visited[n] = true;
 
         int counter = 0;
         while(!q.empty())
         {
             int el = q.front();
             q.pop();
-            if(visited[el])
-                continue;
 
             printf("%d -> ", el);
-            visited[el] = true;
 
             for(vi::const_iterator it = g[el].begin(); it != g[el].end(); ++it)
             {
-                if(!visited[*it])
-                    q.push(*it);
+                if(visited[*it]) 
+                    continue;
+
+                q.push(*it);
+                visited[*it] = true;
             }
         }
     }
@@ -59,6 +60,7 @@ void BFS(const graphtp & g)
 //follow node and print all adjacents
 void DFS_follow(int node, const graphtp & g, vi &visited, std::string sofar)
 {
+    visited[node] = true;
     //follows all adjacent vertices of node
     for(vi::const_iterator it = g[node].begin(); it!=g[node].end();++it)
     {
@@ -85,7 +87,6 @@ void recursive_DFS(const graphtp & g)
             continue;
    
         printf("%d ", node);
-        visited[node] = true;
         DFS_follow(node, g, visited, "    ");
     }
 }

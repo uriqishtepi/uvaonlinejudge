@@ -17,7 +17,7 @@
 #define si std::set<int>
 #define ss std::set<std::string>
 #define mi std::map<int, int>
-#define mli std::map<char, unsigned long long int>
+#define mli std::map<unsigned char, unsigned long long int>
 #define mmi std::multimap<int, int>
 #define msi std::map<std::string, int>
 #define mss std::map<std::string, std::string>
@@ -52,7 +52,7 @@ int main(int argc, char **argv)
         int numc =0;
         while(numc++ < K) {
             unsigned long long int d;
-            char c;
+            unsigned char c;
             scanf("%c %lld\n", &c, &d);
             out("%c %lld\n", c, d);
             revmap[c] = (unsigned long long int) d;
@@ -67,7 +67,7 @@ int main(int argc, char **argv)
             getline(&buff, &n, stdin);
             forl(i,0,strlen(buff)) {
                 unsigned long long int val = 0;
-                mli::iterator it = revmap.find(buff[i]);
+                mli::iterator it = revmap.find((unsigned char) buff[i]);
                 if(it != revmap.end())
                     val = it->second;
 
@@ -78,12 +78,7 @@ int main(int argc, char **argv)
             }
         }
 
-        unsigned long long int q = sum/100LL;
-        int r = sum%100LL;
-
-        printf("%lld.",q);
-        if(r < 10) printf("0");
-        printf("%ld$\n",r);
+        printf("%.2f$\n",(double)sum/100.0);
     }
 
     return 0;

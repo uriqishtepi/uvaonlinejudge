@@ -68,8 +68,6 @@ void DFS_follow(int node, const graphtp & g, vi &visited, std::string sofar)
             continue;
         
         std::cout << sofar << " -> " << *it;
-        visited[*it] = true;
-        
         DFS_follow(*it, g, visited, sofar + "      ");
         printf("\n");
     }
@@ -95,6 +93,7 @@ void recursive_DFS(const graphtp & g)
 void DFS(const graphtp & g)
 {
     vi visited(g.size());
+    int compcntr = 0;
 
     for(int n = 0; n < g.size(); n++)
     {
@@ -103,6 +102,8 @@ void DFS(const graphtp & g)
 
         std::stack<int> k;
         k.push(n);
+        ++compcntr;
+        visited[n] = compcntr;
 
         int counter = 0;
         while(!k.empty()) 
@@ -111,16 +112,20 @@ void DFS(const graphtp & g)
             int node = k.top();
             k.pop();
 
-            if(visited[node])
-                continue;
-
             printf("%d: %d \n", counter++, node);
-            visited[node] = true;
 
             for(vi::const_reverse_iterator it = g[node].rbegin(); it != g[node].rend(); ++it)
             {
-                if(!visited[*it])
-                    k.push(*it);
+                if(visited[*it] == compcntr) {
+                    printf("Warning Directed cycle detected! node %d\n", *it);
+                    continue;
+                }
+                else if(visited[*it]) {
+                    out("visited node %d\n", *it);
+                    continue;
+                }
+                k.push(*it);
+                visited[*it] = compcntr;
             }
         }
     }
@@ -149,28 +154,29 @@ void connected_components(const graphtp &g)
         std::queue<int> q;
         q.push(n);
         ++compcntr;
+        visited[n] = compcntr;
 
         int counter = 0;
         while(!q.empty())
         {
             int el = q.front();
             q.pop();
-            if(visited[el])
-                continue;
-
             printf("%d (%d)-> \n", el,compcntr);
-            visited[el] = compcntr;
 
             for(vi::const_iterator it = g[el].begin(); it != g[el].end(); ++it)
             {
-                if(!visited[*it])
-                    q.push(*it);
+                if(visited[*it])
+                    continue;
+                q.push(*it);
+                visited[*it] = compcntr;
             }
         }
     }
 }
 
 
+//topological sort of a directed acyclic graph is the reverse postorder of DFS
+//
 //will print the nodes in the graph, starting with the one that does not point
 //to any node first, then the others
 //DFS print the one that has no neighbors
@@ -178,6 +184,7 @@ void connected_components(const graphtp &g)
 void topological_sort(const graphtp &g)
 {
     vi visited(g.size());
+    vi postorder; //order in which items are popped from stack
     int counter = 0;
 
     for(int n = 0; n < g.size(); n++)
@@ -187,26 +194,35 @@ void topological_sort(const graphtp &g)
 
         std::stack<int> k;
         k.push(n);
+        visited[n] = true;
 
         while(!k.empty()) 
         {
             //pop first
             int node = k.top();
             k.pop();
-
-            if(visited[node])
-                continue;
-
-            printf("%d: %d \n", counter++, node);
-            visited[node] = true;
+            postorder.push_back(node);
 
             for(vi::const_reverse_iterator it = g[node].rbegin(); it != g[node].rend(); ++it)
             {
-                if(!visited[*it])
-                    k.push(*it);
+                if(visited[*it]) {
+                    continue;
+                }
+                k.push(*it);
+                visited[*it] = true;
             }
         }
     }
+    printf("postorder: ");
+    for(int n = 0; n < postorder.size(); n++)
+        printf("%d ", postorder[n]);
+    printf("\n");
+
+    printf("reverse postorder: ");
+    for(int n = postorder.size() - 1; n >= 0; n--)
+        printf("%d ", postorder[n]);
+    printf("\n");
+    
 }
 
 

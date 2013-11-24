@@ -58,23 +58,19 @@ void BFS(const graphtp & g)
 
 
 //follow node and print all adjacents
-void DFS_follow(int node, const graphtp & g, vi &visited, int compcntr, std::string sofar)
+void DFS_follow(int node, const graphtp & g, vi &visited, std::string sofar)
 {
-    visited[node] = compcntr;
+    visited[node] = true;
     //follows all adjacent vertices of node
     for(vi::const_iterator it = g[node].begin(); it!=g[node].end();++it)
     {
-        if(visited[*it] == compcntr) {
-            printf("Warning Directed cycle detected! node %d\n", *it);
-            continue;
-        }
-        else if(visited[*it]) {
+        if(visited[*it]) {
             out("visited node %d\n", *it);
             continue;
         }        
 
         std::cout << sofar << " -> " << *it;
-        DFS_follow(*it, g, visited, compcntr, sofar + "      ");
+        DFS_follow(*it, g, visited, sofar + "      ");
         printf("\n");
     }
 }
@@ -83,7 +79,6 @@ void recursive_DFS(const graphtp & g)
 {
     out("DFS: size of g %d\n",g.size());
     vi visited(g.size());
-    int compcntr = 0;
 
     for(int node=0; node < g.size(); node++)
     {
@@ -92,7 +87,7 @@ void recursive_DFS(const graphtp & g)
             continue;
    
         printf("%d ", node);
-        DFS_follow(node, g, visited, ++compcntr,"    ");
+        DFS_follow(node, g, visited, "    ");
     }
 }
 
@@ -100,7 +95,6 @@ void recursive_DFS(const graphtp & g)
 void DFS(const graphtp & g)
 {
     vi visited(g.size());
-    int compcntr = 0;
 
     for(int n = 0; n < g.size(); n++)
     {
@@ -109,8 +103,7 @@ void DFS(const graphtp & g)
 
         std::stack<int> k;
         k.push(n);
-        ++compcntr;
-        visited[n] = compcntr;
+        visited[n] = true;
 
         int counter = 0;
         while(!k.empty()) 
@@ -123,16 +116,12 @@ void DFS(const graphtp & g)
 
             for(vi::const_reverse_iterator it = g[node].rbegin(); it != g[node].rend(); ++it)
             {
-                if(visited[*it] == compcntr) {
-                    printf("Warning Directed cycle detected! node %d\n", *it);
-                    continue;
-                }
-                else if(visited[*it]) {
+                if(visited[*it]) {
                     out("visited node %d\n", *it);
                     continue;
                 }
                 k.push(*it);
-                visited[*it] = compcntr;
+                visited[*it] = true;
             }
         }
     }
@@ -172,11 +161,7 @@ void connected_components(const graphtp &g)
 
             for(vi::const_iterator it = g[el].begin(); it != g[el].end(); ++it)
             {
-                if(visited[*it] == compcntr) {
-                    printf("Warning Directed cycle detected! node %d\n", *it);
-                    continue;
-                }
-                else if(visited[*it]) {
+                if(visited[*it]) {
                     out("visited node %d\n", *it);
                     continue;
                 }
@@ -201,40 +186,38 @@ void topological_sort(const graphtp &g)
     vi visited(g.size());
     vi postorder; //order in which items are popped from stack
     int counter = 0;
-    int compcntr = 0;
 
     for(int n = 0; n < g.size(); n++)
     {
         if(visited[n])
             continue;
 
+        vi locorder;
         std::stack<int> k;
         k.push(n);
-        ++compcntr;
-        visited[n] = compcntr;
+        locorder.push_back(n);
+        visited[n] = true;
 
         while(!k.empty()) 
         {
             //pop first
             int node = k.top();
             k.pop();
-            postorder.push_back(node);
 
             for(vi::const_reverse_iterator it = g[node].rbegin(); it != g[node].rend(); ++it)
             {
-                if(visited[*it] == compcntr) {
-                    printf("Warning Directed cycle detected! node %d\n", *it);
-                    continue;
-                }
-                else if(visited[*it]) {
+                if(visited[*it]) {
                     out("visited node %d\n", *it);
                     continue;
                 }
                 k.push(*it);
-                visited[*it] = compcntr;
+                locorder.push_back(*it);
+                visited[*it] = true;
             }
         }
+        postorder.insert(postorder.end(),locorder.rbegin(),locorder.rend());
     }
+
     printf("postorder: ");
     for(int n = 0; n < postorder.size(); n++)
         printf("%d ", postorder[n]);
@@ -245,6 +228,42 @@ void topological_sort(const graphtp &g)
         printf("%d ", postorder[n]);
     printf("\n");
     
+}
+
+void rec_topological_sort(const graphtp &g, vi & visited, vi & postorder, int node)
+{
+    visited[node] = true;
+    for(vi::const_iterator it = g[node].begin(); it != g[node].end(); ++it)
+    {
+        if(visited[*it])
+            continue;
+        rec_topological_sort(g, visited, postorder, *it);
+    }
+    postorder.push_back(node);
+}
+
+
+void recursive_topological_sort(const graphtp &g)
+{
+    vi visited(g.size());
+    vi postorder;
+    for(int n = 0; n < g.size(); n++)
+    {
+        if(visited[n])
+            continue;
+        rec_topological_sort(g, visited, postorder, n);
+    } 
+
+    printf("postorder: ");
+    for(int n = 0; n < postorder.size(); n++)
+        printf("%d ", postorder[n]);
+    printf("\n");
+
+    printf("reverse postorder: ");
+    for(int n = postorder.size() - 1; n >= 0; n--)
+        printf("%d ", postorder[n]);
+    printf("\n");
+ 
 }
 
 
@@ -297,6 +316,10 @@ int main(void)
 
     std::cout << " topogogical sort " << std::endl;
     topological_sort(g);
+    std::cout << std::endl;
+
+    std::cout << "Recursive DFS topogogical sort " << std::endl;
+    recursive_topological_sort(g);
     std::cout << std::endl;
 
     return 0;

@@ -56,15 +56,21 @@ void BFS(const graphtp & g)
     }
 }
 
+enum {white=0, gray=1, black=2,};
+
 
 //follow node and print all adjacents
 void DFS_follow(int node, const graphtp & g, vi &visited, std::string sofar)
 {
-    visited[node] = true;
+    visited[node] = gray;
     //follows all adjacent vertices of node
     for(vi::const_iterator it = g[node].begin(); it!=g[node].end();++it)
     {
-        if(visited[*it]) {
+        if(visited[*it] == gray) {
+            printf("cycle detected node %d\n", *it);
+            continue;
+        }        
+        else if(visited[*it] == black) {
             out("visited node %d\n", *it);
             continue;
         }        
@@ -73,6 +79,7 @@ void DFS_follow(int node, const graphtp & g, vi &visited, std::string sofar)
         DFS_follow(*it, g, visited, sofar + "      ");
         printf("\n");
     }
+    visited[node] = black;
 }
 
 void recursive_DFS(const graphtp & g)

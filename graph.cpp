@@ -20,6 +20,8 @@
 
 
 //breadth first search
+//expand the reach from a node, level at at time
+//extremely hard to find cycles with bfs
 void BFS(const graphtp & g)
 {
     vi visited(g.size());
@@ -60,6 +62,12 @@ enum {white=0, gray=1, black=2,};
 
 
 //follow node and print all adjacents
+//first time we encounter node, we mark it gray
+//then we process all its dfs connected subtree
+//when we are done, we mark it black
+//if during the dfs search we see node that is gray, it means we have cycle
+//if we encounter black node, it means it was independently fully processed
+//earlier and nothing further should be done with it
 void DFS_follow(int node, const graphtp & g, vi &visited, std::string sofar)
 {
     visited[node] = gray;
@@ -67,11 +75,11 @@ void DFS_follow(int node, const graphtp & g, vi &visited, std::string sofar)
     for(vi::const_iterator it = g[node].begin(); it!=g[node].end();++it)
     {
         if(visited[*it] == gray) {
-            printf("cycle detected node %d\n", *it);
+            printf("cycle detected node %d->%d\n", node, *it);
             continue;
         }        
         else if(visited[*it] == black) {
-            out("visited node %d\n", *it);
+            out("encountered a prev. visited node %d\n", *it);
             continue;
         }        
 
@@ -98,7 +106,6 @@ void recursive_DFS(const graphtp & g)
     }
 }
 
-
 void DFS(const graphtp & g)
 {
     vi visited(g.size());
@@ -124,11 +131,60 @@ void DFS(const graphtp & g)
             for(vi::const_reverse_iterator it = g[node].rbegin(); it != g[node].rend(); ++it)
             {
                 if(visited[*it]) {
-                    out("visited node %d\n", *it);
+                    out("encountered a prev. visited node %d\n", *it);
                     continue;
                 }
                 k.push(*it);
                 visited[*it] = true;
+            }
+        }
+    }
+}
+
+
+void DFS_that_detects_cycles(const graphtp & g)
+{
+    vi visited(g.size());
+
+    for(int n = 0; n < g.size(); n++)
+    {
+        if(visited[n])
+            continue;
+
+        std::stack<int> k;
+        k.push(n);
+
+        int counter = 0;
+        while(!k.empty()) 
+        {
+            //pop first
+            int node = k.top();
+            if(visited[node] == black) {
+                k.pop();
+                continue;
+            }
+            visited[node] = gray;
+
+            printf("%d: %d \n", counter++, node);
+
+            int anynew = 0;
+            for(vi::const_reverse_iterator it = g[node].rbegin(); it != g[node].rend(); ++it)
+            {
+                if(visited[*it] == gray) {
+                    printf("cycle detected node %d->%d\n", node, *it);
+                    continue;
+                }        
+                else if(visited[*it] == black) {
+                    out("encountered a prev. visited node %d\n", *it);
+                    continue;
+                }
+                k.push(*it);
+                anynew++;
+            }
+
+            if(!anynew) {
+                visited[node] = black;
+                k.pop();
             }
         }
     }
@@ -169,7 +225,7 @@ void connected_components(const graphtp &g)
             for(vi::const_iterator it = g[el].begin(); it != g[el].end(); ++it)
             {
                 if(visited[*it]) {
-                    out("visited node %d\n", *it);
+                    out("encountered a prev. visited node %d\n", *it);
                     continue;
                 }
 
@@ -191,6 +247,11 @@ void connected_components(const graphtp &g)
 void topological_sort(const graphtp &g)
 {
     vi visited(g.size());
+    printf("vistied : ");
+    for(int n = 0; n < visited.size(); n++)
+        printf("%d ", visited[n]);
+    printf("\n");
+
     vi postorder; //order in which items are popped from stack
     int counter = 0;
 
@@ -202,27 +263,41 @@ void topological_sort(const graphtp &g)
         vi locorder;
         std::stack<int> k;
         k.push(n);
-        locorder.push_back(n);
-        visited[n] = true;
 
         while(!k.empty()) 
         {
             //pop first
             int node = k.top();
-            k.pop();
+            if(visited[node] == black) {
+                k.pop();
+                continue;
+            }
 
+            visited[node] = gray;
+            out("current top() node %d\n", node);
+
+            int anynew = 0;
             for(vi::const_reverse_iterator it = g[node].rbegin(); it != g[node].rend(); ++it)
             {
-                if(visited[*it]) {
-                    out("visited node %d\n", *it);
+                if(visited[*it] == gray) {
+                    printf("cycle detected node %d->%d\n", node, *it);
+                    continue;
+                }        
+                else if(visited[*it] == black) {
+                    out("encountered a prev. visited node %d\n", *it);
                     continue;
                 }
+
                 k.push(*it);
-                locorder.push_back(*it);
-                visited[*it] = true;
+                anynew++;
+            }
+            
+            if(!anynew) {
+                k.pop();
+                visited[node] = black;
+                postorder.push_back(node);
             }
         }
-        postorder.insert(postorder.end(),locorder.rbegin(),locorder.rend());
     }
 
     printf("postorder: ");
@@ -239,13 +314,20 @@ void topological_sort(const graphtp &g)
 
 void rec_topological_sort(const graphtp &g, vi & visited, vi & postorder, int node)
 {
-    visited[node] = true;
+    visited[node] = gray;
     for(vi::const_iterator it = g[node].begin(); it != g[node].end(); ++it)
     {
-        if(visited[*it])
+        if(visited[*it] == gray) {
+            printf("cycle detected node %d->%d\n", node, *it);
             continue;
+        }        
+        else if(visited[*it] == black) {
+            out("encountered a prev. visited node %d\n", *it);
+            continue;
+        }
         rec_topological_sort(g, visited, postorder, *it);
     }
+    visited[node] = black;
     postorder.push_back(node);
 }
 
@@ -308,6 +390,11 @@ int main(void)
     std::cout << " DFS " << std::endl;
     DFS(g);
     std::cout << std::endl;
+
+    std::cout << " DFS with cycle detection " << std::endl;
+    DFS_that_detects_cycles(g);
+    std::cout << std::endl;
+
 
     std::cout << " recursive DFS " << std::endl;
     recursive_DFS(g);

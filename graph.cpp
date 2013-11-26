@@ -405,17 +405,21 @@ void alt_topol_sort(const graphtp &g)
     {
         int el = q.front();
         q.pop();
-        if(visited[el]) //avoid processing items that were put in q mult times
-            continue;
+        if(visited[el] == black) 
+            continue; //avoid processing items that were put in q mult times
 
         printf("%d ", el);
-        visited[el] = true;
+        visited[el] = black;
 
         for(vi::const_iterator it = g[el].begin(); it != g[el].end(); ++it)
         {
             out("\nneighbors of %d investigating node %d\n",el, *it);
 
-            if(visited[*it]) {
+            if(visited[*it] == black) {
+                printf("CYCLE !! %d\n", *it);
+                continue;
+            }
+            else if(visited[*it] == gray) {
                 out("already visited %d\n", *it);
                 continue;
             }
@@ -425,7 +429,7 @@ void alt_topol_sort(const graphtp &g)
                     ++jt) 
             {
                 out("\nnode %d depends on %d\n",*it, *jt);
-                if(!visited[*jt]) {
+                if(visited[*jt] != black) {
                     out("\n %d is not visited yet\n", *jt);
                     feasable = false;
                     break;
@@ -436,17 +440,17 @@ void alt_topol_sort(const graphtp &g)
                 continue;
 
             q.push(*it); 
-            //can not mark visited here otherwise the rev check will fail
-            //so have to mark visited when popping--this introduces possibility
-            //of a node going multiple times on the que
-            //we can avoid it by marking gray when put in queue
-            //and marking black when popping out from queue.
+            visited[*it] = gray;
         }
     }
-    
-
 }
 
+
+
+void strongly_connected_components(const graphtp &g)
+{
+
+}
 
 
 int main(void)

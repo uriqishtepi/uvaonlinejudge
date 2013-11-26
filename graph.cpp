@@ -8,7 +8,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define DEBUG true
+//#define DEBUG true
 #ifdef DEBUG
 #define out printf
 #else
@@ -18,6 +18,20 @@
 #define vi std::vector<int>
 #define graphtp std::vector< vi > 
 
+void print_graph(const graphtp & g)
+{
+    for(int n = 0; n < g.size(); n++)
+    {
+        out("%d: ", n);
+        for(vi::const_iterator it = g[n].begin(); it != g[n].end(); ++it)
+        {
+            out("%d, ", *it);
+        }
+        out("\n");
+
+    }
+
+}
 
 //breadth first search
 //expand the reach from a node, level at at time
@@ -247,20 +261,14 @@ void connected_components(const graphtp &g)
 void topological_sort(const graphtp &g)
 {
     vi visited(g.size());
-    printf("vistied : ");
-    for(int n = 0; n < visited.size(); n++)
-        printf("%d ", visited[n]);
-    printf("\n");
-
     vi postorder; //order in which items are popped from stack
     int counter = 0;
 
-    for(int n = 0; n < g.size(); n++)
+    for(int n = 0; n < g.size(); n++) //go through all the nodes in the graph
     {
-        if(visited[n])
+        if(visited[n]) //nothing more to do with this node
             continue;
 
-        vi locorder;
         std::stack<int> k;
         k.push(n);
 
@@ -268,13 +276,12 @@ void topological_sort(const graphtp &g)
         {
             //pop first
             int node = k.top();
-            if(visited[node] == black) {
+            if(visited[node] == black) { //node can be put in stack mult times
                 k.pop();
                 continue;
             }
 
             visited[node] = gray;
-            out("current top() node %d\n", node);
 
             int anynew = 0;
             for(vi::const_reverse_iterator it = g[node].rbegin(); it != g[node].rend(); ++it)
@@ -352,9 +359,93 @@ void recursive_topological_sort(const graphtp &g)
     for(int n = postorder.size() - 1; n >= 0; n--)
         printf("%d ", postorder[n]);
     printf("\n");
- 
 }
 
+//compute the reverse graph
+void get_reverse_graph(const graphtp &g, graphtp &rev)
+{
+    rev.resize(g.size());
+    for(int n = 0; n < g.size(); n++)
+    {
+        for(vi::const_iterator it = g[n].begin(); it != g[n].end(); ++it)
+        {
+            rev[*it].push_back(n);
+        }
+    }
+}
+
+
+//alternative topological sort based on finding nodes that have no incomming
+//(or out going) edges, then expanding with the nearest neighbors and so on
+//until all the vertices are proessed. there must be at least one vertex with 
+//no incommint edge, otherwise there would be a cycle and no topol sort.
+//After finding nodes with no connectionns outside, do a sort of BFS on graph
+//except that add node with only connections to the visited nodes 
+//This is a bit similar to MST (min spanning tree)
+//We might need to reverse thd edges to find equivalent order to the 
+//DFS based topological sort above
+void alt_topol_sort(const graphtp &g)
+{
+    std::queue<int> q;
+    //need the reverse graph:
+    graphtp rev;
+    get_reverse_graph(g, rev);
+    print_graph(rev);
+
+    //find vertices with no incomming (outgoing?) edges
+    for(int n = 0; n < rev.size(); n++)
+    {
+        if(rev[n].size() == 0)
+            q.push(n);
+    } 
+
+    vi visited(g.size());
+
+    while(!q.empty())
+    {
+        int el = q.front();
+        q.pop();
+        if(visited[el]) //avoid processing items that were put in q mult times
+            continue;
+
+        printf("%d ", el);
+        visited[el] = true;
+
+        for(vi::const_iterator it = g[el].begin(); it != g[el].end(); ++it)
+        {
+            out("\nneighbors of %d investigating node %d\n",el, *it);
+
+            if(visited[*it]) {
+                out("already visited %d\n", *it);
+                continue;
+            }
+
+            bool feasable = true;
+            for(vi::const_iterator jt = rev[*it].begin(); jt!= rev[*it].end();
+                    ++jt) 
+            {
+                out("\nnode %d depends on %d\n",*it, *jt);
+                if(!visited[*jt]) {
+                    out("\n %d is not visited yet\n", *jt);
+                    feasable = false;
+                    break;
+                }
+            }
+
+            if(!feasable)
+                continue;
+
+            q.push(*it); 
+            //can not mark visited here otherwise the rev check will fail
+            //so have to mark visited when popping--this introduces possibility
+            //of a node going multiple times on the que
+            //we can avoid it by marking gray when put in queue
+            //and marking black when popping out from queue.
+        }
+    }
+    
+
+}
 
 
 
@@ -387,6 +478,9 @@ int main(void)
         out("size of g %d\n",g.size());
     }
 
+
+    print_graph(g);
+
     std::cout << " DFS " << std::endl;
     DFS(g);
     std::cout << std::endl;
@@ -400,20 +494,24 @@ int main(void)
     recursive_DFS(g);
     std::cout << std::endl;
 
-    std::cout << " BFS " << std::endl;
+    std::cout << "BFS " << std::endl;
     BFS(g);
     std::cout << std::endl;
 
-    std::cout << " Connected Components " << std::endl;
+    std::cout << "Connected Components " << std::endl;
     connected_components(g);
     std::cout << std::endl;
 
-    std::cout << " topogogical sort " << std::endl;
+    std::cout << "topogogical sort " << std::endl;
     topological_sort(g);
     std::cout << std::endl;
 
-    std::cout << "Recursive DFS topogogical sort " << std::endl;
+    std::cout << "topogogical sort via Recursive DFS " << std::endl;
     recursive_topological_sort(g);
+    std::cout << std::endl;
+
+    std::cout << "topogogical sort via BFS on reverse graph" << std::endl;
+    alt_topol_sort(g);
     std::cout << std::endl;
 
     return 0;

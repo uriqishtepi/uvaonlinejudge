@@ -23,14 +23,11 @@ void print_graph(const graphtp & g)
     for(int n = 0; n < g.size(); n++)
     {
         out("%d: ", n);
-        for(vi::const_iterator it = g[n].begin(); it != g[n].end(); ++it)
-        {
+        for(vi::const_iterator it = g[n].begin(); it != g[n].end(); ++it) {
             out("%d, ", *it);
         }
         out("\n");
-
     }
-
 }
 
 //breadth first search
@@ -258,7 +255,7 @@ void connected_components(const graphtp &g)
 //to any node first, then the others
 //DFS print the one that has no neighbors
 //note that if graph has cycles, there is no topological sort
-void topological_sort(const graphtp &g)
+vi topological_sort(const graphtp &g)
 {
     vi visited(g.size());
     vi postorder; //order in which items are popped from stack
@@ -316,7 +313,7 @@ void topological_sort(const graphtp &g)
     for(int n = postorder.size() - 1; n >= 0; n--)
         printf("%d ", postorder[n]);
     printf("\n");
-    
+    return postorder;   
 }
 
 void rec_topological_sort(const graphtp &g, vi & visited, vi & postorder, int node)
@@ -430,7 +427,7 @@ void alt_topol_sort(const graphtp &g)
             {
                 out("\nnode %d depends on %d\n",*it, *jt);
                 if(visited[*jt] != black) {
-                    out("\n %d is not visited yet\n", *jt);
+                    out("\n %d is not visited yet(has to be to count)\n", *jt);
                     feasable = false;
                     break;
                 }
@@ -447,11 +444,72 @@ void alt_topol_sort(const graphtp &g)
 
 
 
+//will try to get the tarjaon algorithm here
+//i thing the idea is to follow a dfs until found a cycle...then mark the whole
+//path with the component number
 void strongly_connected_components(const graphtp &g)
 {
 
 }
 
+
+//strongly conected comp vai the kosaraju sharir algorithms
+//to run the topo sort on reverse graph, then run DFS taking nodes in that order
+void strongly_connected_components_kos_sharir(const graphtp &g)
+{
+    graphtp rev;
+    get_reverse_graph(g, rev);
+
+    vi revpost = topological_sort(rev);
+    vi visited(g.size());
+    int counter = 0;
+    //do DFS on g by taking order of revpost
+    for(vi::const_reverse_iterator jt = revpost.rbegin(); jt != revpost.rend(); ++jt)
+    {
+        int n = *jt;
+        if(visited[n]) //nothing more to do with this node
+            continue;
+
+        std::stack<int> k;
+        k.push(n);
+        counter++;
+
+        while(!k.empty()) 
+        {
+            //pop first
+            int node = k.top();
+            if(visited[node] == black) { //node can be put in stack mult times
+                k.pop();
+                continue;
+            }
+
+            visited[node] = gray;
+
+            printf("node %d: comp %d \n", node, counter);
+
+            int anynew = 0;
+            for(vi::const_reverse_iterator it = g[node].rbegin(); it != g[node].rend(); ++it)
+            {
+                if(visited[*it] == gray) {
+                    printf("cycle detected node %d->%d\n", node, *it);
+                    continue;
+                }        
+                else if(visited[*it] == black) {
+                    out("encountered a prev. visited node %d\n", *it);
+                    continue;
+                }
+
+                k.push(*it);
+                anynew++;
+            }
+            if(!anynew) {
+                visited[node] = black;
+                k.pop();
+            }
+        }
+
+    }
+}
 
 int main(void)
 {
@@ -514,8 +572,12 @@ int main(void)
     recursive_topological_sort(g);
     std::cout << std::endl;
 
-    std::cout << "topogogical sort via BFS on reverse graph" << std::endl;
+    std::cout << "topogogical sort via expansion on reverse graph" << std::endl;
     alt_topol_sort(g);
+    std::cout << std::endl;
+
+    std::cout << "strongly connected components" << std::endl;
+    strongly_connected_components_kos_sharir(g);
     std::cout << std::endl;
 
     return 0;

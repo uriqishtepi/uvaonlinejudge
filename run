@@ -1,0 +1,6 @@
+make $1 
+if [ $? -eq 0 ] ; then 
+   echo "running $1 < $1.in"
+   $1 < $1.in | tee /tmp/myout.txt && diff -q $1.out /tmp/myout.txt || echo run " vimdiff $1.out /tmp/myout.txt" to see diff
+fi
+

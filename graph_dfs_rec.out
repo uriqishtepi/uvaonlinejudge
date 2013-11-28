@@ -1,0 +1,10 @@
+ DFS 
+Case 1:
+0 1 2 
+
+Case 2:
+0 2 1 
+
+Case 3:
+0 1 2 Cycle detected 2 -> 0
+

@@ -34,39 +34,51 @@ void print_graph(const graphtp & g)
     }
 }
 
-//recursive DFS which can be also used on directed graphs
-void DFS_visit(const graphtp & g, vi & visited, int n)
-{
-    out("DFS_visit n %d\n", n);
-    visited[n] = true;
-    printf("%d ", n);
-    for(vi::const_iterator it = g[n].begin(); it != g[n].end(); ++it) {
-        if(visited[*it]) continue;
-        DFS_visit(g, visited, *it);
-    }
-}
 
-
-void DFS_recursive(const graphtp & g)
+//breadth first search
+//expand the reach from a node, level at at time
+//extremely hard to find cycles with bfs
+void BFS(const graphtp & g)
 {
-    out("DFS_recursive g.size %d\n", g.size());
     vi visited(g.size());
-    assert(visited.size() == g.size() && "Vector not same size");
 
+    //consider all
     for(int n = 0; n < g.size(); n++)
     {
-        if(visited[n]) continue;
-        DFS_visit(g, visited, n);
+        if(visited[n])
+            continue;
+
+        //start with current in queue
+        std::queue<int> q;
+        q.push(n);
+        visited[n] = true;
+
+        int counter = 0;
+        while(!q.empty())
+        {
+            int el = q.front();
+            q.pop();
+
+            printf("%d ", el);
+
+            for(vi::const_iterator it = g[el].begin(); it != g[el].end(); ++it)
+            {
+                if(visited[*it]) 
+                    continue;
+
+                q.push(*it);
+                visited[*it] = true;
+            }
+        }
+        printf("\n");
     }
 }
-
-
 
 
 int main(void)
 {
   out("starting ...\n");
-  std::cout << " DFS " << std::endl;
+  std::cout << " BFS " << std::endl;
 
   int N; //test cases
   scanf("%d\n", &N);
@@ -114,12 +126,8 @@ int main(void)
     printf("Case %d:\n", ++ord);
     print_graph(g);
 
-    DFS_recursive(g);
-
-    std::cout << std::endl;
-
+    BFS(g);
   }
 
   return 0;
 }
-

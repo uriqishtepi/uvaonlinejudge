@@ -34,32 +34,58 @@ void print_graph(const graphtp & g)
     }
 }
 
-//recursive DFS which can be also used on directed graphs
-void DFS_visit(const graphtp & g, vi & visited, int n)
-{
-    out("DFS_visit n %d\n", n);
-    visited[n] = true;
-    printf("%d ", n);
-    for(vi::const_iterator it = g[n].begin(); it != g[n].end(); ++it) {
-        if(visited[*it]) continue;
-        DFS_visit(g, visited, *it);
-    }
-}
 
 
-void DFS_recursive(const graphtp & g)
+void DFS(const graphtp & g)
 {
-    out("DFS_recursive g.size %d\n", g.size());
     vi visited(g.size());
-    assert(visited.size() == g.size() && "Vector not same size");
 
     for(int n = 0; n < g.size(); n++)
     {
-        if(visited[n]) continue;
-        DFS_visit(g, visited, n);
+        if(visited[n])
+            continue;
+
+        std::stack<int> k;
+        k.push(n);
+
+        int counter = 0;
+        while(!k.empty()) 
+        {
+            //pop first
+            int node = k.top();
+            if(visited[node] == black) {
+                k.pop();
+                continue;
+            }
+
+            if(visited[node] != gray) {
+                printf("%d ", node);
+            }
+            out("%d: popped %d \n", counter++, node);
+            visited[node] = gray;
+
+            int anynew = 0;
+            for(vi::const_reverse_iterator it = g[node].rbegin(); it != g[node].rend(); ++it)
+            {
+                if(visited[*it] == gray) {
+                    printf("cycle detected node %d->%d\n", node, *it);
+                    continue;
+                }        
+                else if(visited[*it] == black) {
+                    out("encountered a prev. visited node %d\n", *it);
+                    continue;
+                }
+                k.push(*it);
+                anynew++;
+            }
+
+            if(!anynew) {
+                visited[node] = black;
+                k.pop();
+            }
+        }
     }
 }
-
 
 
 
@@ -114,12 +140,10 @@ int main(void)
     printf("Case %d:\n", ++ord);
     print_graph(g);
 
-    DFS_recursive(g);
-
-    std::cout << std::endl;
+    DFS(g);
+    printf("\n");
 
   }
 
   return 0;
 }
-

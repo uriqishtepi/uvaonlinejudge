@@ -34,33 +34,48 @@ void print_graph(const graphtp & g)
     }
 }
 
-//recursive DFS which can be also used on directed graphs
-void DFS_visit(const graphtp & g, vi & visited, int n)
+
+void rec_topological_sort(const graphtp &g, vi & visited, vi & postorder, int node)
 {
-    out("DFS_visit n %d\n", n);
-    visited[n] = true;
-    printf("%d ", n);
-    for(vi::const_iterator it = g[n].begin(); it != g[n].end(); ++it) {
-        if(visited[*it]) continue;
-        DFS_visit(g, visited, *it);
+    visited[node] = gray;
+    for(vi::const_iterator it = g[node].begin(); it != g[node].end(); ++it)
+    {
+        if(visited[*it] == gray) {
+            printf("cycle detected node %d->%d\n", node, *it);
+            continue;
+        }        
+        else if(visited[*it] == black) {
+            out("encountered a prev. visited node %d\n", *it);
+            continue;
+        }
+        rec_topological_sort(g, visited, postorder, *it);
     }
+    visited[node] = black;
+    postorder.push_back(node);
 }
 
 
-void DFS_recursive(const graphtp & g)
+void recursive_topological_sort(const graphtp &g)
 {
-    out("DFS_recursive g.size %d\n", g.size());
     vi visited(g.size());
-    assert(visited.size() == g.size() && "Vector not same size");
-
+    vi postorder;
     for(int n = 0; n < g.size(); n++)
     {
-        if(visited[n]) continue;
-        DFS_visit(g, visited, n);
-    }
+        if(visited[n])
+            continue;
+        rec_topological_sort(g, visited, postorder, n);
+    } 
+
+    printf("postorder: ");
+    for(int n = 0; n < postorder.size(); n++)
+        printf("%d ", postorder[n]);
+    printf("\n");
+
+    printf("reverse postorder: ");
+    for(int n = postorder.size() - 1; n >= 0; n--)
+        printf("%d ", postorder[n]);
+    printf("\n");
 }
-
-
 
 
 int main(void)
@@ -114,12 +129,10 @@ int main(void)
     printf("Case %d:\n", ++ord);
     print_graph(g);
 
-    DFS_recursive(g);
-
-    std::cout << std::endl;
+    recursive_topological_sort(g);
+    printf("\n");
 
   }
 
   return 0;
 }
-

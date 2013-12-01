@@ -34,32 +34,6 @@ void print_graph(const graphtp & g)
     }
 }
 
-void DFS_follow(const graphtp & g, vi & visited, int n)
-{
-    out("DFS_follow n %d\n", n);
-    visited[n] = true;
-    printf(" %d");
-    for(vi::const_iterator it = g[n].begin(); it != g[n].end(); ++it) {
-        if(visited[*it]) continue;
-        DFS_follow(g, visited, *it);
-    }
-}
-
-
-void DFS_recursive(const graphtp & g)
-{
-    out("DFS_recursive g.size %d\n", g.size());
-    vi visited(g.size());
-    assert(visited.size() == g.size() && "Vector not same size");
-
-    for(int n = 0; n < g.size(); n++)
-    {
-        if(visited[n]) continue;
-        DFS_follow(g, visited, n);
-    }
-    printf("\n");
-}
-
 
 //recursive version that detects cycles
 void DFS_follow_cyc(const graphtp & g, vi & visited, int n)

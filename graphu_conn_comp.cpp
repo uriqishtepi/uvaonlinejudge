@@ -35,53 +35,50 @@ void print_graph(const graphtp & g)
 }
 
 
-void rec_topological_sort(const graphtp &g, vi & visited, vi & postorder, int node)
+//recursive DFS which can be also used on directed graphs
+void DFS_visit(const graphtp & g, vi & visited, int n, int comp)
 {
-    visited[node] = gray;
-    for(vi::const_iterator it = g[node].begin(); it != g[node].end(); ++it)
-    {
-        if(visited[*it] == gray) {
-            printf("cycle detected node %d->%d\n", node, *it);
-            continue;
-        }        
-        else if(visited[*it] == black) {
-            out("encountered a prev. visited node %d\n", *it);
-            continue;
-        }
-        rec_topological_sort(g, visited, postorder, *it);
+    out("DFS_visit n %d\n", n);
+    visited[n] = comp;
+    out("%d ", n);
+    for(vi::const_iterator it = g[n].begin(); it != g[n].end(); ++it) {
+        if(visited[*it]) continue;
+        DFS_visit(g, visited, *it, comp);
     }
-    visited[node] = black;
-    postorder.push_back(node);
 }
 
 
-void recursive_topological_sort(const graphtp &g)
+void connected_components(const graphtp & g)
 {
+    out("Connected Components g.size %d\n", g.size());
     vi visited(g.size());
-    vi postorder;
+    assert(visited.size() == g.size() && "Vector not same size");
+
+    int comp = 0;
     for(int n = 0; n < g.size(); n++)
     {
-        if(visited[n])
-            continue;
-        rec_topological_sort(g, visited, postorder, n);
-    } 
-
-    printf("postorder: ");
-    for(int n = 0; n < postorder.size(); n++)
-        printf("%d ", postorder[n]);
+        if(visited[n]) continue;
+        DFS_visit(g, visited, n, ++comp);
+    }
+    for(int n = 0; n < g.size(); n++)
+        printf("%d ", n);
+    printf("\n");
+    for(int n = 0; n < g.size(); n++)
+        printf("^ ");
+    printf("\n");
+    for(int n = 0; n < g.size(); n++)
+        printf("%d ", visited[n]-1);
     printf("\n");
 
-    printf("reverse postorder: ");
-    for(int n = postorder.size() - 1; n >= 0; n--)
-        printf("%d ", postorder[n]);
-    printf("\n");
 }
+
+
 
 
 int main(void)
 {
   out("starting ...\n");
-  std::cout << " DFS " << std::endl;
+  std::cout << " Connected Components " << std::endl;
 
   int N; //test cases
   scanf("%d\n", &N);
@@ -129,9 +126,7 @@ int main(void)
     printf("Case %d:\n", ++ord);
     print_graph(g);
 
-    recursive_topological_sort(g);
-    printf("\n");
-
+    connected_components(g);
   }
 
   return 0;

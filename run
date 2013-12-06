@@ -1,6 +1,7 @@
-make $1 
+task=${1}
+make ${task}
 if [ $? -eq 0 ] ; then 
    echo "running $1 < $1.in"
-   $1 < $1.in | tee /tmp/myout.txt && diff -q $1.out /tmp/myout.txt || echo run " vimdiff /tmp/myout.txt $1.out" to see diff
+   ./${task} < ${task}.in | tee /tmp/myout.txt && diff -q ${task}.out /tmp/myout.txt || echo run " vimdiff /tmp/myout.txt ${task}.out" to see diff
 fi
 

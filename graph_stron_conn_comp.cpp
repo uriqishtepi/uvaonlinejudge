@@ -141,7 +141,6 @@ void strongly_connected_components_kos_sharir(const graphtp &g)
         }
     }
 
-    printf("\n");
     for(int n = 0; n < g.size(); n++)
         printf("%d ", n);
     printf("\n");

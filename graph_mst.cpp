@@ -16,17 +16,19 @@
 #define out
 #endif
 
-#define vi std::vector<int>
-#define mwp std::map<float, int> //map weight and destination point 
-#define graphtp std::vector< mwp >  //graph is a vector of maps -- the edges
-
-enum {white=0, gray=1, black=2,};
 
 typedef struct {
     int from;
     int to;
     float weight;
 } edge;
+
+
+#define vi std::vector<int>
+#define mwp std::map<float, edge> //map weight and destination point 
+#define graphtp std::vector< mwp >  //graph is a vector of maps -- the edges
+
+enum {white=0, gray=1, black=2,};
 
 
 void print_graph(const graphtp & g)
@@ -51,6 +53,7 @@ void MST(const graphtp & g)
 {
     vi visited(g.size());
     mwp globl;
+    float totpath = 0;
 
     for(int n = 0; n < g.size(); n++)
     {
@@ -63,33 +66,36 @@ void MST(const graphtp & g)
         out("length of globl %d\n", globl.size());
 
         visited[n] = true;
-        printf("n %d ", n);
+        out("initial n %d ", n);
 
         int counter = 0;
         while(!globl.empty()) 
         {
             //pop first
-            std::pair<float,int> e = *globl.begin();
+            edge e = globl.begin()->second;
             globl.erase(globl.begin());
-            if(visited[e.second])
+            if(visited[e.to])
                 continue;
 
-            visited[e.second] = true;
-            printf("%d (%f) ", e.second, e.first);
+            visited[e.to] = true;
+            printf("%d - %d (%f)\n", e.from, e.to, e.weight);
+            totpath += e.weight;
 
-            out("\n%d: popped %d \n", counter++, e.second);
+            out("\n%d: popped %d \n", counter++, e.to);
 
-            for(mwp::const_reverse_iterator it = g[e.second].rbegin(); it != g[e.second].rend(); ++it)
+            for(mwp::const_reverse_iterator it = g[e.to].rbegin(); it != g[e.to].rend(); ++it)
             {
-                out("considering %d -> %d \n", e.second, it->second);
-                if(visited[it->second]) {
-                    out("encountered a prev. visited node %d\n", it->second);
+                out("considering %d -> %d \n", e.to, it->second.to);
+                if(visited[it->second.to]) {
+                    out("encountered a prev. visited node %d\n", it->second.to);
                     continue;
                 }
                 globl.insert(*it);
             }
         }
     }
+    
+    printf ("Tot=%f\n", totpath);
 }
 
 
@@ -118,12 +124,13 @@ int main(void)
         out("this is buff ='%s'\n", buff);
         char * tok = strtok(buff, " \n\t");
         out("this is node ='%s'\n", tok);
+        int nodefrom = atoi(tok);
         if(tok == NULL) {
             printf("Error in input file");
             exit(1);
         }
 
-        mwp e;
+        mwp me;
         tok = strtok(NULL, " \n\t");
         while(tok > 0) 
         {
@@ -140,11 +147,15 @@ int main(void)
                 printf("ERROR: weight must be given for each link \n");
 
             float weight = atof(tok);
-            e.insert(std::make_pair(weight,nodeto));
+            edge e;
+            e.from = nodefrom;
+            e.to = nodeto;
+            e.weight = weight;
+            me.insert(std::make_pair(weight,e));
 
             tok = strtok(NULL, " \n\t");
         }
-        g.push_back(e);
+        g.push_back(me);
         out("size of g %d\n",g.size());
     }
 

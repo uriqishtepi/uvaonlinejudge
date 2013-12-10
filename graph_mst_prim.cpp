@@ -103,7 +103,7 @@ void MST(const graphtp & g)
 int main(void)
 {
   out("starting ...\n");
-  std::cout << " DFS " << std::endl;
+  std::cout << " Prim's MST (min spanning tree) " << std::endl;
 
   int N; //test cases
   scanf("%d\n", &N);

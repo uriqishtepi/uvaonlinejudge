@@ -9,7 +9,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define DEBUG true
+//#define DEBUG true
 #ifdef DEBUG
 #define out printf
 #else
@@ -40,10 +40,23 @@ void print_graph(const graphtp & g)
     {
         out("%d: ", n);
         for(mwp::const_iterator it = g[n].begin(); it != g[n].end(); ++it) {
-            out("%d-%d(%f), ", it->second.from, it->second.to, it->second.weight);
+            out("%d-%d(%.2f), ", it->second.from, it->second.to, it->second.weight);
         }
         out("\n");
     }
+}
+
+
+void printSP(std::vector<edge> P, int i, int final)
+{
+    std::vector<edge> s;
+    while(i != final) {
+        s.push_back(P[i]);
+        i = P[i].from;
+    }
+
+    for(std::vector<edge>::const_reverse_iterator rit = s.rbegin(); rit != s.rend(); ++rit)
+        printf("%d -> %d (%.2f) ",rit->from, rit->to, rit->weight);
 }
 
 //shortest path from a node n to every other node: 
@@ -53,24 +66,27 @@ void ShortestPath(const graphtp & g, int n)
 {
     vi visited(g.size());
     vd D(g.size());
+    std::vector<edge> P(g.size());
 
     for(vd::iterator it = D.begin(); it != D.end(); ++it) 
         *it = INFINITY;
     D[n] = 0;
 
     //start with current in queue
-    std::queue<int> q;
-    q.push(n);
+    mwp globl;
+    edge e; e.from = n; e.to = n; e.weight = 0.0;
+    globl.insert(std::make_pair(0,e));
 
     visited[n] = true;
     out("initial n %d ", n);
 
     int counter = 0;
-    while(!q.empty()) 
+    while(!globl.empty()) 
     {
         //pop first
-        int node = q.front();
-        q.pop();
+        edge e = globl.begin()->second;
+        globl.erase(globl.begin());
+        int node = e.to;
 
         visited[node] = true;
         out("n - %d\n", node);
@@ -85,17 +101,24 @@ void ShortestPath(const graphtp & g, int n)
                 out("encountered a prev. visited node %d\n", it->second.to);
                 continue;
             }
-            q.push(it->second.to);
             float dist = D[node] + it->second.weight;
-            out("dist from %d to %d; old dist %f vs new dist %f\n", node, it->second.to, D[it->second.to], dist);
-            if(D[it->second.to] > dist)
+            out("dist from %d to %d; old dist %.2f vs new dist %.2f\n", node, it->second.to, D[it->second.to], dist);
+            if(D[it->second.to] > dist) { //this is the relaxation step
                 D[it->second.to] = dist;
+                P[it->second.to] = it->second;
+            }
+
+            edge e = it->second;
+            e.weight = D[it->second.to];
+            globl.insert(std::make_pair(e.weight, e));
         }
     }
 
-    for(vd::iterator it = D.begin(); it != D.end(); ++it) 
-        printf("%f ", *it);
-    printf("\n");
+    for(int i = 0; i < D.size(); i++) {
+        printf("%d -> %d sp=%.2f ", n, i, D[i]);
+        printSP(P, i, n);
+        printf("\n");
+    }
 }
 
 

@@ -61,7 +61,6 @@ void MST(const graphtp & g)
             continue;
         
         //start with current in queue
-        std::queue<int> q;
         globl.insert(g[n].begin(),g[n].end());
         out("length of globl %d\n", globl.size());
 
@@ -74,18 +73,19 @@ void MST(const graphtp & g)
             //pop first
             edge e = globl.begin()->second;
             globl.erase(globl.begin());
-            if(visited[e.to])
+            int node = e.to;
+            if(visited[node])
                 continue;
 
-            visited[e.to] = true;
-            printf("%d - %d (%f)\n", e.from, e.to, e.weight);
+            visited[node] = true;
+            printf("%d - %d (%f)\n", e.from, node, e.weight);
             totpath += e.weight;
 
-            out("\n%d: popped %d \n", counter++, e.to);
+            out("\n%d: popped %d \n", counter++, node);
 
-            for(mwp::const_reverse_iterator it = g[e.to].rbegin(); it != g[e.to].rend(); ++it)
+            for(mwp::const_reverse_iterator it = g[node].rbegin(); it != g[node].rend(); ++it)
             {
-                out("considering %d -> %d \n", e.to, it->second.to);
+                out("considering %d -> %d \n", node, it->second.to);
                 if(visited[it->second.to]) {
                     out("encountered a prev. visited node %d\n", it->second.to);
                     continue;

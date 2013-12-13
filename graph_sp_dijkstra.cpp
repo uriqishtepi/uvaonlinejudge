@@ -145,9 +145,6 @@ int main(void)
 {
   out("starting ...\n");
   std::cout << " ShortestPath " << std::endl;
-  edge e1;
-  edge e2;
-  e1 < e2;
 
   int N; //test cases
   scanf("%d\n", &N);

@@ -17,15 +17,19 @@
 #endif
 
 
-typedef struct {
+struct edge {
     int from;
     int to;
     float weight;
-} edge;
+    bool operator<(const edge &other) {
+        return this->weight < other.weight;
+    }
+} ;
 
 
 #define vi std::vector<int>
 #define mwp std::map<float, edge> //map weight and destination point 
+#define pq std::priority_queue<edge> //map weight and destination point 
 #define graphtp std::vector< mwp >  //graph is a vector of maps -- the edges
 
 enum {white=0, gray=1, black=2,};
@@ -44,7 +48,7 @@ void print_graph(const graphtp & g)
     }
 }
 
-//minimum spanning tree 
+//minimum spanning tree  -- Prims algorithm
 //issues to solve: representation of the graph, edges connect two vertices
 //and have a weight. when sorting the edges by weight, the same edge will 
 //show up twice at a time so needs to be represented only once.

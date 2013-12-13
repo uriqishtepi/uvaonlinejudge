@@ -60,10 +60,11 @@ void printSP(std::vector<edge> P, int i, int final)
 }
 
 //shortest path from a node n to every other node: 
+//Dijkstra's this is for graphs that have no negative cycles
 //start from node, and expand via BFS updating shortest path as you go
-//for directed acyclic graphs
 void ShortestPath(const graphtp & g, int n)
 {
+    int comparisons = 0;
     vi visited(g.size());
     vd D(g.size());
     std::vector<edge> P(g.size());
@@ -76,8 +77,6 @@ void ShortestPath(const graphtp & g, int n)
     mwp globl;
     edge e; e.from = n; e.to = n; e.weight = 0.0;
     globl.insert(std::make_pair(0,e));
-
-    visited[n] = true;
     out("initial n %d ", n);
 
     int counter = 0;
@@ -102,7 +101,10 @@ void ShortestPath(const graphtp & g, int n)
                 continue;
             }
             float dist = D[node] + it->second.weight;
-            out("dist from %d to %d; old dist %.2f vs new dist %.2f\n", node, it->second.to, D[it->second.to], dist);
+            out("dist from %d to %d; old dist %.2f vs new dist %.2f\n", 
+                            node, it->second.to, D[it->second.to], dist);
+
+            comparisons++;
             if(D[it->second.to] > dist) { //this is the relaxation step
                 D[it->second.to] = dist;
                 P[it->second.to] = it->second;
@@ -110,6 +112,9 @@ void ShortestPath(const graphtp & g, int n)
 
             edge e = it->second;
             e.weight = D[it->second.to];
+            //if this were a priority queue, we would search for the to elements
+            //and do decrease key on it -- so we would not insert again key
+            //unfortunately we can not do so with a map
             globl.insert(std::make_pair(e.weight, e));
         }
     }
@@ -119,6 +124,7 @@ void ShortestPath(const graphtp & g, int n)
         printSP(P, i, n);
         printf("\n");
     }
+    out("comparisons %d\n", comparisons);
 }
 
 

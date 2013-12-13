@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <vector>
 #include <map>
+#include <set>
 #include <iostream>
 #include <string>
 #include <stdio.h>
@@ -17,18 +18,31 @@
 #endif
 
 
-typedef struct {
+struct edge {
     int from;
     int to;
     float weight;
-} edge;
+    bool operator<(const edge & other) {
+        out("****** operrator < \n");
+        return this->weight < other.weight;
+    }
+};
+
+struct cmpedge {
+    bool operator()(const edge & a, const edge &b) {
+        return a.weight < b.weight;
+    }
+};
+
+
 
 
 #define vi std::vector<int>
 #define vd std::vector<double>
 #define mwp std::map<double, edge> //map weight and destination point 
 #define mdi std::map<double, int>  //map double int
-#define graphtp std::vector< mwp >  //graph is a vector of maps -- the edges
+#define se std::set<edge, cmpedge>  //set of edges
+#define graphtp std::vector< se >  //graph is a vector of maps -- the edges
 #define INFINITY 200000000
 
 enum {white=0, gray=1, black=2,};
@@ -40,8 +54,8 @@ void print_graph(const graphtp & g)
     for(int n = 0; n < g.size(); n++)
     {
         out("%d: ", n);
-        for(mwp::const_iterator it = g[n].begin(); it != g[n].end(); ++it) {
-            out("%d-%d(%.2f), ", it->second.from, it->second.to, it->second.weight);
+        for(se::const_iterator it = g[n].begin(); it != g[n].end(); ++it) {
+            out("%d-%d(%.2f), ", it->from, it->to, it->weight);
         }
         out("\n");
     }
@@ -92,28 +106,28 @@ void ShortestPath(const graphtp & g, int n)
 
         out("\n%d: popped %d \n", counter++, node);
 
-        for(mwp::const_iterator it = g[node].begin(); it != g[node].end(); ++it)
+        for(se::const_iterator it = g[node].begin(); it != g[node].end(); ++it)
         {
-            assert(it->second.from == node && "encountered an inconsistend element");
-            out("considering %d -> %d \n", node, it->second.to);
-            if(visited[it->second.to]) {
-                out("encountered a prev. visited node %d\n", it->second.to);
+            assert(it->from == node && "encountered an inconsistend element");
+            out("considering %d -> %d \n", node, it->to);
+            if(visited[it->to]) {
+                out("encountered a prev. visited node %d\n", it->to);
                 continue;
             }
-            float dist = D[node] + it->second.weight;
+            float dist = D[node] + it->weight;
             out("dist from %d to %d; old dist %.2f vs new dist %.2f\n", 
-                            node, it->second.to, D[it->second.to], dist);
+                            node, it->to, D[it->to], dist);
 
             comparisons++;
-            if(D[it->second.to] > dist) { //this is the relaxation step
-                D[it->second.to] = dist;
-                P[it->second.to] = it->second;
+            if(D[it->to] > dist) { //this is the relaxation step
+                D[it->to] = dist;
+                P[it->to] = *it;
             }
 
             //if this were a priority queue, we would search for the to elements
             //and do decrease key on it -- so we would not insert again key
             //unfortunately we can not do so with a map
-            q.insert(std::make_pair(D[it->second.to], it->second.to));
+            q.insert(std::make_pair(D[it->to], it->to));
         }
     }
 
@@ -131,6 +145,9 @@ int main(void)
 {
   out("starting ...\n");
   std::cout << " ShortestPath " << std::endl;
+  edge e1;
+  edge e2;
+  e1 < e2;
 
   int N; //test cases
   scanf("%d\n", &N);
@@ -157,7 +174,7 @@ int main(void)
             exit(1);
         }
 
-        mwp me;
+        se me;
         tok = strtok(NULL, " \n\t");
         while(tok > 0) 
         {
@@ -180,7 +197,7 @@ int main(void)
             e.from = nodefrom;
             e.to = nodeto;
             e.weight = weight;
-            me.insert(std::make_pair(weight,e));
+            me.insert(e);
 
             tok = strtok(NULL, " \n\t");
         }

@@ -27,6 +27,7 @@ typedef struct {
 #define vi std::vector<int>
 #define vd std::vector<double>
 #define mwp std::map<double, edge> //map weight and destination point 
+#define mdi std::map<double, int>  //map double int
 #define graphtp std::vector< mwp >  //graph is a vector of maps -- the edges
 #define INFINITY 200000000
 
@@ -74,18 +75,17 @@ void ShortestPath(const graphtp & g, int n)
     D[n] = 0;
 
     //start with current in queue
-    mwp globl;
+    mdi q;
     edge e; e.from = n; e.to = n; e.weight = 0.0;
-    globl.insert(std::make_pair(0,e));
+    q.insert(std::make_pair(0,n));
     out("initial n %d ", n);
 
     int counter = 0;
-    while(!globl.empty()) 
+    while(!q.empty()) 
     {
         //pop first
-        edge e = globl.begin()->second;
-        globl.erase(globl.begin());
-        int node = e.to;
+        int node = q.begin()->second;
+        q.erase(q.begin());
 
         visited[node] = true;
         out("n - %d\n", node);
@@ -110,12 +110,10 @@ void ShortestPath(const graphtp & g, int n)
                 P[it->second.to] = it->second;
             }
 
-            edge e = it->second;
-            e.weight = D[it->second.to];
             //if this were a priority queue, we would search for the to elements
             //and do decrease key on it -- so we would not insert again key
             //unfortunately we can not do so with a map
-            globl.insert(std::make_pair(e.weight, e));
+            q.insert(std::make_pair(D[it->second.to], it->second.to));
         }
     }
 

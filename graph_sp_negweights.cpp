@@ -80,7 +80,7 @@ void printSP(std::vector<edge> P, int i, int final)
 }
 
 //shortest path from a node n to every other node: 
-//this is for any graphs even ones that have negative cycles
+//this is for any graphs even ones that have negative weights -- can detect negative cycles
 //for every vertex, relax E times
 void ShortestPath(const graphtp & g, int n)
 {
@@ -95,7 +95,7 @@ void ShortestPath(const graphtp & g, int n)
 
     //do the relaxation V times 
     for(int i = 0; i < g.size(); i++) {
-        //for all vertices v get the distance from n
+        //visit and relax all edges (two for loopxs needed to visit all edges)
         for(int v = 0; v < g.size(); v++) {
             for(se::const_iterator it = g[v].begin(); it != g[v].end(); ++it)
             {
@@ -104,6 +104,7 @@ void ShortestPath(const graphtp & g, int n)
                 if(D[it->to] > dist) { //this is the relaxation step
                     D[it->to] = dist;
                     P[it->to] = *it;
+                    l.push_back(it->to); //track which changed
                 }
             }
         }

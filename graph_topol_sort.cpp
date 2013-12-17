@@ -71,6 +71,7 @@ void recursive_topological_sort(const graphtp &g)
         printf("%d ", postorder[n]);
     printf("\n");
 
+    //topological order is the reverse postorder of visited nodes
     printf("reverse postorder: ");
     for(int n = postorder.size() - 1; n >= 0; n--)
         printf("%d ", postorder[n]);

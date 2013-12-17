@@ -195,6 +195,7 @@ int main(int argc, char**argv)
   out("N %d\n",N);
   int ord = 0;
     
+  //for Kruskal I used list of edges-weights format
   while(N-- > 0) {
     char * buff = NULL;
     graphtp g;

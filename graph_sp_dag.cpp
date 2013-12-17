@@ -75,6 +75,10 @@ void printSP(std::vector<edge> P, int i, int final)
 
 
 
+//recursive topological sort, does a DFS and puts the nodes in the postorder
+//vector with the furthest one going in first (ie is last in topological order)
+//returnsthe nodes in postorder, topological order is the reverse of postorder
+//so you would traverse from the end of the array postorder
 void rec_topological_sort(const graphtp &g, vi & visited, vi & postorder, int node)
 {
     visited[node] = gray;
@@ -120,11 +124,11 @@ void ShortestPath(const graphtp & g, int n)
 
 
     out("initial n %d ", n);
-    vi topolorder;
-    rec_topological_sort(g, visited, topolorder, n);
+    vi postorder;
+    rec_topological_sort(g, visited, postorder, n); //returns in postorder
     
     //consider the vertices in topological order(reverse postorder: use rbegin)
-    for(vi::const_reverse_iterator cit = topolorder.rbegin(); cit!= topolorder.rend();++cit)
+    for(vi::const_reverse_iterator cit = postorder.rbegin(); cit!= postorder.rend();++cit)
     {
         int node = *cit;
         for(se::const_iterator cjt = g[node].begin(); cjt!= g[node].end();++cjt)
@@ -135,6 +139,7 @@ void ShortestPath(const graphtp & g, int n)
                     cjt->from, cjt->to, D[cjt->to], dist);
 
             comparisons++;
+            //to get longest path (only DAGs), we would reverse this comparison
             if(D[cjt->to] > dist) { //this is the relaxation step
                 D[cjt->to] = dist;
                 P[cjt->to] = *cjt;

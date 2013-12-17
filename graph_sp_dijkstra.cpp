@@ -74,6 +74,7 @@ void printSP(std::vector<edge> P, int i, int final)
         printf("%d -> %d (%.2f) ",rit->from, rit->to, rit->weight);
 }
 
+
 //shortest path from a node n to every other node: 
 //Dijkstra's this is for graphs that have no negative cycles
 //start from node, and expand via BFS updating shortest path as you go

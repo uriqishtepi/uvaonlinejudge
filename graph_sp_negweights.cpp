@@ -47,6 +47,7 @@ struct cmpedge {
 #define mwp std::map<double, edge> //map weight and destination point 
 #define mdi std::map<double, int>  //map double int
 #define se std::set<edge, cmpedge>  //set of edges
+#define si std::set<int>
 #define graphtp std::vector< se >  //graph is a vector of maps -- the edges
 #define INFINITY 200000000
 
@@ -93,10 +94,19 @@ void ShortestPath(const graphtp & g, int n)
         *it = INFINITY;
     D[n] = 0;
 
+    si lastupdated;
+
+    //keep a queue (set) of vertices (nodes) that were updated last time around
     //do the relaxation V times 
     for(int i = 0; i < g.size(); i++) {
+        lastupdated.insert(i);
+    }
+
+    while(!lastupdated.empty()) {
+        si newlast;
         //visit and relax all edges (two for loopxs needed to visit all edges)
-        for(int v = 0; v < g.size(); v++) {
+        for(si::iterator it = lastupdated.begin(); it != lastupdated.end(); it++) {
+            int v = *it;
             for(se::const_iterator it = g[v].begin(); it != g[v].end(); ++it)
             {
                 float dist = D[v] + it->weight;
@@ -104,10 +114,11 @@ void ShortestPath(const graphtp & g, int n)
                 if(D[it->to] > dist) { //this is the relaxation step
                     D[it->to] = dist;
                     P[it->to] = *it;
-                    l.push_back(it->to); //track which changed
+                    newlast.insert(it->to); //track which changed
                 }
             }
         }
+        lastupdated = newlast;
     }
 
     for(int i = 0; i < D.size(); i++) {

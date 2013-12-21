@@ -83,6 +83,9 @@ void printSP(std::vector<edge> P, int i, int final)
 //shortest path from a node n to every other node: 
 //this is for any graphs even ones that have negative weights -- can detect negative cycles
 //for every vertex, relax E times
+//as an optimization we use a queue to store vertices that changed
+//and relax paths only from that queue
+//to detect negative loops can check if node n gets updated on any the n-th iteration
 void ShortestPath(const graphtp & g, int n)
 {
     int comparisons = 0;
@@ -102,23 +105,38 @@ void ShortestPath(const graphtp & g, int n)
         lastupdated.insert(i);
     }
 
+    int counter = 0;
     while(!lastupdated.empty()) {
         si newlast;
         //visit and relax all edges (two for loopxs needed to visit all edges)
         for(si::iterator it = lastupdated.begin(); it != lastupdated.end(); it++) {
             int v = *it;
+            out("next to work on is %d\n", v);
             for(se::const_iterator it = g[v].begin(); it != g[v].end(); ++it)
             {
                 float dist = D[v] + it->weight;
                 assert(v == it->from && "not the same node");
                 if(D[it->to] > dist) { //this is the relaxation step
+                    if(counter >= it->to) { 
+                        //we should not update a node in a stage greater than its node id
+                        printf("negative cycles exists distance %d to %d is %f\n", v, it->to, dist);
+                        //need to trace back from P[v]
+                        edge e = P[v];
+                        while(e.from != v) {
+                            printf("from %d\n",i);
+                            i = P[v];
+                        }
+                        return;
+                    }
                     D[it->to] = dist;
                     P[it->to] = *it;
                     newlast.insert(it->to); //track which changed
+                    out("new distance %d to %d is %f\n", v, it->to, dist);
                 }
             }
         }
         lastupdated = newlast;
+        counter++;
     }
 
     for(int i = 0; i < D.size(); i++) {

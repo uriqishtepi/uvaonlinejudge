@@ -122,12 +122,14 @@ void ShortestPath(const graphtp & g, int n)
                 float dist = D[v] + it->weight;
                 assert(v == it->from && "not the same node");
                 if(D[it->to] > dist) { //this is the relaxation step
-printf("counter %d, it->to %d\n", counter, it->to);
+                    out("counter %d, it->to %d\n", counter, it->to);
                     if(counter == g.size() - 1 && it->weight < 0) { 
                         //we should not update a node in a stage greater than its node id
                         printf("negative cycles exists distance %d to %d is %f\n", v, it->to, dist);
                         //need to trace back from P[v]
                         printSP(P, it->to, v);
+                        printSP(P, v, it->to);
+                        printf("\n");
                         return;
                     }
                     D[it->to] = dist;

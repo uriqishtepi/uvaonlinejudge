@@ -68,10 +68,13 @@ void print_graph(const graphtp & g)
 }
 
 
-void printSP(std::vector<edge> P, int i, int final)
+//print shortest path from source vertex source to vertex i
+//the data is stored in predecesor order in p
+//so we need to traverse from i till the source vertex, and print in reverse
+void printSP(std::vector<edge> P, int i, int source)
 {
     std::vector<edge> s;
-    while(i != final) {
+    while(i != source) {
         s.push_back(P[i]);
         i = P[i].from;
     }
@@ -79,6 +82,7 @@ void printSP(std::vector<edge> P, int i, int final)
     for(std::vector<edge>::const_reverse_iterator rit = s.rbegin(); rit != s.rend(); ++rit)
         printf("%d -> %d (%.2f) ",rit->from, rit->to, rit->weight);
 }
+
 
 //shortest path from a node n to every other node: 
 //this is for any graphs even ones that have negative weights -- can detect negative cycles
@@ -109,23 +113,21 @@ void ShortestPath(const graphtp & g, int n)
     while(!lastupdated.empty()) {
         si newlast;
         //visit and relax all edges (two for loopxs needed to visit all edges)
-        for(si::iterator it = lastupdated.begin(); it != lastupdated.end(); it++) {
-            int v = *it;
+        for(si::iterator jt = lastupdated.begin();jt != lastupdated.end(); jt++)
+        {
+            int v = *jt;
             out("next to work on is %d\n", v);
             for(se::const_iterator it = g[v].begin(); it != g[v].end(); ++it)
             {
                 float dist = D[v] + it->weight;
                 assert(v == it->from && "not the same node");
                 if(D[it->to] > dist) { //this is the relaxation step
-                    if(counter >= it->to) { 
+printf("counter %d, it->to %d\n", counter, it->to);
+                    if(counter == g.size() - 1 && it->weight < 0) { 
                         //we should not update a node in a stage greater than its node id
                         printf("negative cycles exists distance %d to %d is %f\n", v, it->to, dist);
                         //need to trace back from P[v]
-                        edge e = P[v];
-                        while(e.from != v) {
-                            printf("from %d\n",i);
-                            i = P[v];
-                        }
+                        printSP(P, it->to, v);
                         return;
                     }
                     D[it->to] = dist;

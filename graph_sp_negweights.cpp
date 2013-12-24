@@ -94,8 +94,8 @@ void ShortestPath(const graphtp & g, int n)
 {
     int comparisons = 0;
     vi visited(g.size());
-    vd D(g.size());
-    std::vector<edge> P(g.size());
+    vd D(g.size());     //distances from source node to every other node
+    std::vector<edge> P(g.size()); //parent node for node e.to is e.from
 
     for(vd::iterator it = D.begin(); it != D.end(); ++it) 
         *it = INFINITY;

@@ -1,4 +1,7 @@
-/* form an array of suffices */
+/* lsd radix sort
+ * utilizes counting sort to sort on the rightmost column first, 
+ * going leftwards until the first column. 
+ */
 
 #include <stack>
 #include <queue>
@@ -13,7 +16,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define DEBUG true
+//#define DEBUG true
 #ifdef DEBUG
 #define out printf
 #else
@@ -45,7 +48,7 @@ int main(void)
       v[i] = i; //all v's entries point to initial respective locations 
 
   for(int i = 0; i < N; i++) {
-      std::cout << strings[v[i]] << std::endl;
+      out("%s\n", strings[v[i]]);
   }
 
   int R = 256; //radix 2^8
@@ -65,28 +68,28 @@ int main(void)
 
       //accumulate the counts
       for(int i = 0; i < R; i++) {
+          if(counts[i+1] > 0)
+              out("counts[%c]=%d+%d\n",i, counts[i + 1], counts[i]);
           counts[i + 1] += counts[i];
-          out("counts[%d]=%d\n",i + 1, counts[i + 1]);
       }
 
       std::vector<int> aux(N); //map to sorted strings
       for(int i = 0; i < N; i++) {
           int offset = v[i]; //offset of the ith string
           std::string & currstr = strings[offset];
-          aux[counts[currstr.at(l)]++ ] = i;
+          aux[counts[currstr.at(l)]++ ] = v[i];
       }
 
       for(int i = 0; i < N; i++) {
           v[i] = aux[i];
       }
 
-      std::cout << "l=" << l << std::endl;
+      out("l=%d",l);
       for(int i = 0; i < N; i++) {
-          std::cout << strings[v[i]] << std::endl;
+          out("strings[%d]=%s\n", v[i], strings[v[i]].c_str());
       }
   }
   
-  std::cout << "Sorted:" << std::endl;
   for(int i = 0; i < N; i++) {
       std::cout << strings[v[i]] << std::endl;
   }

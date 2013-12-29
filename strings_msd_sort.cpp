@@ -41,6 +41,7 @@ char charat(const std::string & s, int i)
 
 void msd_radix_sort(const std::vector<std::string> & strings, std::vector<int> &v, int start, int end, int chrindx)
 {
+
   out("msd_radix_sort %d, %d, %d\n", start, end, chrindx);
   if(end - start < 2) return;
 
@@ -84,16 +85,16 @@ void msd_radix_sort(const std::vector<std::string> & strings, std::vector<int> &
       out("%d) strings[%d]=%s\n", i, v[i], strings[v[i]].c_str());
   }
 
-  for(int r = 0; r < R; r++) {
-      if(counts[r+1] - counts[r] > 1) {
-          msd_radix_sort(strings, v, start + counts[r], 
-                  start + counts[r + 1], chrindx + 1);
+  int last = start;
+  for(int i = start+1; i < end; i++) {
+      if(i - last > 0 && charat(strings[v[last]],chrindx) != charat(strings[v[i]],chrindx)) 
+      {
+          out("%c != %c\n", charat(strings[v[last]],chrindx), charat(strings[v[i]],chrindx));
+          msd_radix_sort(strings, v, last, i, chrindx+1);
+          last = i;
       }
   }
 }
-
-
-
 
 int main(void)
 {
@@ -103,14 +104,13 @@ int main(void)
   std::vector<std::string> strings;
   
   int N = 0;
-  scanf("%d",&N);
 
   //start from 
-  for(int i = 0; i < N; i++) {
-      std::string str;
-      std::cin >> str;
+  std::string str;
+  while( std::cin >> str ) {
       strings.push_back(str);
   }
+  N = strings.size();
 
   std::vector<int> v(N); //map to sorted strings
   for(int i = 0; i < N; i++)
@@ -122,7 +122,6 @@ int main(void)
   for(int i = 0; i < N; i++) {
       std::cout << strings[v[i]] << std::endl;
   }
-
 
   return 0;
 }

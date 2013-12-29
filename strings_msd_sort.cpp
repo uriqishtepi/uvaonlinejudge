@@ -21,7 +21,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define DEBUG true
+//#define DEBUG true
 #ifdef DEBUG
 #define out printf
 #else
@@ -85,13 +85,10 @@ void msd_radix_sort(const std::vector<std::string> & strings, std::vector<int> &
       out("%d) strings[%d]=%s\n", i, v[i], strings[v[i]].c_str());
   }
 
-  int last = start;
-  for(int i = start+1; i < end; i++) {
-      if(i - last > 0 && charat(strings[v[last]],chrindx) != charat(strings[v[i]],chrindx)) 
-      {
-          out("%c != %c\n", charat(strings[v[last]],chrindx), charat(strings[v[i]],chrindx));
-          msd_radix_sort(strings, v, last, i, chrindx+1);
-          last = i;
+  for(int r = 0; r < R; r++) {
+      if(counts[r+1] - counts[r] > 1) {
+          msd_radix_sort(strings, v, start + counts[r], 
+                  start + counts[r + 1], chrindx + 1);
       }
   }
 }

@@ -31,6 +31,7 @@
 int R = 256; //radix 2^8
 
 
+inline
 char charat(const std::string & s, int i)
 {
     if(i < s.size()) return s.at(i);
@@ -39,59 +40,55 @@ char charat(const std::string & s, int i)
 
 
 
-void msd_radix_sort(const std::vector<std::string> & strings, std::vector<int> &v, int start, int end, int chrindx)
+void msd_radix_sort(const std::vector<std::string> & strings, std::vector<int> &v, std::vector<int> &aux, int start, int end, int chrindx)
 {
+    out("msd_radix_sort %d, %d, %d\n", start, end, chrindx);
+    if(end - start < 2) return;
 
-  out("msd_radix_sort %d, %d, %d\n", start, end, chrindx);
-  if(end - start < 2) return;
+    for(int i = start; i < end; i++) {
+        out("h %s\n", strings[v[i]].c_str());
+    }
 
-  for(int i = start; i < end; i++) {
-      out("h %s\n", strings[v[i]].c_str());
-  }
 
-  
-  //do counting sort on the l-th column
-  int counts[256 + 2] = {0};
+    //do counting sort on the l-th column
+    int counts[256 + 2] = {0};
 
-  for(int i = start; i < end; i++) {
-      int offset = v[i]; //offset of the ith string
-      const std::string & currstr = strings[offset];
-      counts[charat(currstr,chrindx) + 2]++;
-      out("%d) strings[%d]=%s  counts[%c + 1]=%d \n",i, offset, strings[offset].c_str(), charat(currstr,chrindx),  counts[charat(currstr,chrindx) + 1]);
-  }
+    for(int i = start; i < end; i++) {
+        int offset = v[i]; //offset of the ith string
+        const std::string & currstr = strings[offset];
+        counts[charat(currstr,chrindx) + 2]++;
+        out("%d) strings[%d]=%s  counts[%c + 1]=%d \n",i, offset, strings[offset].c_str(), charat(currstr,chrindx),  counts[charat(currstr,chrindx) + 1]);
+    }
 
-  //accumulate the counts
-  for(int i = 0; i < R+1; i++) {
-      if(counts[i+1] > 0)
-          out("counts[%c]=%d+%d\n",i-1, counts[i + 1], counts[i]);
-      counts[i + 1] += counts[i];
-  }
+    //accumulate the counts
+    for(int i = 0; i < R+1; i++) {
+        if(counts[i+1] > 0)
+            out("counts[%c]=%d+%d\n",i-1, counts[i + 1], counts[i]);
+        counts[i + 1] += counts[i];
+    }
 
-  std::vector<int> aux(strings.size()); //map to sorted strings
-  for(int i = start; i < end; i++) {
-      int offset = v[i]; //offset of the ith string
-      const std::string & currstr = strings[offset];
-      aux[counts[charat(currstr,chrindx) + 1]++ ] = v[i];
-      out("aux[%d]=%d\n", start + counts[charat(currstr,chrindx)], v[i]);
-  }
+    for(int i = start; i < end; i++) {
+        int offset = v[i]; //offset of the ith string
+        const std::string & currstr = strings[offset];
+        aux[counts[charat(currstr,chrindx) + 1]++ ] = v[i];
+        out("aux[%d]=%d\n", start + counts[charat(currstr,chrindx)], v[i]);
+    }
 
-  for(int i = start; i < end; i++) {
-      v[i] = aux[i - start];
-  }
+    out("chrindx=%d\n",chrindx);
+    for(int i = start; i < end; i++) {
+        v[i] = aux[i - start];
+        out("%d) strings[%d]=%s\n", i, v[i], strings[v[i]].c_str());
+    }
 
-  out("chrindx=%d\n",chrindx);
-
-  for(int i = start; i < end; i++) {
-      out("%d) strings[%d]=%s\n", i, v[i], strings[v[i]].c_str());
-  }
-
-  for(int r = 0; r < R; r++) {
-      if(counts[r+1] - counts[r] > 1) {
-          msd_radix_sort(strings, v, start + counts[r], 
-                  start + counts[r + 1], chrindx + 1);
-      }
-  }
+    for(int r = 0; r < R; r++) {
+        if(counts[r+1] - counts[r] > 1) {
+            msd_radix_sort(strings, v, aux, start + counts[r], 
+                    start + counts[r + 1], chrindx + 1);
+        }
+    }
 }
+
+
 
 int main(void)
 {
@@ -103,8 +100,8 @@ int main(void)
   int N = 0;
 
   //start from 
-  std::string str;
-  while( std::cin >> str ) {
+  char str[256] = {0};
+  while( scanf("%s",&str) != EOF ) {
       strings.push_back(str);
   }
   N = strings.size();
@@ -113,7 +110,8 @@ int main(void)
   for(int i = 0; i < N; i++)
       v[i] = i; //all v's entries point to initial respective locations 
 
-  msd_radix_sort(strings, v, 0, N, 0);
+  std::vector<int> aux(N); //map to sorted strings
+  msd_radix_sort(strings, v, aux, 0, N, 0);
 
   out("SORTED strings\n");
   for(int i = 0; i < N; i++) {

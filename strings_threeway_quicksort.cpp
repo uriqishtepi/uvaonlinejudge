@@ -38,7 +38,7 @@ char charat(const std::string & s, int i)
     else return -1;
 }
 
-void insertion_sort(const std::vector<std::string> & strings, std::vector<int> &v, std::vector<int> &aux, int start, int end, int chrindx)
+void insertion_sort(const std::vector<char *> & strings, std::vector<int> &v, int start, int end, int chrindx)
 {
     for(int i = start; i < end - 1; i++){
         for(int j = i; j < end; j++) {
@@ -56,15 +56,15 @@ void insertion_sort(const std::vector<std::string> & strings, std::vector<int> &
 
 //pick a pivot, maybe randomly
 //put all points above, less than and equal to in separate places of v[i]
-void threeway_quicksort(const std::vector<std::string> & strings, std::vector<int> &v, std::vector<int> &aux, int start, int end, int chrindx)
+void threeway_quicksort(const std::vector<char *> & strings, std::vector<int> &v, int start, int end, int chrindx)
 {
     out("threeway_quicksort %d, %d, %d\n", start, end, chrindx);
     int n = end - start;
     if(n < 2) return;
-    if(n < 20) { insertion_sort(strings, v, aux, start, end, chrindx); return; }
+    if(n < 20) { insertion_sort(strings, v, start, end, chrindx); return; }
 
     for(int i = start; i < end; i++) {
-        out("h %s\n", strings[v[i]].c_str());
+        out("h %s\n", strings[v[i]]);
     }
 
     //get the pivot
@@ -106,12 +106,12 @@ void threeway_quicksort(const std::vector<std::string> & strings, std::vector<in
     out("gtthan - lessthan %d\n", gtthan - lessthan);
 
     for(int i = start; i < end; i++) {
-        out("%d) strings[%d]=%s\n", i, v[i], strings[v[i]].c_str());
+        out("%d) strings[%d]=%s\n", i, v[i], strings[v[i]]);
     }
 
-    threeway_quicksort(strings, v, aux, start, lessthan, chrindx);
-    threeway_quicksort(strings, v, aux, lessthan, gtthan, chrindx + 1);
-    threeway_quicksort(strings, v, aux, gtthan, end, chrindx);
+    threeway_quicksort(strings, v, start, lessthan, chrindx);
+    threeway_quicksort(strings, v, lessthan, gtthan, chrindx + 1);
+    threeway_quicksort(strings, v, gtthan, end, chrindx);
 }
 
 
@@ -121,14 +121,14 @@ int main(void)
     out("starting ...\n");
     std::cout << " Three way quick sort " << std::endl;
 
-    std::vector<std::string> strings;
+    std::vector<char*> strings;
 
     int N = 0;
 
     //start from 
     char str[256] = {0};
     while( scanf("%s",&str) != EOF ) {
-        strings.push_back(str);
+        strings.push_back(strdup(str));
     }
     N = strings.size();
 
@@ -136,8 +136,7 @@ int main(void)
     for(int i = 0; i < N; i++)
         v[i] = i; //all v's entries point to initial respective locations 
 
-    std::vector<int> aux(N); //map to sorted strings
-    threeway_quicksort(strings, v, aux, 0, N, 0);
+    threeway_quicksort(strings, v, 0, N, 0);
 
     out("SORTED strings\n");
     for(int i = 0; i < N; i++) {

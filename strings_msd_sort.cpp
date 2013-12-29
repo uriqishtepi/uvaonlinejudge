@@ -41,15 +41,16 @@ char charat(const std::string & s, int i)
 
 void msd_radix_sort(const std::vector<std::string> & strings, std::vector<int> &v, int start, int end, int chrindx)
 {
-
   out("msd_radix_sort %d, %d, %d\n", start, end, chrindx);
+  if(end - start < 2) return;
+
   for(int i = start; i < end; i++) {
       out("h %s\n", strings[v[i]].c_str());
   }
 
   
   //do counting sort on the l-th column
-  int counts[256 + 1] = {0};
+  int counts[256 + 2] = {0};
 
   for(int i = start; i < end; i++) {
       int offset = v[i]; //offset of the ith string
@@ -83,16 +84,16 @@ void msd_radix_sort(const std::vector<std::string> & strings, std::vector<int> &
       out("%d) strings[%d]=%s\n", i, v[i], strings[v[i]].c_str());
   }
 
-  int last = start;
-  for(int i = start+1; i < end; i++) {
-      if(i - last > 2 && charat(strings[v[last]],chrindx) != charat(strings[v[i]],chrindx)) 
-      {
-          out("%c != %c\n", charat(strings[v[last]],chrindx), charat(strings[v[i]],chrindx));
-          msd_radix_sort(strings, v, last, i, chrindx+1);
-          last = i;
+  for(int r = 0; r < R; r++) {
+      if(counts[r+1] - counts[r] > 1) {
+          msd_radix_sort(strings, v, start + counts[r], 
+                  start + counts[r + 1], chrindx + 1);
       }
   }
 }
+
+
+
 
 int main(void)
 {

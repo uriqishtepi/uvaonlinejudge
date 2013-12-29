@@ -21,7 +21,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-//#define DEBUG true
+#define DEBUG true
 #ifdef DEBUG
 #define out printf
 #else
@@ -31,12 +31,20 @@
 int R = 256; //radix 2^8
 
 
+char charat(const std::string & s, int i)
+{
+    if(i < s.size()) return s.at(i);
+    else return -1;
+}
+
+
+
 void msd_radix_sort(const std::vector<std::string> & strings, std::vector<int> &v, int start, int end, int chrindx)
 {
 
   out("msd_radix_sort %d, %d, %d\n", start, end, chrindx);
   for(int i = start; i < end; i++) {
-      out("%s\n", strings[v[i]].c_str());
+      out("h %s\n", strings[v[i]].c_str());
   }
 
   
@@ -46,27 +54,27 @@ void msd_radix_sort(const std::vector<std::string> & strings, std::vector<int> &
   for(int i = start; i < end; i++) {
       int offset = v[i]; //offset of the ith string
       const std::string & currstr = strings[offset];
-      counts[(currstr.at(chrindx)) + 1]++;
-      out("%d) strings[%d]=%s  counts[%c + 1]=%d \n",i, offset, strings[offset].c_str(), currstr.at(chrindx),  counts[(currstr.at(chrindx)) + 1]);
+      counts[charat(currstr,chrindx) + 2]++;
+      out("%d) strings[%d]=%s  counts[%c + 1]=%d \n",i, offset, strings[offset].c_str(), charat(currstr,chrindx),  counts[charat(currstr,chrindx) + 1]);
   }
 
   //accumulate the counts
-  for(int i = 0; i < R; i++) {
+  for(int i = 0; i < R+1; i++) {
       if(counts[i+1] > 0)
-          out("counts[%c]=%d+%d\n",i, counts[i + 1], counts[i]);
+          out("counts[%c]=%d+%d\n",i-1, counts[i + 1], counts[i]);
       counts[i + 1] += counts[i];
   }
 
-  std::vector<int> aux(end-start+1); //map to sorted strings
+  std::vector<int> aux(strings.size()); //map to sorted strings
   for(int i = start; i < end; i++) {
       int offset = v[i]; //offset of the ith string
       const std::string & currstr = strings[offset];
-      aux[start + counts[currstr.at(chrindx)]++ ] = v[i];
-      out("aux[%d]=%d\n",start + counts[currstr.at(chrindx)], v[i]);
+      aux[counts[charat(currstr,chrindx) + 1]++ ] = v[i];
+      out("aux[%d]=%d\n", start + counts[charat(currstr,chrindx)], v[i]);
   }
 
   for(int i = start; i < end; i++) {
-      v[i] = start+aux[i];
+      v[i] = aux[i - start];
   }
 
   out("chrindx=%d\n",chrindx);
@@ -77,18 +85,14 @@ void msd_radix_sort(const std::vector<std::string> & strings, std::vector<int> &
 
   int last = start;
   for(int i = start+1; i < end; i++) {
-      if(i - last > 1 && strings[v[last]].at(chrindx) != strings[v[i]].at(chrindx)
-              && strings[v[last]].length() < chrindx && strings[v[i]].length() < chrindx) 
+      if(i - last > 2 && charat(strings[v[last]],chrindx) != charat(strings[v[i]],chrindx)) 
       {
-          out("%c != %c\n", strings[v[last]].at(chrindx), strings[v[i]].at(chrindx));
+          out("%c != %c\n", charat(strings[v[last]],chrindx), charat(strings[v[i]],chrindx));
           msd_radix_sort(strings, v, last, i, chrindx+1);
           last = i;
       }
   }
-  
-
 }
-
 
 int main(void)
 {

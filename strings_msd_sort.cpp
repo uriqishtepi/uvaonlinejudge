@@ -38,12 +38,28 @@ char charat(const std::string & s, int i)
     else return -1;
 }
 
+void insertion_sort(const std::vector<std::string> & strings, std::vector<int> &v, std::vector<int> &aux, int start, int end, int chrindx)
+{
+    for(int i = start; i < end - 1; i++){
+        for(int j = i; j < end; j++) {
+            if( strcmp(&strings[v[i]][chrindx], &strings[v[j]][chrindx])) {
+                    int temp = v[i];
+                    v[i] = v[j];
+                    v[j] = temp;
+            }
+        }
+    }
 
+}
 
 void msd_radix_sort(const std::vector<std::string> & strings, std::vector<int> &v, std::vector<int> &aux, int start, int end, int chrindx)
 {
     out("msd_radix_sort %d, %d, %d\n", start, end, chrindx);
     if(end - start < 2) return;
+    if(end - start < 24) {
+        insertion_sort(strings, v, aux, start, end, chrindx);
+        return;
+    }
 
     for(int i = start; i < end; i++) {
         out("h %s\n", strings[v[i]].c_str());

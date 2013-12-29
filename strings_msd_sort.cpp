@@ -21,7 +21,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define DEBUG true
+//#define DEBUG true
 #ifdef DEBUG
 #define out printf
 #else
@@ -34,6 +34,7 @@ int R = 256; //radix 2^8
 void msd_radix_sort(const std::vector<std::string> & strings, std::vector<int> &v, int start, int end, int chrindx)
 {
 
+  out("msd_radix_sort %d, %d, %d\n", start, end, chrindx);
   for(int i = start; i < end; i++) {
       out("%s\n", strings[v[i]].c_str());
   }
@@ -60,7 +61,7 @@ void msd_radix_sort(const std::vector<std::string> & strings, std::vector<int> &
   for(int i = start; i < end; i++) {
       int offset = v[i]; //offset of the ith string
       const std::string & currstr = strings[offset];
-      aux[start + ++counts[currstr.at(chrindx)]] = v[i];
+      aux[start + counts[currstr.at(chrindx)]++ ] = v[i];
       out("aux[%d]=%d\n",start + counts[currstr.at(chrindx)], v[i]);
   }
 
@@ -69,8 +70,20 @@ void msd_radix_sort(const std::vector<std::string> & strings, std::vector<int> &
   }
 
   out("chrindx=%d\n",chrindx);
+
   for(int i = start; i < end; i++) {
       out("%d) strings[%d]=%s\n", i, v[i], strings[v[i]].c_str());
+  }
+
+  int last = start;
+  for(int i = start+1; i < end; i++) {
+      if(i - last > 1 && strings[v[last]].at(chrindx) != strings[v[i]].at(chrindx)
+              && strings[v[last]].length() < chrindx && strings[v[i]].length() < chrindx) 
+      {
+          out("%c != %c\n", strings[v[last]].at(chrindx), strings[v[i]].at(chrindx));
+          msd_radix_sort(strings, v, last, i, chrindx+1);
+          last = i;
+      }
   }
   
 
@@ -100,6 +113,7 @@ int main(void)
 
   msd_radix_sort(strings, v, 0, N, 0);
 
+  out("SORTED strings\n");
   for(int i = 0; i < N; i++) {
       std::cout << strings[v[i]] << std::endl;
   }

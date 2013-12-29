@@ -42,7 +42,7 @@ void insertion_sort(const std::vector<std::string> & strings, std::vector<int> &
 {
     for(int i = start; i < end - 1; i++){
         for(int j = i; j < end; j++) {
-            if( strcmp(&strings[v[i]][chrindx], &strings[v[j]][chrindx])) {
+            if( strcmp(&strings[v[i]][chrindx], &strings[v[j]][chrindx]) > 0) {
                     int temp = v[i];
                     v[i] = v[j];
                     v[j] = temp;

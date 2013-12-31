@@ -19,7 +19,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define DEBUG true
+//#define DEBUG true
 #ifdef DEBUG
 #define out printf
 #else

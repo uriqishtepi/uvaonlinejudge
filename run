@@ -1,13 +1,25 @@
 task=${1}
 make ${task}
-if [ $? -eq 0 ] ; then 
-   echo "running $1 < $1.in"
-   ./${task} < ${task}.in > /tmp/myout.txt && diff -q ${task}.out /tmp/myout.txt || echo run " vimdiff /tmp/myout.txt ${task}.out" to see diff
+if [ $? -ne 0 ] ; then 
+    exit;
+fi
 
-   if [ `wc -l /tmp/myout.txt | awk '{print $1}'` -gt 32 ] ; then
-	less /tmp/myout.txt;
-   else
-	cat /tmp/myout.txt;
-   fi
+IN=${task}.in
+
+if [ ! -f $IN ] ; then 
+    exit; 
+fi
+
+OUT=/tmp/myout.txt
+
+if [ -f $OUT ] ; then rm /tmp/myout.txt; fi
+
+echo "running ${task} < $IN"
+./${task} < $IN > $OUT && diff -q ${task}.out $OUT || echo run " vimdiff $OUT ${task}.out" to see diff
+
+if [ `wc -l $OUT | awk '{print $1}' ` -gt 32 ] ; then
+    less $OUT;
+else
+    cat $OUT;
 fi
 

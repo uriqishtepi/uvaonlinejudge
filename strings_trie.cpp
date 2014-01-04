@@ -187,6 +187,8 @@ void traverse_trie(node * root, std::string & str)
 
 }
 
+int numItems = 0;
+
 void insert_trie(node * root, char * str, int value)
 {
     assert(root != NULL && "node passed in as root is null");
@@ -194,6 +196,7 @@ void insert_trie(node * root, char * str, int value)
     out("root %ld\n", &root);
 
     if(str == NULL || *str == '\0') {
+        numItems++;
         root->value = value;
         return;
     }
@@ -212,24 +215,31 @@ void insert_trie(node * root, char * str, int value)
 int main(void)
 {
     out("starting ...\n");
-    std::cout << " Three way quick sort " << std::endl;
+    std::cout << " Strings R-trie " << std::endl;
 
     int N = 0;
+    bool useallsubstrings = true; //to do a word search as you type
 
     node root; //trie root
 
     //start from 
     char str[256] = {0};
-    int counter = 0;
+    int counterAsVal = 0;
     while( scanf("%s",&str) != EOF ) {
-        counter++;
         out("root %ld\n", &root);
-        insert_trie(&root, str, counter);
+        int len = 1;
+        if(useallsubstrings)
+            len = strlen(str);
+
+        for(int i = 0; i < len; i++) { 
+            counterAsVal++;
+            insert_trie(&root, i+str, counterAsVal);
+        }
     }
 
-    out("traverse trie\n");
+    printf("traverse trie of size %d\n", numItems);
     std::string tmp;
-    traverse_trie(&root, tmp);
+    traverse_trie(&root, tmp); //prints only
 
     return 0;
 }

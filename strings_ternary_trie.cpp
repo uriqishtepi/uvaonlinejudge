@@ -45,14 +45,13 @@ void traverse_trie(node * root, std::string & str)
         printf("%s %d\n",str.c_str(), root->value);
     }
 
-    //print accumulated string plus the char at this location
-    
     if(root->lessthan) {
         traverse_trie(root->lessthan, str);
     }    
 
+    //print accumulated string plus the char at this location
     if(root->equal) {
-        str += root->equal->c;
+        str += root->c;
         traverse_trie(root->equal, str);
         str.erase(str.end()-1);
     }
@@ -60,7 +59,6 @@ void traverse_trie(node * root, std::string & str)
     if(root->gtthan) {
         traverse_trie(root->gtthan, str);
     }
-
 }
 
 int numItems = 0;
@@ -81,13 +79,13 @@ void insert_trie(node * root, char * str, int value)
     if(root->equal == NULL)
     {
         root->equal = new node;
-        root->equal->c = c;
+        root->c = c;
         out("new children[%d]=%ld\n", c, &root->equal);
         insert_trie(root->equal, str+1, value);
         return;
     }    
 
-    if(c < root->equal->c)
+    if(c < root->c)
     {
         if(root->lessthan == NULL) {
             root->lessthan = new node;
@@ -96,7 +94,7 @@ void insert_trie(node * root, char * str, int value)
         }
         insert_trie(root->lessthan, str, value);
     }    
-    else if(c > root->equal->c)
+    else if(c > root->c)
     {
         if(root->gtthan == NULL) {
             root->gtthan = new node;

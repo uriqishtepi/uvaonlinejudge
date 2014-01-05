@@ -11,6 +11,7 @@ if [ ! -f $IN ] ; then
 fi
 
 OUT=/tmp/myout.txt
+LINES=`tput lines`
 
 if [ -f $OUT ] ; then rm /tmp/myout.txt; fi
 

@@ -1,6 +1,7 @@
-/* ternary trie
- * this method of having a trie, makes better use of memory
- * each node will have three children, lessthan, equal, gtthan
+/* substring search brute force
+ *  uses two for loops and when there is a mismatch it starts
+ * the internal loop from beginning, so it can do time M * N 
+ * worst case with M and N being the sizes of they haystack and needle
  */
 
 #include <stack>

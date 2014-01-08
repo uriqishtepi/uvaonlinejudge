@@ -34,7 +34,7 @@ int sequential_search(char * haystack, char * needle, int & counter)
     out("for '%s' with length %d ", needle, nlen);
     int loc = -1;
 
-    for(int i = 0; i < len - nlen; i++) { 
+    for(int i = 0; i < len - nlen + 1; i++) { 
         int j = 0;
         for(j = 0; j < nlen; j++) { 
             counter++;

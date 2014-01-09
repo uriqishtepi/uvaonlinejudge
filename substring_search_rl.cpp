@@ -48,35 +48,34 @@ int rl_search(char * haystack, char * needle, int & counter)
 
     int len = strlen(haystack);
     out("for '%s' with length %d ", needle, nlen);
-    int loc = -1;
+    int skip = 0;
 
-    int i = 0;
-    while(i < len - nlen + 1) 
+    for(int i = 0; i < len - nlen + 1; i += skip)
     { 
-        int j;
-        for(j = nlen - 1; j != -1; j--) {
+        skip = 0;
+        for(int j = nlen - 1; j != -1; j--) {
             counter++;
-            out("cmp %d %d : %c %c\n",i + j, j, haystack[i+j], needle[j]);
-            if(haystack[i+j] != needle[j]) {
+            char c = haystack[i+j];
+            int l = lastloc[c];
+            out("cmp %d %d : %c %c\n",i + j, j, c, needle[j]);
+            if(c != needle[j]) {
+                if(l < 0)
+                    skip += nlen;
+                else if(l > j)
+                    skip += l;
+                else
+                    skip += 1;
+
                 break;
             }
         }
 
-        if(j == -1) {
-            loc = i;
-            break;
+        if(skip == 0) {
+            return i;
         }
-        int l = lastloc[haystack[i+j]];
-        if(l < 0)
-            i += nlen;
-        else if(l > j)
-            i += l;
-        else
-            i += 1;
     }
 
-
-    return loc;
+    return -1;
 }
 
 int main(void)

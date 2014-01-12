@@ -61,53 +61,63 @@ void print_graph(const graphtp & g)
 }
 
 
-//one state per each character
-//go through the re and build the graph
-//if i-th is parethesis add epsilon edge from i to i+i
-//if 0-th is ( dont need to do anything special with edges
-//when we see a ( we push i into the stack
-//when we see a | or a ) we pop from the stack
-//and we link state of ( which we just popped, with state of ) or |
+/* one state per each character
+ * go through the re and build the graph
+ * if i-th is parethesis add epsilon edge from i to i+i
+ * if 0-th is ( dont need to do anything special with edges
+ * when we see a ( we push i into the stack
+ * when we see a | or a ) we pop from the stack
+ * and we link state of ( which we just popped, with state of ) or |
+ *
+ * modified so that it can take multiple | inside the same block
+ */
 void build_nfa_graph(graphtp & g, char * re, int relen)
 {
     for(int i = 0; i <= relen; i++)
-        g.push_back(vi());
-
+        g.push_back(vi()); //initiate g connections with empty vectors
 
     std::stack<int> k;
-    int last_previous = 0; //used to identify last ( or last |
+    int last_previous = 0; //used to identify last ( or char for the link to *
 
     for(int i = 0; i < relen; i++)
     {
-        //last character or last paren to return to in case of a * 
-
-        //new epsilon trans from i to i+1 for (, ), and *
-        if(re[i] == '(' || re[i] == ')' || re[i] == '*') 
-            g[i].push_back(i+1); //* to next state
+        //new epsilon trans from i to i+1 for ( and )
+        if(re[i] == '(' || re[i] == ')') 
+            g[i].push_back(i+1); //edge * to next state
 
         if(re[i] == '(' || re[i] == '|') { //push to stack symbol loc
             k.push(i);
         }
 
-        if(re[i] == '*') {
+        if(re[i] == '*') { //three links when finding the * character
+            g[i].push_back(i+1); //edge * to next state
             g[last_previous].push_back(i); //lastprev state to next state
             g[i].push_back(last_previous); //* to lastprev state
         }
 
-        if(re[i] == ')') { //i is ) so need to pop and process
+        if(re[i] == ')')  //i is ) so need to pop from stack and process
+        {
             int orloc = k.top();
             int next = i + 1;
-            if(re[orloc] == '|') { //get symbol, if | have work to do
-                g[orloc].push_back(i); //| to )
-                k.pop();
-                last_previous = k.top(); //mark ( as last previous
-                g[last_previous].push_back(orloc+1); //( to after |
+            if(re[orloc] == '|') { //if poped symbol is | have work to do
+                vi ors; //accumulate into ors all the | locations
+                while(re[orloc] == '|') { //get all the | symbols in vector
+                    ors.push_back(orloc);
+                    k.pop();
+                    orloc = k.top(); //set last previous to next in stack
+                    last_previous = orloc; //set last previous to next in stack
+                }
+
+                //for all the | make two e-connections, one from ( and one to )
+                for(vi::iterator it = ors.begin(); it != ors.end(); ++it) {
+                    g[*it].push_back(i); //edge | to )
+                    g[last_previous].push_back(*it + 1); //( to after |
+                }
             }
-            else last_previous = orloc;
+            else last_previous = orloc; //else it is location of '('
             k.pop();
         }
         else last_previous = i;
-
     }
 
     print_graph(g);
@@ -115,9 +125,12 @@ void build_nfa_graph(graphtp & g, char * re, int relen)
 
 
 
+/* depth first search, will mark the visited array as the result of the
+ * search, start at node n and do dfs and mark visited for the reachable
+ * states. 
+ */
 void dfs(const graphtp & g, int n, vi & visited)
 {
-
     std::stack<int> k;
     k.push(n);
 
@@ -170,52 +183,51 @@ void print_visited(vi & visited)
 }
 
 
+inline void get_visited(vi & visited, vi & states)
+{
+    states.resize(0);
+    for(int i = 0; i != visited.size(); i++) {
+        if(visited[i]) { 
+            states.push_back(i);
+            visited[i] = white;
+        }
+    }
+}
 
-//check a text starting at 0 if it fulfills the regular expression
-//will search for the longest pattern that matches the RE
-//if it is successful will return the length of the match
-//if it in UNsucessful will return -1
-int check_nfa(const graphtp & g, char * re, int relen, char * text, int len)
+
+/* check a text starting at 0 if it fulfills the regular expression
+ * will search for the longest pattern that matches the RE
+ * if at any moment we reach the final state, we store it in longestfound
+ * but we continue to search so the we find indeed the longest txt
+ * if it is successful will return the length of the match
+ * if it in UNsucessful will return -1
+ */
+int check_nfa(const graphtp & g, char * re, int relen, char * text, int len, int & counter)
 {
     out("check_nfa re='%s' text='%s'\n", re, text);
     int longestfound = -1;
-    //get all the possible states reachable from start state 0
     vi st;
     vi visited(relen+1);
-    dfs(g, 0, visited); 
-    for(int i = 0; i != visited.size(); i++)
-        if(visited[i]) { 
-            st.push_back(i);
-            visited[i] = white;
-        }
 
+    dfs(g, 0, visited); // get all possible states reachable from start state 0
+    get_visited(visited, st);
     print_visited(visited);
 
-    for(int i = 0; i < len && !st.empty(); i++) 
-    {
-        //if at any moment we reach the final state, we return true
-
-        for(vi::iterator it = st.begin(); it != st.end(); ++it)
-        {
+    for(int i = 0; i < len && !st.empty(); i++) {
+        for(vi::iterator it = st.begin(); it != st.end(); ++it) {
             int s = *it;
             if(s == relen) continue; //need to continue search tho
 
             if(text[i] == re[s] || re[s] == '.') {
+                counter++;
                 s = s + 1; //find ne state after it
                 dfs(g, s, visited); //find all e-transitions from s
             }
         }
 
-        print_visited(visited);
-
         if(visited.back()) longestfound = i;
-
-        st.resize(0);
-        for(int i = 0; i != visited.size(); i++)
-            if(visited[i]) { 
-                st.push_back(i);
-                visited[i] = white;
-            }
+        get_visited(visited, st);
+        print_visited(visited);
     } 
 
     out("longestfound='%d'\n", longestfound);
@@ -232,11 +244,12 @@ int pattern_search(char * text, char * re)
     build_nfa_graph(g, re, relen);
     int count = 0;
     int length = 0;
+    int counter = 0;
 
     for(int i = 0; i < len; i++) {
-        if((length=check_nfa(g, re, relen, text + i, len - i)) >= 0) {
+        if((length=check_nfa(g, re, relen, text + i, len - i, counter)) >= 0) {
             count++;
-            printf("found in location %d: %.*s \n", i, length+1, text+i);
+            printf("found in location %d: %.*s (after %d probes)\n", i, length+1, text+i, counter);
         }
     }
 
@@ -257,6 +270,7 @@ int main(int argc, char**argv)
     while(scanf("%s\n",&re) != EOF) 
     { 
         int counter = 0;
+        printf("searching for '%s' \n", re);
         int count = pattern_search(text, re);
 
         if(count > 0 ) printf("found in %d locations \n", count);

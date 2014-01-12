@@ -1,15 +1,36 @@
  Rexex search 
-found in location 1: a 
-found in location 3: abc 
+searching for 'a(bc)*' 
+found in location 1: a (after 1 probes)
+found in location 3: abc (after 4 probes)
 found in 2 locations 
-found in location 3: abc 
+searching for 'abc*' 
+found in location 3: abc (after 4 probes)
 found in 1 locations 
-found in location 3: abcd 
+searching for 'abcd*' 
+found in location 3: abcd (after 5 probes)
 found in 1 locations 
-found in location 6: def 
-found in location 7: ef 
+searching for 'd*ef' 
+found in location 6: def (after 3 probes)
+found in location 7: ef (after 5 probes)
 found in 2 locations 
-found in location 1: aoa 
+searching for '(bo|aoa)' 
+found in location 1: aoa (after 4 probes)
 found in 1 locations 
-found in location 8: fgggo 
+searching for '(fg*.)' 
+found in location 8: fgggo (after 8 probes)
 found in 1 locations 
+searching for '(bo|aoa|ggg)' 
+found in location 1: aoa (after 4 probes)
+found in location 9: ggg (after 9 probes)
+found in 2 locations 
+searching for '(bo|aoa|gg*)' 
+found in location 1: aoa (after 4 probes)
+found in location 9: ggg (after 9 probes)
+found in location 10: gg (after 11 probes)
+found in location 11: g (after 12 probes)
+found in 4 locations 
+searching for '((a*b|bc|ggg)(c|o))' 
+found in location 3: abc (after 6 probes)
+found in location 4: bc (after 10 probes)
+found in location 9: gggo (after 14 probes)
+found in 3 locations 

@@ -5,3 +5,6 @@ abcd*
 d*ef
 (bo|aoa)
 (fg*.)
+(bo|aoa|ggg)
+(bo|aoa|gg*)
+((a*b|bc|ggg)(c|o))

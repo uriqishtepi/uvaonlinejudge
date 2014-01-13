@@ -270,13 +270,14 @@ void grep(int argc, char **argv)
     std::cout << " Grep search argc "<< argc << std::endl;
     //argv[0] is the regual expression, argv[1] is the file to scan
     //if argc < 2 then we are dealing with standard input
-    std::ifstream in; //TODO: = std::cin;
+    std::fstream in; //TODO: = std::cin;
     if(argc < 2) {
         std::cerr << "Usage " << argv[0] << " <regex> [file] " << std::endl;
         exit(1);
     }
     if(argc > 2)
         in.open(argv[2], std::ifstream::in);
+    std::istream & fin = in.is_open() ? in : std::cin;
 
     std::string re = "(.*" + std::string(argv[1]) + ".*)"; //search for regex in the text
     int relen = re.size();
@@ -285,7 +286,7 @@ void grep(int argc, char **argv)
     
     std::string text;
     int line = 0;
-    while(in >> text)
+    while(fin >> text)
     {
         int counter = 0;
         line++;

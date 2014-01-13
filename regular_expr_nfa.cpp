@@ -20,6 +20,13 @@
  * When simulating the graph, you would need to start at each character 
  * in the text, so runtime would be M*N (M length of text, N length of pattern)
  *
+ * When using this as a grep you would need to add (.* re .* ) so that 
+ * it automatically looks for the pattern in each line of the input.
+ * Added ability to perform check similar to grep, 
+ * although it is not called by default, 
+ * and also it does not color the output (which would require to
+ * retreive the correct location of the regex).
+ *
  */
 #include <stack>
 #include <queue>
@@ -28,6 +35,7 @@
 #include <map>
 #include <set>
 #include <iostream>
+#include <fstream>
 #include <string>
 #include <stdio.h>
 #include <string.h>
@@ -71,7 +79,7 @@ void print_graph(const graphtp & g)
  *
  * modified so that it can take multiple | inside the same block
  */
-void build_nfa_graph(graphtp & g, char * re, int relen)
+void build_nfa_graph(graphtp & g, const char * re, int relen)
 {
     for(int i = 0; i <= relen; i++)
         g.push_back(vi()); //initiate g connections with empty vectors
@@ -202,7 +210,7 @@ inline void get_visited(vi & visited, vi & states)
  * if it is successful will return the length of the match
  * if it in UNsucessful will return -1
  */
-int check_nfa(const graphtp & g, char * re, int relen, char * text, int len, int & counter)
+int check_nfa(const graphtp & g, const char * re, int relen, const char * text, int len, int & counter)
 {
     out("check_nfa re='%s' text='%s'\n", re, text);
     int longestfound = -1;
@@ -256,11 +264,45 @@ int pattern_search(char * text, char * re)
     return count;
 }
 
+//grep version of the program
+void grep(int argc, char **argv)
+{
+    std::cout << " Grep search argc "<< argc << std::endl;
+    //argv[0] is the regual expression, argv[1] is the file to scan
+    //if argc < 2 then we are dealing with standard input
+    std::ifstream in; //TODO: = std::cin;
+    if(argc < 2) {
+        std::cerr << "Usage " << argv[0] << " <regex> [file] " << std::endl;
+        exit(1);
+    }
+    if(argc > 2)
+        in.open(argv[2], std::ifstream::in);
 
+    std::string re = "(.*" + std::string(argv[1]) + ".*)"; //search for regex in the text
+    int relen = re.size();
+    graphtp g;
+    build_nfa_graph(g, re.c_str(), relen);
+    
+    std::string text;
+    int line = 0;
+    while(in >> text)
+    {
+        int counter = 0;
+        line++;
+        int length = check_nfa(g, re.c_str(), relen, text.c_str(), text.size(), counter);
+        if(length >= 0) {
+            printf("found in line %d: %.*s (after %d probes)\n", line, length+1, text.c_str(), counter);
+        }
+    }
+    
+}
 
 int main(int argc, char**argv)
 {
-    out("starting ...\n");
+    out("starting ... \n");
+    //If you want grep, uncomment next line: 
+    //grep(argc, argv); exit(1);
+    
     std::cout << " Rexex search " << std::endl;
 
     char text[10000] = {0};

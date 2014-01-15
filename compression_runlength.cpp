@@ -3,6 +3,12 @@
  * so 16 consecutive 1111111111111111 would correspond to 8bit 16: 00010000
  * alternate num of ones with num of zeros, if no zeros put 0
  *
+ * some good tests:
+ * 00
+ * FF
+ * E0
+ * 07
+ *
  */
 #include <stack>
 #include <queue>
@@ -40,7 +46,7 @@ inline char bit(char buf, char mask)
 }
 void print_byte(char b)
 {
-    for(int i = 0; i < 8; i++)
+    for(int i = 7; i >= 0; i--)
         out("%d",(b>>i)&0x1);
     out("\n");
 }
@@ -78,44 +84,64 @@ void decode(int argc, char**argv)
 
     char buf;
     char turn = 0x1; //start with ones turn
-    int rem = 0;
+    int rem = 0; //will accumulate the remainder 
     int cnt = 0;
+    unsigned char pat = 0; //need to accumulate here and write when cnt is 8
 
     while((cnt = read(fin, &buf, 1)) > 0) {
         print_byte(buf);
         cnt = buf;
         int sum = rem + cnt;
-        out("rem=%d, cnt=%d, sum=%d\n",rem, cnt, sum);
+        out("rem=%d, cnt=%d, sum=%d\n turn:",rem, cnt, sum);
+        print_byte(turn);
 
-        if(rem > 0) {
-            assert((sum % 8) == 0 && "innapropriate count or remainder");
-            unsigned char pat = 0;
-            for(int i = 0; i < rem; i++) {
-                pat |= (1 << i);
+        if(rem > 0 && sum > 8) {
+
+            for(int i = 0; i < (8-rem); i++) {
+                pat <<= 1;
+                pat |= turn;
+                out("1pat=");
+                print_byte(pat);
             }
-            if(turn == 1)
-                pat = ~pat;
-
-            out("writing x=%d, turn=%d\n", pat, turn);
+            
+            //write pattern and set cnt = sum - rem
+            cnt = cnt - (8 - rem); //wrote 8 bytes
+            out("1writing x=%d, turn=%d\n", pat, turn);
             write(fout, &pat, 1); 
             rem = 0;
+            pat = 0;
         }
 
+        //write out bytes full of ones or of zeros (whatever turn is)
         while(cnt >= 8) {
             out("consuming cnt=%d, sum=%d\n", cnt, sum);
-            unsigned char pat = 0;
-            if(turn)
-                pat = 0xFF;
+            pat = - turn; //if turn is 0, pat is 0, else -1
 
-            out("writing x=%d, turn=%d\n", pat, turn);
+            out("2writing x=%d, turn=%d\n", pat, turn);
             write(fout, &pat, 1);
             cnt -= 8;
+            pat = 0;
+        }
+        //if anything remains, we need to write it to pat
+        for(int i = 0; i < cnt; i++) {
+            pat <<= 1;
+            pat |= turn;
+            out("2pat=");
+            print_byte(pat);
+
         }
 
-        turn = !turn;
-        rem = cnt;
+        turn = !turn; //next turn is flipped
+        rem += cnt;
     }
 
+    out("rem=%d, cnt=%d \n turn:",rem, cnt);
+    print_byte(turn);
+    if(rem > 0) {
+        //write pattern and set cnt = sum - rem
+        out("writing x=%d, turn=%d\n", pat, turn);
+        write(fout, &pat, 1); 
+    }
 }
 
 
@@ -146,9 +172,9 @@ void encode(int argc, char**argv)
     int count = 0;
     while(read(fin, &buf, 1) > 0) 
     {
-        unsigned short mask = 1;
+        unsigned short mask = 1<<7;
         print_byte(buf);
-        while(mask <= 0x00FF) {
+        while(mask > 0) {
             out("mask=%d, turn=%d\n",mask, turn);
             out("turn %d and bit %d, count=%d\n", turn, bit(buf, mask), count);
             if(turn == bit(buf, mask)) { //if turn is same as bit
@@ -171,7 +197,7 @@ void encode(int argc, char**argv)
                 out("resetting: count=%d turn=%d\n",count, turn);
             }
 
-            mask <<= 1;
+            mask >>= 1;
         }
     }
 

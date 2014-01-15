@@ -28,7 +28,7 @@
 #include <fcntl.h>
 
 
-#define DEBUG true
+//#define DEBUG true
 #ifdef DEBUG
 #define out printf
 #else
@@ -82,7 +82,7 @@ void decode(int argc, char**argv)
             fout = tmp2;
     }
 
-    char buf;
+    unsigned char buf;
     char turn = 0x1; //start with ones turn
     int rem = 0; //will accumulate the remainder 
     int cnt = 0;
@@ -97,6 +97,7 @@ void decode(int argc, char**argv)
 
         if(rem > 0 && sum > 8) {
 
+            //write the remaining of the byte from cnt
             for(int i = 0; i < (8-rem); i++) {
                 pat <<= 1;
                 pat |= turn;
@@ -167,7 +168,7 @@ void encode(int argc, char**argv)
         }
     }
 
-    char buf;
+    unsigned char buf;
     char turn = 0x1; //start with ones turn
     int count = 0;
     while(read(fin, &buf, 1) > 0) 

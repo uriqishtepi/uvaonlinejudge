@@ -12,13 +12,15 @@
  */
 #include <stack>
 #include <queue>
-#include <assert.h>
 #include <vector>
 #include <map>
 #include <set>
 #include <iostream>
 #include <fstream>
 #include <string>
+
+#include <assert.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -51,6 +53,44 @@ void print_byte(char b)
     out("\n");
 }
 
+class ByteWriter {
+public:
+    ByteWriter(int fout) : m_fout(fout), m_count(0), m_byte(0) {}
+
+    //bit to write, count of bits
+    void writeByte(uint8_t p, uint8_t ncnt) {
+        if(ncnt + m_count > 8) { //copy 8 - m_count, then write m_byte
+            for(int i = 0; i < 8 - m_count; i++, ncnt--) {
+                m_byte <<= 1;
+                m_byte |= p & 0x1; //just in case p contains crap
+            }
+            write(m_fout, &m_byte, 1); 
+            m_count = 0;
+            m_byte = 0;
+        }
+        for(;ncnt > 8; ncnt -= 8, m_byte = 0) { //write 8 bits p at a time
+            m_byte = -(p & 0x1); //FF if 1, 0 if 0
+            write(m_fout, &m_byte, 1); 
+        }
+        for(int i = 0; i < ncnt; i++, m_count++) {
+            m_byte <<= 1;
+            m_byte |= p & 0x1; //just in case p contains crap
+        }
+    }
+
+    ~ByteWriter(){
+        assert((m_count %8) == 0 && " this should always be mult of 8");
+        if(m_count > 0)
+            write(m_fout, &m_byte, 1); 
+    }
+
+private:
+    int m_fout;
+    uint8_t m_count;
+    uint8_t m_byte;
+};
+
+
 void decode(int argc, char**argv)
 {
     int fin = 0; //stdin
@@ -82,66 +122,13 @@ void decode(int argc, char**argv)
             fout = tmp2;
     }
 
-    unsigned char buf;
-    char turn = 0x1; //start with ones turn
-    int rem = 0; //will accumulate the remainder 
-    int cnt = 0;
-    unsigned char pat = 0; //need to accumulate here and write when cnt is 8
+    uint8_t buf;
+    uint8_t turn = 0x1; //start with ones turn
+    ByteWriter bw(fout);
 
-    while((cnt = read(fin, &buf, 1)) > 0) {
-        print_byte(buf);
-        cnt = buf;
-        int sum = rem + cnt;
-        out("rem=%d, cnt=%d, sum=%d\n turn:",rem, cnt, sum);
-        print_byte(turn);
-
-        if(rem > 0 && sum > 8) {
-
-            //write the remaining of the byte from cnt
-            for(int i = 0; i < (8-rem); i++) {
-                pat <<= 1;
-                pat |= turn;
-                out("1pat=");
-                print_byte(pat);
-            }
-            
-            //write pattern and set cnt = sum - rem
-            cnt = cnt - (8 - rem); //wrote 8 bytes
-            out("1writing x=%d, turn=%d\n", pat, turn);
-            write(fout, &pat, 1); 
-            rem = 0;
-            pat = 0;
-        }
-
-        //write out bytes full of ones or of zeros (whatever turn is)
-        while(cnt >= 8) {
-            out("consuming cnt=%d, sum=%d\n", cnt, sum);
-            pat = - turn; //if turn is 0, pat is 0, else -1
-
-            out("2writing x=%d, turn=%d\n", pat, turn);
-            write(fout, &pat, 1);
-            cnt -= 8;
-            pat = 0;
-        }
-        //if anything remains, we need to write it to pat
-        for(int i = 0; i < cnt; i++) {
-            pat <<= 1;
-            pat |= turn;
-            out("2pat=");
-            print_byte(pat);
-
-        }
-
+    while(read(fin, &buf, 1) > 0) {
+        bw.writeByte(turn, buf);
         turn = !turn; //next turn is flipped
-        rem += cnt;
-    }
-
-    out("rem=%d, cnt=%d \n turn:",rem, cnt);
-    print_byte(turn);
-    if(rem > 0) {
-        //write pattern and set cnt = sum - rem
-        out("writing x=%d, turn=%d\n", pat, turn);
-        write(fout, &pat, 1); 
     }
 }
 
@@ -168,12 +155,13 @@ void encode(int argc, char**argv)
         }
     }
 
-    unsigned char buf;
-    char turn = 0x1; //start with ones turn
+    uint8_t buf;
+    uint8_t turn = 0x1; //start with ones turn
     int count = 0;
     while(read(fin, &buf, 1) > 0) 
     {
         unsigned short mask = 1<<7;
+        out("buf=");
         print_byte(buf);
         while(mask > 0) {
             out("mask=%d, turn=%d\n",mask, turn);
@@ -183,8 +171,8 @@ void encode(int argc, char**argv)
             }
             else { //turn is different from bit, so write out the count of turn
                 while(count > 255) {
-                    char eight = 0x8;
-                    char none = 0x0;
+                    uint8_t eight = 0xff; //255 of the pattern
+                    uint8_t none = 0x0;
                     write(fout, &eight, 1); //255 of type turn (ex ones)
                     write(fout, &none, 1); //0 of the other type (ex zeros)
                     count-=255;
@@ -202,10 +190,21 @@ void encode(int argc, char**argv)
         }
     }
 
+    while(count > 255) {
+        uint8_t eight = 0xff; //255 of the pattern
+        uint8_t none = 0x0;
+        write(fout, &eight, 1); //255 of type turn (ex ones)
+        write(fout, &none, 1); //0 of the other type (ex zeros)
+        count-=255;
+        out("while: count=%d\n",count);
+    }
+
+
     if(count > 0) {
         out("last last: writing count=%d turn=%d\n",count, turn);
         write(fout, &count,1);//finally write the count which is < 255
     }
+
     close(fin);
     close(fout);
 }

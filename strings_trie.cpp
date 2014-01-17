@@ -29,7 +29,7 @@
 #define out
 #endif
 
-int R = 256; //radix 2^8
+#define R 256 //radix 2^8
 
 
 
@@ -38,7 +38,7 @@ struct node {
         memset(children, 0, sizeof(children));
         value = 0;
     }
-    node*  children[256]; //if  n[i] exists, it means that a path goes through
+    node*  children[R]; //if  n[i] exists, it means that a path goes through
     int value;    // some value associated with this node, if < 0 then not  terminal
 };
 
@@ -96,7 +96,7 @@ int main(void)
     node root; //trie root
 
     //start from 
-    char str[256] = {0};
+    char str[R] = {0};
     int counterAsVal = 0;
     while( scanf("%s",&str) != EOF ) {
         out("root %ld\n", &root);

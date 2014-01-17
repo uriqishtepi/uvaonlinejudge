@@ -1,3 +1,4 @@
+#!/bin/bash
 task=${1}
 make ${task}
 if [ $? -ne 0 ] ; then 
@@ -18,8 +19,9 @@ if [ -f $OUT ] ; then rm /tmp/myout.txt; fi
 echo "running ${task} < $IN"
 ./${task} < $IN > $OUT && diff -q ${task}.out $OUT || echo run " vimdiff $OUT ${task}.out" to see diff
 
+#could just use more $OUT, but more does not clear the visual when it returns
 if [ `wc -l $OUT | awk '{print $1}' ` -gt $((LINES-5)) ] ; then
-    less $OUT;
+    less -e $OUT;
 else
     cat $OUT;
 fi

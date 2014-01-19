@@ -112,21 +112,25 @@ node * build_tree(ByteReader & br)
 }
 
 
-char get_char(node * decoding_trie, ByteReader br) 
+//do the search on the tree
+//follow the paths according to the bits read
+char get_char(node * decoding_trie, ByteReader & br) 
 {
     static node * last = decoding_trie;
     
-    while(last) {
+    while(last) { //while node of tree
         uint8_t p = br.readBit();
-        if(p) { //search right of last
+        if(p) { //on bit 1 search right of last
             last = last->m_right;
         }
-        else
+        else //on bit 0 search to the left
             last = last->m_left;
 
         if(last->m_c != '\0') {
-            last = decoding_trie;
-            return last->m_c;
+            char c = last->m_c;
+            out("\nfound on leaf: '%c'\n", c);
+            last = decoding_trie; //start search from the root
+            return c;
         }
     }
 }

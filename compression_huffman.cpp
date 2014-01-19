@@ -45,10 +45,36 @@ void print_byte(char b)
     out("\n");
 }
 
+struct ByteReader {
+    ByteReader(char * addr) : m_addr(addr), m_offset(0), m_byteLoc(7) {}
+
+    uint8_t readBit() { 
+        uint8_t ret = (m_addr[m_offset] >> m_byteLoc) & 0x1; 
+        if(--m_byteLoc < 0) {
+            m_byteLoc = 7; 
+            m_offset++;
+        }
+        return ret; 
+    }
+    uint8_t readByte() {
+        uint8_t ret = m_addr[m_offset] << (8 - m_byteLoc); 
+        m_offset++; 
+        return ret | (m_addr[m_offset] >> m_byteLoc);
+    }
+
+    char * m_addr;
+    int m_offset; //offset in m_addr
+    char m_byteLoc; //offset in last byte
+};
+
+
 void decode(int argc, char**argv)
 {
     int fin = 0; //stdin
     int fout = 1; //stdout
+
+    char *addr;
+    struct stat sb;
 
     if(argc < 2) {
         return;
@@ -56,9 +82,14 @@ void decode(int argc, char**argv)
 
     std::string s(argv[1]);
     s += ".out";
+
+    if (stat(s.c_str(), &sb) == -1) {
+        perror("stat");
+        exit(EXIT_FAILURE);
+    }
+
     int tmp = open(s.c_str(), O_RDONLY);
     out("\nDecoding: %s\n",s.c_str());
-
 
     if(tmp < 0) {
         printf("decode:Can not open file %s\n", s.c_str());
@@ -77,7 +108,24 @@ void decode(int argc, char**argv)
             fout = tmp2;
     }
 
-    unsigned char buf;
+    ssize_t flsize = sb.st_size;
+    addr = (char*) mmap(NULL, sb.st_size, PROT_READ, MAP_PRIVATE, fin, 0);
+
+    //read tree first
+    int i = 0; 
+    int j = 0;
+    while(i < flsize) {
+        unsigned char buf = addr[i];
+        i++;
+        //read tree first
+        while(j < 8) {
+            if(buf[j] == 0) { //we have a internal node
+                
+            }
+            j++;
+        }
+    }
+
     char turn = 0x1; //start with ones turn
     int rem = 0; //will accumulate the remainder 
     int cnt = 0;
@@ -244,7 +292,6 @@ void encode(int argc, char**argv)
     int fin = 0; //stdin
     int fout = 1; //stdout
     char *addr;
-
     struct stat sb;
 
     if (argc != 2) {
@@ -316,6 +363,7 @@ void encode(int argc, char**argv)
         bw.writeStringAsBits(chmap[addr[i]]); //write to file encoding of char
     } 
 
+    munmap(addr, sb.st_size);
     close(fin);
     close(fout);
 }

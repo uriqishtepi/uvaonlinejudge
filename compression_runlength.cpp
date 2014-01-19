@@ -212,9 +212,6 @@ void encode(int argc, char**argv)
 int main(int argc, char**argv)
 {
     out("starting ... \n");
-    //If you want grep, uncomment next line: 
-    //grep(argc, argv); exit(1);
-
     std::cerr << " Runlength coding " << std::endl;
     for(int i = 0; i < 8; i++)
         assert(bit(0xFF,0x1 << i) == 1 && "err 1");

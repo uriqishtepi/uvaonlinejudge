@@ -61,9 +61,10 @@ void cleanup_tree(node * nptr) { delete nptr; }
 
 
 struct ByteReader {
-    ByteReader(uint8_t * addr) : m_addr(addr), m_offset(0), m_byteLoc(8) {}
+    ByteReader(uint8_t * addr, int flsize) : m_addr(addr), m_offset(0), m_flsize(flsize), m_byteLoc(8) {}
 
     uint8_t readBit() { 
+        if(m_offset >= m_flsize) throw;
         uint8_t ret = (m_addr[m_offset] >> (--m_byteLoc)) & 0x1; 
         out("readBit: m_offset=%d m_byteLoc=%d ret=%x\n", m_offset, m_byteLoc, ret);
         if(m_byteLoc <= 0) {
@@ -74,6 +75,7 @@ struct ByteReader {
         return ret; 
     }
     uint8_t readByte() {
+        if(m_offset >= m_flsize) throw;
         //out("orig part readByte: %x\n", m_addr[m_offset]);
         uint8_t ret = m_addr[m_offset] << (8 - m_byteLoc); 
         //out("ret part readByte: %x\n", ret);
@@ -86,6 +88,7 @@ struct ByteReader {
 
     uint8_t * m_addr;
     int m_offset; //offset in m_addr
+    int m_flsize; //size of file
     char m_byteLoc; //offset in last byte
 };
 
@@ -119,7 +122,13 @@ char get_char(node * decoding_trie, ByteReader & br)
     static node * last = decoding_trie;
     
     while(last) { //while node of tree
-        uint8_t p = br.readBit();
+        uint8_t p = 0;
+        try {
+            p = br.readBit();
+        }
+        catch(...) {
+            return 0;
+        }
         if(p) { //on bit 1 search right of last
             last = last->m_right;
         }
@@ -185,7 +194,7 @@ void decode(int argc, char**argv)
     }
 
     //read tree first
-    ByteReader br(addr);
+    ByteReader br(addr, flsize);
     node * decoding_trie = build_tree(br);
 
     char c;

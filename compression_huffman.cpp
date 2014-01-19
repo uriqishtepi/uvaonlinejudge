@@ -45,27 +45,92 @@ void print_byte(char b)
     out("\n");
 }
 
+
+
+struct node { 
+    node(char c) : m_c(c), m_left(NULL), m_right(NULL) {}
+    node(char c, node * left,  node * right) : m_c(c), m_left(left), m_right(right) {}
+    ~node() { if(m_left) delete  m_left; if(m_right) delete m_right; }
+    char m_c;
+    node * m_left;
+    node * m_right;
+};
+
+
+void cleanup_tree(node * nptr) { delete nptr; }
+
+
 struct ByteReader {
-    ByteReader(char * addr) : m_addr(addr), m_offset(0), m_byteLoc(7) {}
+    ByteReader(uint8_t * addr) : m_addr(addr), m_offset(0), m_byteLoc(8) {}
 
     uint8_t readBit() { 
-        uint8_t ret = (m_addr[m_offset] >> m_byteLoc) & 0x1; 
-        if(--m_byteLoc < 0) {
-            m_byteLoc = 7; 
+        uint8_t ret = (m_addr[m_offset] >> (--m_byteLoc)) & 0x1; 
+        out("readBit: m_offset=%d m_byteLoc=%d ret=%x\n", m_offset, m_byteLoc, ret);
+        if(m_byteLoc <= 0) {
+            m_byteLoc = 8; 
             m_offset++;
+            out("readBit next offset!!\n");
         }
         return ret; 
     }
     uint8_t readByte() {
+        //out("orig part readByte: %x\n", m_addr[m_offset]);
         uint8_t ret = m_addr[m_offset] << (8 - m_byteLoc); 
+        //out("ret part readByte: %x\n", ret);
         m_offset++; 
-        return ret | (m_addr[m_offset] >> m_byteLoc);
+        //out("other part readByte: %x\n", (m_addr[m_offset] >> m_byteLoc));
+        ret |= (m_addr[m_offset] >> m_byteLoc);
+        out("readByte: %x\n", ret);
+        return ret;
     }
 
-    char * m_addr;
+    uint8_t * m_addr;
     int m_offset; //offset in m_addr
     char m_byteLoc; //offset in last byte
 };
+
+
+
+//every leaf node makes the search stop
+//for non leaf nodes, we populate the subtree
+node * build_tree(ByteReader & br)
+{
+    if(br.readBit()) { //this is a leaf node, populate with byte
+        char c = br.readByte();
+        out("\nleaf: '%c'\n", c);
+        return new node(c);
+    }
+
+    out("{\n");
+    node *left = build_tree(br);
+    out("}\n");
+    out("{\n");
+    node *right = build_tree(br);
+    out("}\n");
+
+    return new node('\0',left, right);
+}
+
+
+char get_char(node * decoding_trie, ByteReader br) 
+{
+    static node * last = decoding_trie;
+    
+    while(last) {
+        uint8_t p = br.readBit();
+        if(p) { //search right of last
+            last = last->m_right;
+        }
+        else
+            last = last->m_left;
+
+        if(last->m_c != '\0') {
+            last = decoding_trie;
+            return last->m_c;
+        }
+    }
+}
+
 
 
 void decode(int argc, char**argv)
@@ -73,7 +138,7 @@ void decode(int argc, char**argv)
     int fin = 0; //stdin
     int fout = 1; //stdout
 
-    char *addr;
+    uint8_t *addr;
     struct stat sb;
 
     if(argc < 2) {
@@ -109,85 +174,21 @@ void decode(int argc, char**argv)
     }
 
     ssize_t flsize = sb.st_size;
-    addr = (char*) mmap(NULL, sb.st_size, PROT_READ, MAP_PRIVATE, fin, 0);
+    addr = (uint8_t*) mmap(NULL, sb.st_size, PROT_READ, MAP_PRIVATE, fin, 0);
+
+    for(int i =0; i < flsize; i++) {
+        out("%c", addr[i]);
+    }
 
     //read tree first
-    int i = 0; 
-    int j = 0;
-    while(i < flsize) {
-        unsigned char buf = addr[i];
-        i++;
-        //read tree first
-        while(j < 8) {
-            if(buf[j] == 0) { //we have a internal node
-                
-            }
-            j++;
-        }
-    }
+    ByteReader br(addr);
+    node * decoding_trie = build_tree(br);
 
-    char turn = 0x1; //start with ones turn
-    int rem = 0; //will accumulate the remainder 
-    int cnt = 0;
-    unsigned char pat = 0; //need to accumulate here and write when cnt is 8
-
-    while(read(fin, &buf, 1) > 0) {
-        print_byte(buf);
-        cnt = buf;
-        int sum = rem + cnt;
-        out("rem=%d, cnt=%d, sum=%d\n turn:",rem, cnt, sum);
-        print_byte(turn);
-
-        if(rem > 0 && sum > 8) {
-
-            //write the remaining of the byte from cnt
-            for(int i = 0; i < (8-rem); i++) {
-                pat <<= 1;
-                pat |= turn;
-                out("1pat=");
-                print_byte(pat);
-            }
-            
-            //write pattern and set cnt = sum - rem
-            cnt = cnt - (8 - rem); //wrote 8 bytes
-            out("1writing x=%d, turn=%d\n", pat, turn);
-            write(fout, &pat, 1); 
-            rem = 0;
-            pat = 0;
-        }
-
-        //write out bytes full of ones or of zeros (whatever turn is)
-        while(cnt >= 8) {
-            out("consuming cnt=%d, sum=%d\n", cnt, sum);
-            pat = - turn; //if turn is 0, pat is 0, else -1
-
-            out("2writing x=%d, turn=%d\n", pat, turn);
-            write(fout, &pat, 1);
-            cnt -= 8;
-            pat = 0;
-        }
-        //if anything remains, we need to write it to pat
-        for(int i = 0; i < cnt; i++) {
-            pat <<= 1;
-            pat |= turn;
-            out("2pat=");
-            print_byte(pat);
-
-        }
-
-        turn = !turn; //next turn is flipped
-        rem += cnt;
-    }
-
-    out("rem=%d, cnt=%d \n turn:",rem, cnt);
-    print_byte(turn);
-    if(rem > 0) {
-        //write pattern and set cnt = sum - rem
-        out("writing x=%d, turn=%d\n", pat, turn);
-        write(fout, &pat, 1); 
+    char c;
+    while( (c = get_char(decoding_trie, br)) != 0 ) {
+        write(fout, &c, 1); 
     }
 }
-
 
 
 class ByteWriter {
@@ -196,29 +197,41 @@ public:
 
     //bit to write, count of bits
     void writeByte(uint8_t p, uint8_t ncnt) {
+        out("writeByte: %x ncnt=%d m_count=%d\n", p, ncnt, m_count);
         if(ncnt + m_count > 8) { //copy 8 - m_count, then write m_byte
             for(int i = 0; i < 8 - m_count; i++, ncnt--) {
                 m_byte <<= 1;
                 m_byte |= p & 0x1; //just in case p contains crap
             }
             write(m_fout, &m_byte, 1); 
+            out("write: %x\n", m_byte);
             m_count = 0;
             m_byte = 0;
         }
         for(;ncnt > 8; ncnt -= 8, m_byte = 0) { //write 8 bits p at a time
             m_byte = -(p & 0x1); //FF if 1, 0 if 0
             write(m_fout, &m_byte, 1); 
+            out("write: %x\n", m_byte);
         }
-        for(int i = 0; i < ncnt; i++, m_count++) {
+        for(int i = 0; i < ncnt; i++) {
             m_byte <<= 1;
             m_byte |= p & 0x1; //just in case p contains crap
+            m_count++;
         }
     }
     inline void writeBit(uint8_t p) { writeByte(p, 1); }
+    void writeByte(uint8_t p) {
+        out("writeByte: %x\n", p);
+        for(int i = 7; i >= 0; i--)
+            writeBit((p >> i) & 0x1);
+    }
     inline void writeStringAsBits(const std::string & s) { 
+        out("writeStringAsBits: ");
         for(std::string::const_iterator it = s.begin(); it != s.end(); ++it) {
             writeBit(*it - '0');
+            out("%c", *it);
         }
+        out("\n");
     }
 
     ~ByteWriter(){
@@ -229,20 +242,13 @@ public:
 
 private:
     int m_fout;
+    char dummy[256];
     uint8_t m_count;
+    char dumm2y[256];
     uint8_t m_byte;
 };
 
 
-
-
-struct node { 
-    node(char c) : m_c(c), m_left(NULL), m_right(NULL) {}
-    node(char c, node * left,  node * right) : m_c(c), m_left(left), m_right(right) {}
-    char m_c;
-    node * m_left;
-    node * m_right;
-};
 
 struct symbol {
     symbol(int freq, char c) : m_freq(freq)
@@ -263,19 +269,35 @@ struct symbol {
 
 typedef std::map <char, std::string> MCS;
 
-void traverse_tree(ByteWriter bw, node * nptr, MCS & chmap, std::string s)
+void print_tree(node * nptr, std::string s)
+{
+    if(nptr == NULL) return;
+    if(nptr->m_c != '\0') {
+        out("'%c' '%s'\n", nptr->m_c, s.c_str());
+        return; //done leaf node has no children so return
+    }
+
+    out("'%d' '%s'\n", nptr->m_c, s.c_str());
+    print_tree(nptr->m_left, s+"0");
+    print_tree(nptr->m_right, s+"1");
+}
+
+
+void traverse_tree(ByteWriter & bw, node * nptr, MCS & chmap, std::string s)
 {
     if(nptr == NULL) return;
     if(nptr->m_c != '\0') {
         out("nptr c='%c' '%s'\n", nptr->m_c, s.c_str());
         chmap.insert(make_pair(nptr->m_c, s));
         //this is leaf node, write to fout (via bytewriter)
+        out("traverse_tree: true\n");
         bw.writeBit(true);
-        bw.writeStringAsBits(s);
+        bw.writeByte(nptr->m_c);
+        return; //done leaf node has no children so return
     }
-    else
-        bw.writeBit(false); //write as internal  node
 
+    out("traverse_tree: false\n");
+    bw.writeBit(false); //write as internal  node
     traverse_tree(bw, nptr->m_left, chmap, s+"0");
     traverse_tree(bw, nptr->m_right, chmap, s+"1");
 }
@@ -326,7 +348,7 @@ void encode(int argc, char**argv)
 
     //first get the frequencies of the symbols
     for(int i =0; i < flsize; i++) {
-        printf("%c", addr[i]);
+        out("%c", addr[i]);
         freq[addr[i]]++;
     }
 
@@ -357,12 +379,18 @@ void encode(int argc, char**argv)
     MCS chmap;
     ByteWriter bw(fout);
 
+
+    print_tree(mh.begin()->m_nptr, ""); 
+
+
     traverse_tree(bw, mh.begin()->m_nptr, chmap, ""); //will write to file
+    out("Done traversing tree\n");
 
     for(int i =0; i < flsize; i++) {
         bw.writeStringAsBits(chmap[addr[i]]); //write to file encoding of char
     } 
 
+    cleanup_tree(mh.begin()->m_nptr);
     munmap(addr, sb.st_size);
     close(fin);
     close(fout);
@@ -379,6 +407,6 @@ int main(int argc, char**argv)
         assert(bit(0xFF,0x1 << i) == 1 && "err 1");
 
     encode(argc, argv);
-    //decode(argc, argv);
+    decode(argc, argv);
     return 0;
 }

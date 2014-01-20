@@ -1,6 +1,9 @@
 /* 
  * With huffman, we create a tree structure with frequencies of the 
  * nodes in decreasing order (going down the tree)
+ * this binary trie, is then written to the output, and red from the decoder
+ * and rebuilt, and used to decode the rest of the encoded message.
+ *
  */
 #include <stack>
 #include <queue>
@@ -61,34 +64,43 @@ void cleanup_tree(node * nptr) { delete nptr; }
 
 
 struct ByteReader {
-    ByteReader(uint8_t * addr, int flsize) : m_addr(addr), m_offset(0), m_flsize(flsize), m_byteLoc(8) {}
+    ByteReader(uint8_t * addr) : m_addr(addr), m_offset(0), m_byteLoc(8) {}
 
     uint8_t readBit() { 
-        if(m_offset >= m_flsize) throw;
         uint8_t ret = (m_addr[m_offset] >> (--m_byteLoc)) & 0x1; 
         out("readBit: m_offset=%d m_byteLoc=%d ret=%x\n", m_offset, m_byteLoc, ret);
         if(m_byteLoc <= 0) {
             m_byteLoc = 8; 
             m_offset++;
-            out("readBit next offset!!\n");
+            out("readBit next offset addr[offset]=");
+            print_byte(m_addr[m_offset]);
         }
         return ret; 
     }
     uint8_t readByte() {
-        if(m_offset >= m_flsize) throw;
         //out("orig part readByte: %x\n", m_addr[m_offset]);
         uint8_t ret = m_addr[m_offset] << (8 - m_byteLoc); 
         //out("ret part readByte: %x\n", ret);
         m_offset++; 
+        out("readBit next offset addr[offset]=");
+        print_byte(m_addr[m_offset]);
         //out("other part readByte: %x\n", (m_addr[m_offset] >> m_byteLoc));
         ret |= (m_addr[m_offset] >> m_byteLoc);
         out("readByte: %x\n", ret);
         return ret;
     }
 
+    int readInt() {
+        int val = 0;
+        ((uint8_t*)&val)[0] = readByte();
+        ((uint8_t*)&val)[1] = readByte();
+        ((uint8_t*)&val)[2] = readByte();
+        ((uint8_t*)&val)[3] = readByte();
+        return val;
+    }
+
     uint8_t * m_addr;
     int m_offset; //offset in m_addr
-    int m_flsize; //size of file
     char m_byteLoc; //offset in last byte
 };
 
@@ -122,13 +134,7 @@ char get_char(node * decoding_trie, ByteReader & br)
     static node * last = decoding_trie;
     
     while(last) { //while node of tree
-        uint8_t p = 0;
-        try {
-            p = br.readBit();
-        }
-        catch(...) {
-            return 0;
-        }
+        uint8_t p = br.readBit();
         if(p) { //on bit 1 search right of last
             last = last->m_right;
         }
@@ -145,65 +151,6 @@ char get_char(node * decoding_trie, ByteReader & br)
 }
 
 
-
-void decode(int argc, char**argv)
-{
-    int fin = 0; //stdin
-    int fout = 1; //stdout
-
-    uint8_t *addr;
-    struct stat sb;
-
-    if(argc < 2) {
-        return;
-    }
-
-    std::string s(argv[1]);
-    s += ".out";
-
-    if (stat(s.c_str(), &sb) == -1) {
-        perror("stat");
-        exit(EXIT_FAILURE);
-    }
-
-    int tmp = open(s.c_str(), O_RDONLY);
-    out("\nDecoding: %s\n",s.c_str());
-
-    if(tmp < 0) {
-        printf("decode:Can not open file %s\n", s.c_str());
-        return;
-    }
-    else {
-        fin = tmp;
-        std::string s(argv[1]);
-        s += ".verif";
-        int tmp2 = creat(s.c_str(), S_IRUSR | S_IWUSR);
-        if(tmp2 < 0) {
-            printf("decode:Can not open file for writing %s\n", s.c_str());
-            return;
-        }
-        else
-            fout = tmp2;
-    }
-
-    ssize_t flsize = sb.st_size;
-    addr = (uint8_t*) mmap(NULL, sb.st_size, PROT_READ, MAP_PRIVATE, fin, 0);
-
-    for(int i =0; i < flsize; i++) {
-        out("%c", addr[i]);
-    }
-
-    //read tree first
-    ByteReader br(addr, flsize);
-    node * decoding_trie = build_tree(br);
-
-    char c;
-    while( (c = get_char(decoding_trie, br)) != 0 ) {
-        write(fout, &c, 1); 
-    }
-}
-
-
 class ByteWriter {
 public:
     ByteWriter(int fout) : m_fout(fout), m_count(0), m_byte(0) {}
@@ -216,15 +163,14 @@ public:
                 m_byte <<= 1;
                 m_byte |= p & 0x1; //just in case p contains crap
             }
-            write(m_fout, &m_byte, 1); 
-            out("write: %x\n", m_byte);
+            writeOut();
+
             m_count = 0;
             m_byte = 0;
         }
         for(;ncnt > 8; ncnt -= 8, m_byte = 0) { //write 8 bits p at a time
             m_byte = -(p & 0x1); //FF if 1, 0 if 0
-            write(m_fout, &m_byte, 1); 
-            out("write: %x\n", m_byte);
+            writeOut();
         }
         for(int i = 0; i < ncnt; i++) {
             m_byte <<= 1;
@@ -247,10 +193,19 @@ public:
         out("\n");
     }
 
+    void writeInt(int val) {
+        writeByte(((uint8_t*)&val)[0]);
+        writeByte(((uint8_t*)&val)[1]);
+        writeByte(((uint8_t*)&val)[2]);
+        writeByte(((uint8_t*)&val)[3]);
+    }
+
     ~ByteWriter(){
         //assert((m_count %8) == 0 && " this should always be mult of 8");
-        if(m_count > 0)
-            write(m_fout, &m_byte, 1); 
+        flush();
+    }
+    void flush() {
+        if(m_count > 0) writeOut();
     }
 
 private:
@@ -259,6 +214,13 @@ private:
     uint8_t m_count;
     char dumm2y[256];
     uint8_t m_byte;
+
+    void writeOut() {
+        write(m_fout, &m_byte, 1); 
+        out("write next offset m_byte=");
+        print_byte(m_byte);
+    }
+
 };
 
 
@@ -315,6 +277,69 @@ void traverse_tree(ByteWriter & bw, node * nptr, MCS & chmap, std::string s)
     traverse_tree(bw, nptr->m_right, chmap, s+"1");
 }
 
+
+
+
+
+void decode(int argc, char**argv)
+{
+    int fin = 0; //stdin
+    int fout = 1; //stdout
+
+    uint8_t *addr;
+    struct stat sb;
+
+    if(argc < 2) {
+        return;
+    }
+
+    std::string s(argv[1]);
+    s += ".out";
+
+    if (stat(s.c_str(), &sb) == -1) {
+        perror("stat");
+        exit(EXIT_FAILURE);
+    }
+
+    int tmp = open(s.c_str(), O_RDONLY);
+    out("\nDecoding: %s\n",s.c_str());
+
+    if(tmp < 0) {
+        printf("decode:Can not open file %s\n", s.c_str());
+        return;
+    }
+    else {
+        fin = tmp;
+        std::string s(argv[1]);
+        s += ".verif";
+        int tmp2 = creat(s.c_str(), S_IRUSR | S_IWUSR);
+        if(tmp2 < 0) {
+            printf("decode:Can not open file for writing %s\n", s.c_str());
+            return;
+        }
+        else
+            fout = tmp2;
+    }
+
+    ssize_t flsize = sb.st_size;
+    addr = (uint8_t*) mmap(NULL, sb.st_size, PROT_READ, MAP_PRIVATE, fin, 0);
+
+    //for(int i =0; i < flsize; i++) { out("%c", addr[i]); } 
+    //read tree first
+    ByteReader br(addr);
+    int outputlen = br.readInt();
+    out("outputlen=%d\n", outputlen);
+
+    node * decoding_trie = build_tree(br);
+
+    for(int count = 0; count < outputlen; count++) {
+        char c = get_char(decoding_trie, br);
+        write(fout, &c, 1); 
+    }
+
+    cleanup_tree(decoding_trie);
+    munmap(addr, sb.st_size);
+}
 
 
 //FFFF FF00 translates to 32+16, 16
@@ -391,20 +416,21 @@ void encode(int argc, char**argv)
     //finally we are left with the tree in first.m_nptr
     MCS chmap;
     ByteWriter bw(fout);
-
+    bw.writeInt(flsize);
+    out("flsize=%d\n", flsize);
 
     print_tree(mh.begin()->m_nptr, ""); 
-
-
     traverse_tree(bw, mh.begin()->m_nptr, chmap, ""); //will write to file
     out("Done traversing tree\n");
 
-    for(int i =0; i < flsize; i++) {
+    for(int i = 0; i < flsize; i++) {
         bw.writeStringAsBits(chmap[addr[i]]); //write to file encoding of char
     } 
 
     cleanup_tree(mh.begin()->m_nptr);
     munmap(addr, sb.st_size);
+
+    bw.flush(); //flush before closing file
     close(fin);
     close(fout);
 }
@@ -414,8 +440,7 @@ void encode(int argc, char**argv)
 
 int main(int argc, char**argv)
 {
-    out("starting ... \n");
-    std::cerr << " Huffman coding " << std::endl;
+    out("starting ... Huffman coding\n");
     for(int i = 0; i < 8; i++)
         assert(bit(0xFF,0x1 << i) == 1 && "err 1");
 

@@ -4,6 +4,14 @@
  * this binary trie, is then written to the output, and red from the decoder
  * and rebuilt, and used to decode the rest of the encoded message.
  *
+ * In this program i utilize memory mapping of the input files 
+ * for easer reading the files (i could use it on the outpu file too).
+ * at the end is just a nicer way to work with bytes.
+ *
+ * There is an issue with unprintable characters that i am not sure
+ * i want to investigate because i have other things to do, rather than 
+ * make this program industrial strength.
+ *
  */
 #include <stack>
 #include <queue>
@@ -25,7 +33,7 @@
 #include <sys/mman.h> //for memory mapping
 
 
-#define DEBUG true
+//#define DEBUG true
 #ifdef DEBUG
 #define out printf
 #else

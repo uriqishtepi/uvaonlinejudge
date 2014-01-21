@@ -33,7 +33,7 @@
 #include <sys/mman.h> //for memory mapping
 
 
-//#define DEBUG true
+#define DEBUG true
 #ifdef DEBUG
 #define out printf
 #else
@@ -44,6 +44,7 @@
 #define vi std::vector<int>
 #define graphtp std::vector< vi > 
 
+#define R 256
 
 inline char bit(char buf, char mask)
 {
@@ -59,12 +60,15 @@ void print_byte(char b)
 
 
 struct node { 
-    node(char c) : m_c(c), m_left(NULL), m_right(NULL) {}
-    node(char c, node * left,  node * right) : m_c(c), m_left(left), m_right(right) {}
+    node(char c) : m_c(c), m_left(NULL), m_right(NULL), is_leaf(true) {}
+    node(char c, node * left,  node * right) : m_c(c), m_left(left), 
+            m_right(right), is_leaf(false) 
+    {}
     ~node() { if(m_left) delete  m_left; if(m_right) delete m_right; }
     char m_c;
     node * m_left;
     node * m_right;
+    bool is_leaf;
 };
 
 
@@ -149,7 +153,8 @@ char get_char(node * decoding_trie, ByteReader & br)
         else //on bit 0 search to the left
             last = last->m_left;
 
-        if(last->m_c != '\0') {
+        assert(last && "last is NULL and should not be");
+        if(last->is_leaf) {
             char c = last->m_c;
             out("\nfound on leaf: '%c'\n", c);
             last = decoding_trie; //start search from the root
@@ -209,18 +214,21 @@ public:
     }
 
     ~ByteWriter(){
-        //assert((m_count %8) == 0 && " this should always be mult of 8");
         flush();
     }
     void flush() {
+        //make sure m_count is 8--shift the bits to make it so
+        for(;m_count != 8; m_count++, m_byte <<= 1) {
+            out("shifting for last m_count=%d\n",m_count);
+        }
+
+        assert((m_count % 8) == 0 && " this should always be mult of 8");
         if(m_count > 0) writeOut();
     }
 
 private:
     int m_fout;
-    char dummy[256];
     uint8_t m_count;
-    char dumm2y[256];
     uint8_t m_byte;
 
     void writeOut() {
@@ -234,13 +242,11 @@ private:
 
 
 struct symbol {
-    symbol(int freq, char c) : m_freq(freq)
-    {
+    symbol(int freq, char c) : m_freq(freq) {
         m_nptr = new node(c);
     }
 
-    symbol(const symbol &s1, const symbol &s2) : m_freq(s1.m_freq + s2.m_freq)
-    {
+    symbol(const symbol &s1, const symbol &s2) : m_freq(s1.m_freq + s2.m_freq) {
         m_nptr = new node('\0', s1.m_nptr, s2.m_nptr);
     }
 
@@ -269,7 +275,7 @@ void print_tree(node * nptr, std::string s)
 void traverse_tree(ByteWriter & bw, node * nptr, MCS & chmap, std::string s)
 {
     if(nptr == NULL) return;
-    if(nptr->m_c != '\0') {
+    if(nptr->is_leaf) {
         out("nptr c='%c' '%s'\n", nptr->m_c, s.c_str());
         chmap.insert(make_pair(nptr->m_c, s));
         //this is leaf node, write to fout (via bytewriter)
@@ -284,7 +290,6 @@ void traverse_tree(ByteWriter & bw, node * nptr, MCS & chmap, std::string s)
     traverse_tree(bw, nptr->m_left, chmap, s+"0");
     traverse_tree(bw, nptr->m_right, chmap, s+"1");
 }
-
 
 
 
@@ -330,6 +335,7 @@ void decode(int argc, char**argv)
     }
 
     ssize_t flsize = sb.st_size;
+    if(flsize == 0) return; //nothing to do
     addr = (uint8_t*) mmap(NULL, sb.st_size, PROT_READ, MAP_PRIVATE, fin, 0);
 
     //for(int i =0; i < flsize; i++) { out("%c", addr[i]); } 
@@ -359,7 +365,7 @@ void encode(int argc, char**argv)
 {
     int fin = 0; //stdin
     int fout = 1; //stdout
-    char *addr;
+    uint8_t *addr;
     struct stat sb;
 
     if (argc != 2) {
@@ -388,25 +394,32 @@ void encode(int argc, char**argv)
     }
 
     ssize_t flsize = sb.st_size;
-    addr = (char*) mmap(NULL, sb.st_size, PROT_READ, MAP_PRIVATE, fin, 0);
+    if(flsize == 0) return; //nothing to do
+    addr = (uint8_t*) mmap(NULL, sb.st_size, PROT_READ, MAP_PRIVATE, fin, 0);
 
-    int freq[256] = {0};
-
+    int freq[R] = {0};
     //first get the frequencies of the symbols
     for(int i =0; i < flsize; i++) {
-        out("%c", addr[i]);
+        out("%d ", addr[i]);
         freq[addr[i]]++;
     }
+    out("\n");
 
     typedef std::multiset<symbol, std::less<symbol> > MSS;
     MSS mh;
 
+    int distinct = 0;
     //build structure -- could use binary trie to store the symbols
-    for(int i = 0; i < 256; i++) {
+    for(int i = 0; i < R; i++) {
         if(freq[i]==0) continue;
-        symbol s(freq[i],i);
-        mh.insert(s);
+        //symbol s(freq[i],i);
+        mh.insert(symbol(freq[i],i));
+        distinct++;
     }
+    assert(distinct != 0 && "no characters in the file?");
+    if(distinct == 1) //..insert another node to have two leaves
+        mh.insert(symbol(0,0));
+
 
     for(MSS::iterator it = mh.begin(); it != mh.end(); ++it) {
         out("Freq=%d, c=%c\n", it->m_freq, it->m_nptr->m_c);
@@ -424,14 +437,15 @@ void encode(int argc, char**argv)
     //finally we are left with the tree in first.m_nptr
     MCS chmap;
     ByteWriter bw(fout);
+    out("writing flsize=%d\n", flsize);
     bw.writeInt(flsize);
-    out("flsize=%d\n", flsize);
 
     print_tree(mh.begin()->m_nptr, ""); 
     traverse_tree(bw, mh.begin()->m_nptr, chmap, ""); //will write to file
     out("Done traversing tree\n");
 
     for(int i = 0; i < flsize; i++) {
+        out("Writing '%c'\n", addr[i]);
         bw.writeStringAsBits(chmap[addr[i]]); //write to file encoding of char
     } 
 

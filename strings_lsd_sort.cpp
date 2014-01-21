@@ -23,6 +23,16 @@
 #define out
 #endif
 
+#define R 256 //radix 2^8
+
+
+//for every column do counting sort on the column
+//and update the v[] which is the mapping to the real strings
+//since we dont want to move strings around, we oonly update the mapping
+//v[] will have the final sorted order with v[0] being the first sorted string
+//
+//counting sort works by first getting the counts of each letter in the column
+//then accumulating the counts so we have v[R] to be N at the end
 void lsd_radix_sort(const std::vector<std::string> & strings, int N)
 {
   std::vector<int> v(N); //map to sorted strings
@@ -34,7 +44,6 @@ void lsd_radix_sort(const std::vector<std::string> & strings, int N)
       out("%s\n", strings[v[i]].c_str());
   }
 
-  int R = 256; //radix 2^8
   /* we assume that the length of the strings is the same, 
    * we start from the least significant place (right) and move to the left 
    */
@@ -60,7 +69,8 @@ void lsd_radix_sort(const std::vector<std::string> & strings, int N)
       for(int i = 0; i < N; i++) {
           int offset = v[i]; //offset of the ith string
           const std::string & currstr = strings[offset];
-          aux[counts[currstr.at(l)]++ ] = v[i];
+          int newpos = counts[currstr.at(l)]++; //++ for next occurnc of this char
+          aux[newpos] = v[i];
           out("aux[%d]=%d\n",counts[currstr.at(l)], v[i]);
       }
 

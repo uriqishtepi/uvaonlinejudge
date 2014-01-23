@@ -23,7 +23,7 @@
 #include <fcntl.h>
 
 
-#define DEBUG true
+//#define DEBUG true
 #ifdef DEBUG
 #define out printf
 #else
@@ -46,43 +46,6 @@ void print_byte(char b)
         out("%d",(b>>i)&0x1);
     out("\n");
 }
-
-class ByteWriter {
-public:
-    ByteWriter(int fout) : m_fout(fout), m_count(0), m_byte(0) {}
-
-    //bit to write, count of bits
-    void writeByte(uint8_t p, uint8_t ncnt) {
-        if(ncnt + m_count > 8) { //copy 8 - m_count, then write m_byte
-            for(int i = 0; i < 8 - m_count; i++, ncnt--) {
-                m_byte <<= 1;
-                m_byte |= p & 0x1; //just in case p contains crap
-            }
-            write(m_fout, &m_byte, 1); 
-            m_count = 0;
-            m_byte = 0;
-        }
-        for(;ncnt > 8; ncnt -= 8, m_byte = 0) { //write 8 bits p at a time
-            m_byte = -(p & 0x1); //FF if 1, 0 if 0
-            write(m_fout, &m_byte, 1); 
-        }
-        for(int i = 0; i < ncnt; i++, m_count++) {
-            m_byte <<= 1;
-            m_byte |= p & 0x1; //just in case p contains crap
-        }
-    }
-
-    ~ByteWriter(){
-        assert((m_count %8) == 0 && " this should always be mult of 8");
-        if(m_count > 0)
-            write(m_fout, &m_byte, 1); 
-    }
-
-private:
-    int m_fout;
-    uint8_t m_count;
-    uint8_t m_byte;
-};
 
 
 void decode(int argc, char**argv)
@@ -122,7 +85,6 @@ void decode(int argc, char**argv)
         chmap[i] = i;
     }
 
-    int count = 0;
     while(read(fin, &buf, 1) > 0) 
     {
         out("buf=");
@@ -139,7 +101,14 @@ void decode(int argc, char**argv)
 }
 
 
-//
+inline void swap(uint8_t & a, uint8_t & b)
+{
+    uint8_t tmp = b;
+    b = a;
+    a = tmp;
+}
+
+
 void encode(int argc, char**argv)
 {
     int fin = 0; //stdin
@@ -167,19 +136,29 @@ void encode(int argc, char**argv)
         chmap[i] = i;
     }
 
-    int count = 0;
     while(read(fin, &buf, 1) > 0) 
     {
         out("buf=");
         print_byte(buf);
 
-        write(fout, &chmap[buf], 1); //0 of the other type (ex zeros)
+        uint8_t prev = chmap[0]; //save prev
         for(int i = 0; i < R; i++) {
-            if(chmap[i] < chmap[buf])
-                chmap[i]++;
+            out("i%d%d",i,chmap[i]);
+            if(chmap[i] == buf) {
+                swap(chmap[i], prev);
+                write(fout, &i, 1); 
+                chmap[0] = buf;
+                out("found at %d\n",i);
+                break;
+            }
+            swap(chmap[i], prev);
         }
-        chmap[buf] = 0;
     }
+    /*
+    0 1 2 ... a b c
+    a 0 1 2.... b c
+    b a 0 1 2.... c
+    */
 
     close(fin);
     close(fout);
@@ -188,7 +167,8 @@ void encode(int argc, char**argv)
 int main(int argc, char**argv)
 {
     out("starting ... \n");
-    std::cerr << " Runlength coding " << std::endl;
+    std::cerr << " Move to front coding " << std::endl;
+
     for(int i = 0; i < 8; i++)
         assert(bit(0xFF,0x1 << i) == 1 && "err 1");
 

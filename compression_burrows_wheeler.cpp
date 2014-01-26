@@ -34,7 +34,7 @@
 #include <fcntl.h>
 
 
-//#define DEBUG true
+#define DEBUG true
 #ifdef DEBUG
 #define out printf
 #else
@@ -57,17 +57,19 @@ void print_byte(char b)
     out("\n");
 }
 
+#define BUFFERSIZE  1024
+#define R 256 //radix 2^8
+
 struct strpair {
-    strpair(const char * s, int value) : m_s(s), m_value(value) {} 
+    strpair(const uint8_t * s, int value) : m_s(s), m_value(value) {} 
     bool operator <(const strpair & sp) const {
-        return strcmp(m_s, sp.m_s) < 0;
+        return memcmp(m_s, sp.m_s, BUFFERSIZE) < 0;
     }
-    const char * m_s;
+    const uint8_t * m_s;
     int m_value;
 };
 
 typedef std::set<strpair, std::less<strpair> > SP;
-#define R 256 //radix 2^8
 
 //inverse transform is ingenuous:
 //sort the letters in the string, after assigning a node id
@@ -75,10 +77,9 @@ typedef std::set<strpair, std::less<strpair> > SP;
 //in the original string, thus we can do a simple search (DFS style) to get from
 //the first to the last node 
 //we can use radix sort, or counting sort and it will get us linear time sorting
-void inverse_transform(std::string & s)
+void inverse_transform(uint8_t * s, int len, int firstpos)
 {
     char counts[R+1] = {0};
-    int len = s.size();
 
     //get the counts of the letters in the string
     for(int i = 0; i < len; i++) {
@@ -92,7 +93,6 @@ void inverse_transform(std::string & s)
         //out("%d: %d\n", i, counts[i]);
     }
 
-    int markfirstpos = counts['$'];
 
     std::vector<int> from(len);
     std::vector<int> to(len);
@@ -107,7 +107,7 @@ void inverse_transform(std::string & s)
     }
 
     for(int i = 0; i < len; i++) {
-        std::cout << values[i];
+        //std::cout << values[i];
         out("%d: value %c from %d to %d\n", i, values[i], from[i], to[i]);
     }
     std::cout << std::endl;
@@ -115,47 +115,80 @@ void inverse_transform(std::string & s)
     //values contain the sorted output, from contains positin each letter came from
     //we start from $, find the from until $ again
     //mark $ will now be the first in the values, so we start from from[0]
-    int next = from[0];  //start at $ mark
+    int next = firstpos;  //start at $ mark
     do {
         next = from[next];  //get the next and print it
         std::cout << s[next];
-    } while (next != from[0]);  //until we dont reach mark $ again
+    } while (next != firstpos);  //until we dont reach firstpos
 
     std::cout << std::endl;
 }
 
 
 //we can use radix sort to sort the substrings so we get linear time sorting
-void transform(const std::string & s, std::string & ret)
+//return the position of the zeroth character
+int transform(const uint8_t * buffer, int len, uint8_t * ret)
 {
-    std::string modstr = s + '$' + s; //$ should mabye be 0x2 or similar
-    int len = s.size();
     SP postfixes;
+    int initialpos = 0;
 
-    for(int i = 0; i <= len; i++) {
-        out("%.2d: %*.s %*.*s \n",i ,i," ", i, len+1, modstr.c_str() + i);
-        strpair sp(modstr.c_str() + i, i);
+    for(int i = 0; i < len; i++) {
+        out("%.2d: %*.s %*.*s \n",i ,i," ", i, len+1, buffer + i);
+        strpair sp(buffer + i, i);
         postfixes.insert(sp);
     }
 
+    int index = 0;
     for(SP::iterator it = postfixes.begin(); it != postfixes.end(); it++)
     {
-        out("%c %.*s : %d \n", it->m_s[len], len+1, it->m_s, it->m_value);
+        out("%c %.*s : %d \n", it->m_s[len-1], len, it->m_s, it->m_value);
         //printf("%c\n",it->m_s[len], it->m_value);
-        ret += it->m_s[len];
+        if(it->m_value == 0) { 
+            out("offset %d\n", index);
+            initialpos = index;
+        }
+        ret[index++] = it->m_s[len-1];
     }
+    return initialpos;
 }
 
 
 int main(int argc, char**argv)
 {
-    out("starting ... Burrows - Wheeler transform\n");
+    out("starting ... Burrows - Wheeler transform %d\n", argc);
 
-    std::string s;
-    std::cin >> s;
+    std::fstream in;
+    if(argc > 1)
+        in.open(argv[1], std::ifstream::in); 
+    std::istream & fin = in.is_open() ? in : std::cin;
 
-    std::string res;
-    transform(s, res);
-    inverse_transform(res);
+    uint8_t c = 0;
+    uint8_t buffer[3 * BUFFERSIZE]; //TODO chabnge to 2
+    uint8_t res[BUFFERSIZE];
+    int count = 0;
+    int offset = 0;
+
+    while(fin >> c) {
+        buffer[count++] = c;
+        out("c=%x ",c);
+        if(count >= BUFFERSIZE - 1) {
+            memcpy(buffer + BUFFERSIZE, buffer, count);
+            offset = transform(buffer, count, res);
+            break;
+            count = 0; 
+        }
+    }
+    if(count > 0) {
+        memcpy(buffer + count, buffer, count);
+        offset = transform(buffer, count, res);
+    }
+
+    std::cout << "'" ;
+    for(int i = 0; i < count; i++)
+        std::cout << res[i];
+    std::cout << "'" ;
+    std::cout << std::endl;
+
+    inverse_transform(res, count, offset);
     return 0;
 }

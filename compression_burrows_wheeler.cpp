@@ -34,7 +34,7 @@
 #include <fcntl.h>
 
 
-#define DEBUG true
+//#define DEBUG true
 #ifdef DEBUG
 #define out printf
 #else
@@ -79,7 +79,7 @@ typedef std::set<strpair, std::less<strpair> > SP;
 //we can use radix sort, or counting sort and it will get us linear time sorting
 void inverse_transform(uint8_t * s, int len, int firstpos)
 {
-    char counts[R+1] = {0};
+    int counts[R+1] = {0};
 
     //get the counts of the letters in the string
     for(int i = 0; i < len; i++) {
@@ -110,7 +110,6 @@ void inverse_transform(uint8_t * s, int len, int firstpos)
         //std::cout << values[i];
         out("%d: value %c from %d to %d\n", i, values[i], from[i], to[i]);
     }
-    std::cout << std::endl;
 
     //values contain the sorted output, from contains positin each letter came from
     //we start from $, find the from until $ again
@@ -120,8 +119,6 @@ void inverse_transform(uint8_t * s, int len, int firstpos)
         next = from[next];  //get the next and print it
         std::cout << s[next];
     } while (next != firstpos);  //until we dont reach firstpos
-
-    std::cout << std::endl;
 }
 
 
@@ -133,7 +130,7 @@ int transform(const uint8_t * buffer, int len, uint8_t * ret)
     int initialpos = 0;
 
     for(int i = 0; i < len; i++) {
-        out("%.2d: %*.s %*.*s \n",i ,i," ", i, len+1, buffer + i);
+        out("%.2d: %*.s %*.*s \n",i ,i," ", i, len, buffer + i);
         strpair sp(buffer + i, i);
         postfixes.insert(sp);
     }
@@ -152,43 +149,56 @@ int transform(const uint8_t * buffer, int len, uint8_t * ret)
     return initialpos;
 }
 
+inline 
+void do_run(uint8_t * buffer, int count, uint8_t * res) {
+    memcpy(buffer + count, buffer, count);
+    int offset = transform(buffer, count, res);
 
-int main(int argc, char**argv)
-{
-    out("starting ... Burrows - Wheeler transform %d\n", argc);
-
-    std::fstream in;
-    if(argc > 1)
-        in.open(argv[1], std::ifstream::in); 
-    std::istream & fin = in.is_open() ? in : std::cin;
-
-    uint8_t c = 0;
-    uint8_t buffer[3 * BUFFERSIZE]; //TODO chabnge to 2
-    uint8_t res[BUFFERSIZE];
-    int count = 0;
-    int offset = 0;
-
-    while(fin >> c) {
-        buffer[count++] = c;
-        out("c=%x ",c);
-        if(count >= BUFFERSIZE - 1) {
-            memcpy(buffer + BUFFERSIZE, buffer, count);
-            offset = transform(buffer, count, res);
-            break;
-            count = 0; 
-        }
-    }
-    if(count > 0) {
-        memcpy(buffer + count, buffer, count);
-        offset = transform(buffer, count, res);
-    }
-
+    /* must write to a file
+    */
     std::cout << "'" ;
     for(int i = 0; i < count; i++)
         std::cout << res[i];
     std::cout << "'" ;
     std::cout << std::endl;
 
+
     inverse_transform(res, count, offset);
+}
+
+
+int main(int argc, char**argv)
+{
+    out("starting ... Burrows - Wheeler transform %d\n", argc);
+
+    int fin = 0; //stdin
+    if(argc > 1) {
+        int rc = open(argv[1], O_RDONLY);
+        if(rc == -1) {
+            printf("Error opening file %s\n",argv[1]);
+            exit(1);
+        }
+        fin = rc;
+    }
+
+    uint8_t c = 0;
+    uint8_t buffer[2 * BUFFERSIZE]; //TODO chabnge to 2
+    uint8_t res[BUFFERSIZE];
+    int count = 0;
+    int offset = 0;
+
+    while(read(fin, &c, 1)) {
+        buffer[count++] = c;
+        out("c=%x ",c);
+        if(count >= BUFFERSIZE - 1) {
+            do_run(buffer, count, res);
+            count = 0; 
+        }
+    }
+
+    if(count > 0) {
+        do_run(buffer, count, res);
+    }
+
     return 0;
 }

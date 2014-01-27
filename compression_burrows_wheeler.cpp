@@ -14,11 +14,23 @@
  * and we note the froms, the froms denote the location where 
  * the original was, thus printing it, you get the original.
  *
+ * There is an issue with repeating strings such as:
+ *   abc
+ *   abc
+ * (two identical lines) and the way i could fix it is by adding 
+ * an end of file null character to the end of the input, 
+ * which becomes part of the processing, so need to stop 
+ * short of printing it. Not sure if there is a better method.
+ *
+ * TODO: split this out so it does encoding and decoding separately
+ *
  */
+
 #include <stack>
 #include <queue>
 #include <assert.h>
 #include <vector>
+#include <algorithm>
 #include <map>
 #include <set>
 #include <iostream>
@@ -41,6 +53,8 @@
 #define out
 #endif
 
+#define BUFFERSIZE  1024
+#define R 256 //radix 2^8
 
 #define vi std::vector<int>
 #define graphtp std::vector< vi > 
@@ -57,19 +71,33 @@ void print_byte(char b)
     out("\n");
 }
 
-#define BUFFERSIZE  1024
-#define R 256 //radix 2^8
 
 struct strpair {
-    strpair(const uint8_t * s, int value) : m_s(s), m_value(value) {} 
-    bool operator <(const strpair & sp) const {
-        return memcmp(m_s, sp.m_s, BUFFERSIZE) < 0;
+    strpair(const uint8_t * s, int offset, int len) : m_s(s), m_offset(offset), m_length(len) {} 
+    bool operator < (const strpair & sp) const {
+        //return memcmp(m_s, sp.m_s, BUFFERSIZE) < 0;
+        for(int i = 0; i < m_length; i++) {
+            int off1 = (m_offset + i) % m_length;
+            int off2 = (sp.m_offset + i) % m_length;
+            assert(off1 < m_length && off2 < m_length && "out of bounds");
+
+            uint8_t a = m_s[off1];
+            uint8_t b = m_s[off2];
+            if(a < b)
+                return true;
+            if (a > b)
+                return false;
+            //otherwise continue comparing
+        }
+        return false; //equal, so return false
     }
     const uint8_t * m_s;
-    int m_value;
+    int m_offset;
+    int m_length;
 };
 
 typedef std::set<strpair, std::less<strpair> > SP;
+typedef std::vector<strpair> ARR;
 
 //inverse transform is ingenuous:
 //sort the letters in the string, after assigning a node id
@@ -115,10 +143,11 @@ void inverse_transform(uint8_t * s, int len, int firstpos)
     //we start from $, find the from until $ again
     //mark $ will now be the first in the values, so we start from from[0]
     int next = firstpos;  //start at $ mark
+    int counter = 0;
     do {
         next = from[next];  //get the next and print it
         std::cout << s[next];
-    } while (next != firstpos);  //until we dont reach firstpos
+    } while (next != firstpos && ++counter < len-1);  //until we dont reach firstpos
 }
 
 
@@ -126,42 +155,51 @@ void inverse_transform(uint8_t * s, int len, int firstpos)
 //return the position of the zeroth character
 int transform(const uint8_t * buffer, int len, uint8_t * ret)
 {
-    SP postfixes;
+    out("\nlen=%d\n",len);
+    ARR postfixes;
     int initialpos = 0;
 
     for(int i = 0; i < len; i++) {
         out("%.2d: %*.s %*.*s \n",i ,i," ", i, len, buffer + i);
-        strpair sp(buffer + i, i);
-        postfixes.insert(sp);
+        strpair sp(buffer, i, len);
+        postfixes.push_back(sp);
     }
 
+    assert(postfixes.size() == len && "sizes are not the same");
+    std::sort(postfixes.begin(), postfixes.end()); //stable_sort is needed
+
+    out("\nsorted postfix size = %d\n", postfixes.size());
     int index = 0;
-    for(SP::iterator it = postfixes.begin(); it != postfixes.end(); it++)
+    for(ARR::iterator it = postfixes.begin(); it != postfixes.end(); it++)
     {
-        out("%c %.*s : %d \n", it->m_s[len-1], len, it->m_s, it->m_value);
-        //printf("%c\n",it->m_s[len], it->m_value);
-        if(it->m_value == 0) { 
+        //out("%.2d: %.*s : %c : %d \n", index, len, it->m_s, it->m_s[len-1], it->m_offset);
+        int last = (it->m_offset + len-1) % len;
+        assert(last < len && " last is outside of buffer");
+
+        out("%.2d: %c..%c %d \n", index, it->m_s[it->m_offset], it->m_s[last], it->m_offset);
+        //printf("%c\n",it->m_s[len], it->m_offset);
+        if(it->m_offset == 0) { 
             out("offset %d\n", index);
             initialpos = index;
         }
-        ret[index++] = it->m_s[len-1];
+        ret[index++] = it->m_s[last];
     }
+    out("\nend sorted\n");
     return initialpos;
 }
 
 inline 
 void do_run(uint8_t * buffer, int count, uint8_t * res) {
-    memcpy(buffer + count, buffer, count);
+    buffer[count++] = '\0';
     int offset = transform(buffer, count, res);
 
     /* must write to a file
-    */
     std::cout << "'" ;
     for(int i = 0; i < count; i++)
         std::cout << res[i];
     std::cout << "'" ;
     std::cout << std::endl;
-
+    */
 
     inverse_transform(res, count, offset);
 }
@@ -182,14 +220,14 @@ int main(int argc, char**argv)
     }
 
     uint8_t c = 0;
-    uint8_t buffer[2 * BUFFERSIZE]; //TODO chabnge to 2
-    uint8_t res[BUFFERSIZE];
+    uint8_t buffer[BUFFERSIZE+1] = {0}; 
+    uint8_t res[BUFFERSIZE+1] = {0};
     int count = 0;
     int offset = 0;
 
     while(read(fin, &c, 1)) {
+        out("c(%d)=%x ",count, c);
         buffer[count++] = c;
-        out("c=%x ",c);
         if(count >= BUFFERSIZE - 1) {
             do_run(buffer, count, res);
             count = 0; 

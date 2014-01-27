@@ -155,18 +155,19 @@ struct rotsorter {
     rotsorter(const uint8_t * buff, int len) : m_s(buff), m_length(len) {}
     bool operator()(int o1, int o2) {
         //return memcmp(m_s, sp.m_s, BUFFERSIZE) < 0;
-        for(int i = 0; i < m_length; i++) {
-            int off1 = (o1 + i) % m_length;
-            int off2 = (o2 + i) % m_length;
-            assert(off1 < m_length && off2 < m_length && "out of bounds");
+        const uint8_t * p1 = &m_s[o1];
+        const uint8_t * p2 = &m_s[o2];
 
-            uint8_t a = m_s[off1];
-            uint8_t b = m_s[off2];
-            if(a < b)
+        for(int i = 0; i < m_length; i++) {
+            if(*p1 < *p2)
                 return true;
-            if (a > b)
+            if (*p1 > *p2)
                 return false;
             //otherwise continue comparing
+            p1++;
+            p2++;
+            if (p1 - m_s >= m_length)  p1 = m_s;
+            if (p2 - m_s >= m_length)  p2 = m_s;
         }
         return false; //equal, so return false
     }

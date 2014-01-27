@@ -150,38 +150,62 @@ void inverse_transform(uint8_t * s, int len, int firstpos)
 }
 
 
+//comparator for the sorting of the indices
+struct rotsorter {
+    rotsorter(const uint8_t * buff, int len) : m_s(buff), m_length(len) {}
+    bool operator()(int o1, int o2) {
+        //return memcmp(m_s, sp.m_s, BUFFERSIZE) < 0;
+        for(int i = 0; i < m_length; i++) {
+            int off1 = (o1 + i) % m_length;
+            int off2 = (o2 + i) % m_length;
+            assert(off1 < m_length && off2 < m_length && "out of bounds");
+
+            uint8_t a = m_s[off1];
+            uint8_t b = m_s[off2];
+            if(a < b)
+                return true;
+            if (a > b)
+                return false;
+            //otherwise continue comparing
+        }
+        return false; //equal, so return false
+    }
+
+    const uint8_t * m_s;
+    int m_length;
+};
+
+
 //we can use radix sort to sort the substrings so we get linear time sorting
 //return the position of the zeroth character
 int transform(const uint8_t * buffer, int len, uint8_t * ret)
 {
     out("\nlen=%d\n",len);
-    ARR postfixes;
+    int postfixes[BUFFERSIZE] = {0};
     int initialpos = 0;
 
     for(int i = 0; i < len; i++) {
         out("%.2d: %*.s %*.*s \n",i ,i," ", i, len, buffer + i);
-        strpair sp(buffer, i, len);
-        postfixes.push_back(sp);
+        postfixes[i] = i;
     }
 
-    assert(postfixes.size() == len && "sizes are not the same");
-    std::sort(postfixes.begin(), postfixes.end()); //stable_sort is needed
+    rotsorter r(buffer, len);
+    std::sort(postfixes, postfixes + len, r); //stable_sort is not needed
 
-    out("\nsorted postfix size = %d\n", postfixes.size());
+    out("\nsorted \n");
     int index = 0;
-    for(ARR::iterator it = postfixes.begin(); it != postfixes.end(); it++)
-    {
+    for(int i = 0; i < len; i++) {
         //out("%.2d: %.*s : %c : %d \n", index, len, it->m_s, it->m_s[len-1], it->m_offset);
-        int last = (it->m_offset + len-1) % len;
+        int offset = postfixes[i];
+        int last = (offset + len-1) % len;
         assert(last < len && " last is outside of buffer");
 
-        out("%.2d: %c..%c %d \n", index, it->m_s[it->m_offset], it->m_s[last], it->m_offset);
-        //printf("%c\n",it->m_s[len], it->m_offset);
-        if(it->m_offset == 0) { 
+        out("%.2d: %c..%c %d \n", index, buffer[offset], buffer[last], offset);
+        if(offset == 0) { 
             out("offset %d\n", index);
             initialpos = index;
         }
-        ret[index++] = it->m_s[last];
+        ret[index++] = buffer[last];
     }
     out("\nend sorted\n");
     return initialpos;

@@ -3,6 +3,8 @@
  * Transform to get a modified version of the input string:
  * form all the rotations, sort them, then take the last column
  * of the NxN matrix and that's the transformed msg.
+ * Before i was using s + s to compute the rotations, but 
+ * I switched to using modulus which may or may not be faster.
  *
  * The inverse transform is quite ingenuous, need to sort the 
  * string, remembering where the characters came from and then
@@ -17,10 +19,7 @@
  * There is an issue with repeating strings such as:
  *   abc
  *   abc
- * (two identical lines) and the way i could fix it is by adding 
- * an end of file null character to the end of the input, 
- * which becomes part of the processing, so need to stop 
- * short of printing it. Not sure if there is a better method.
+ * in decoding i just need to continue until reaching correct count
  *
  * TODO: split this out so it does encoding and decoding separately
  *
@@ -143,11 +142,11 @@ void inverse_transform(uint8_t * s, int len, int firstpos)
     //we start from $, find the from until $ again
     //mark $ will now be the first in the values, so we start from from[0]
     int next = firstpos;  //start at $ mark
-    int counter = 0;
-    do {
+    
+    for(int i = 0; i < len; i++) {
         next = from[next];  //get the next and print it
         std::cout << s[next];
-    } while (next != firstpos && ++counter < len-1);  //until we dont reach firstpos
+    } 
 }
 
 
@@ -190,7 +189,6 @@ int transform(const uint8_t * buffer, int len, uint8_t * ret)
 
 inline 
 void do_run(uint8_t * buffer, int count, uint8_t * res) {
-    buffer[count++] = '\0';
     int offset = transform(buffer, count, res);
 
     /* must write to a file
@@ -223,7 +221,6 @@ int main(int argc, char**argv)
     uint8_t buffer[BUFFERSIZE+1] = {0}; 
     uint8_t res[BUFFERSIZE+1] = {0};
     int count = 0;
-    int offset = 0;
 
     while(read(fin, &c, 1)) {
         out("c(%d)=%x ",count, c);

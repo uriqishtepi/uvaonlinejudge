@@ -104,7 +104,7 @@ typedef std::vector<strpair> ARR;
 //in the original string, thus we can do a simple search (DFS style) to get from
 //the first to the last node 
 //we can use radix sort, or counting sort and it will get us linear time sorting
-void inverse_transform(uint8_t * s, int len, int firstpos)
+void inverse_transform(uint8_t * s, int len, int initialpos)
 {
     int counts[R+1] = {0};
 
@@ -141,7 +141,7 @@ void inverse_transform(uint8_t * s, int len, int firstpos)
     //values contain the sorted output, from contains positin each letter came from
     //we start from $, find the from until $ again
     //mark $ will now be the first in the values, so we start from from[0]
-    int next = firstpos;  //start at $ mark
+    int next = initialpos;  //start at $ mark
     
     for(int i = 0; i < len; i++) {
         next = from[next];  //get the next and print it
@@ -214,23 +214,109 @@ int transform(const uint8_t * buffer, int len, uint8_t * ret)
 
 inline 
 void do_run(uint8_t * buffer, int count, uint8_t * res) {
-    int offset = transform(buffer, count, res);
+    int initialpos = transform(buffer, count, res);
+    inverse_transform(res, count, initialpos);
+}
 
-    /* must write to a file
-    std::cout << "'" ;
+
+/* write to file */
+inline
+void writeBuffer(int fout, uint8_t * buffer, int count)
+{
     for(int i = 0; i < count; i++)
-        std::cout << res[i];
-    std::cout << "'" ;
-    std::cout << std::endl;
-    */
+        write(fout, &buffer[i], sizeof(uint8_t));
+}
 
-    inverse_transform(res, count, offset);
+void encode(int argc, char**argv)
+{
+    int fin = 0; //stdin
+    int fout = 1; //stdout
+
+    if(argc > 1) {
+        int rc = open(argv[1], O_RDONLY);
+        if(rc == -1) {
+            printf("Error opening file %s\n",argv[1]);
+            exit(1);
+        }
+        fin = rc;
+    }
+
+    std::string s(argv[1]);
+    s += ".brw";
+    int tmp2 = creat(s.c_str(), S_IRUSR | S_IWUSR);
+    if(tmp2 < 0)
+        printf("encode:Can not open file for writing %s\n", s.c_str());
+    else
+        fout = tmp2;
+
+    uint8_t c = 0;
+    uint8_t buffer[BUFFERSIZE+1] = {0}; 
+    uint8_t res[BUFFERSIZE+1] = {0};
+    int count = 0;
+
+    while((count = read(fin, buffer, BUFFERSIZE)) > 0) {
+        int initialpos = transform(buffer, count, res);
+        out("count=%d initialpos=%d\n",count, initialpos);
+        write(fout, &initialpos, sizeof(initialpos));
+        writeBuffer(fout, res, count);
+    }
+}
+
+void decode(int argc, char**argv)
+{
+    int fin = 0; //stdin
+    int fout = 1; //stdout
+
+    if(argc > 1) {
+        int rc = open(argv[1], O_RDONLY);
+        if(rc == -1) {
+            printf("Error opening file %s\n",argv[1]);
+            exit(1);
+        }
+        fin = rc;
+    }
+
+    std::string s(argv[1]);
+    s += ".out";
+    int tmp2 = creat(s.c_str(), S_IRUSR | S_IWUSR);
+    if(tmp2 < 0)
+        printf("encode:Can not open file for writing %s\n", s.c_str());
+    else
+        fout = tmp2;
+
+    uint8_t buffer[BUFFERSIZE+1] = {0}; 
+    while(1) {
+        int initialpos = 0;
+        read(fin, &initialpos, sizeof(int));
+        out("initialpos=%d\n",initialpos);
+        assert(initialpos >= 0 && initialpos < BUFFERSIZE && "bad first byte in file");
+
+        int count = read(fin, buffer, BUFFERSIZE);
+        if(count <= 0) {
+            break;
+        }
+        inverse_transform(buffer, count, initialpos);
+        writeBuffer(fout, buffer, count);
+    }
 }
 
 
 int main(int argc, char**argv)
 {
     out("starting ... Burrows - Wheeler transform %d\n", argc);
+
+    if(argc > 1)  {
+        if(argv[1][0] == '-') {
+            encode(argc-1, argv+1);
+            return 0;
+        }
+        if(argv[1][0] == '+') {
+            decode(argc-1, argv+1);
+            return 0;
+        }
+    }
+
+
 
     int fin = 0; //stdin
     if(argc > 1) {

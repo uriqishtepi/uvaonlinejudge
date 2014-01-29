@@ -33,7 +33,7 @@
 #include <sys/mman.h> //for memory mapping
 
 
-#define DEBUG true
+//#define DEBUG true
 #ifdef DEBUG
 #define out printf
 #else
@@ -307,7 +307,7 @@ void decode(int argc, char**argv)
     }
 
     std::string s(argv[1]);
-    s += ".out";
+    s += ".enc";
 
     if (stat(s.c_str(), &sb) == -1) {
         perror("stat");
@@ -324,7 +324,7 @@ void decode(int argc, char**argv)
     else {
         fin = tmp;
         std::string s(argv[1]);
-        s += ".verif";
+        s += ".out";
         int tmp2 = creat(s.c_str(), S_IRUSR | S_IWUSR);
         if(tmp2 < 0) {
             printf("decode:Can not open file for writing %s\n", s.c_str());
@@ -385,7 +385,7 @@ void encode(int argc, char**argv)
     else {
         fin = tmp;
         std::string s(argv[1]);
-        s += ".out";
+        s += ".enc";
         int tmp2 = creat(s.c_str(), S_IRUSR | S_IWUSR);
         if(tmp2 < 0)
             printf("encode:Can not open file for writing %s\n", s.c_str());
@@ -463,8 +463,17 @@ void encode(int argc, char**argv)
 int main(int argc, char**argv)
 {
     out("starting ... Huffman coding\n");
-    for(int i = 0; i < 8; i++)
-        assert(bit(0xFF,0x1 << i) == 1 && "err 1");
+
+    if(argc > 1)  {
+        if(argv[1][0] == '-') {
+            encode(argc-1, argv+1);
+            return 0;
+        }
+        if(argv[1][0] == '+') {
+            decode(argc-1, argv+1);
+            return 0;
+        }
+    }
 
     encode(argc, argv);
     decode(argc, argv);

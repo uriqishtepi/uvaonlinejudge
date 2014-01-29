@@ -57,13 +57,11 @@ void decode(int argc, char**argv)
         return;
     }
 
-    std::string s(argv[1]);
-    s += ".out";
-    int tmp = open(s.c_str(), O_RDONLY);
-    out("\nDecoding: %s\n",s.c_str());
+    int tmp = open(argv[1], O_RDONLY);
+    out("\nDecoding: %s\n",argv[1]);
 
     if(tmp < 0) {
-        printf("decode:Can not open file %s\n", s.c_str());
+        printf("decode:Can not open file %s\n", argv[1]);
         return;
     }
     else {
@@ -166,11 +164,18 @@ void encode(int argc, char**argv)
 
 int main(int argc, char**argv)
 {
-    out("starting ... \n");
-    std::cerr << " Move to front coding " << std::endl;
+    out("starting ... front coding\n");
 
-    for(int i = 0; i < 8; i++)
-        assert(bit(0xFF,0x1 << i) == 1 && "err 1");
+    if(argc > 1)  {
+        if(argv[1][0] == '-') {
+            encode(argc-1, argv+1);
+            return 0;
+        }
+        if(argv[1][0] == '+') {
+            decode(argc-1, argv+1);
+            return 0;
+        }
+    }
 
     encode(argc, argv);
     decode(argc, argv);

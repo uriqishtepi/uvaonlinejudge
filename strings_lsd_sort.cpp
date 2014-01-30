@@ -25,6 +25,38 @@
 
 #define R 256 //radix 2^8
 
+void counting_sort(const std::vector<std::string> & strings, std::vector<int> & v, int N, int l) 
+{
+    //do counting sort on the l-th column
+    int counts[R + 1] = {0};
+
+    for(int i = 0; i < N; i++) {
+        int offset = v[i]; //offset of the ith string
+        const std::string & currstr = strings[offset];
+        counts[(currstr.at(l)) + 1]++;
+        out("%d) strings[%d]=%s  counts[%c + 1]=%d \n",i, offset, strings[offset].c_str(), currstr.at(l),  counts[(currstr.at(l)) + 1]);
+    }
+
+    //accumulate the counts
+    for(int i = 0; i < R; i++) {
+        if(counts[i+1] > 0)
+            out("counts[%c]=%d+%d\n",i, counts[i + 1], counts[i]);
+        counts[i + 1] += counts[i];
+    }
+
+    std::vector<int> aux(N); //map to sorted strings
+    for(int i = 0; i < N; i++) {
+        int offset = v[i]; //offset of the ith string
+        const std::string & currstr = strings[offset];
+        int newpos = counts[currstr.at(l)]++; //++ for next occurnc of this char
+        aux[newpos] = v[i];
+        out("aux[%d]=%d\n",counts[currstr.at(l)], v[i]);
+    }
+
+    for(int i = 0; i < N; i++) {
+        v[i] = aux[i];
+    }
+}
 
 //for every column do counting sort on the column
 //and update the v[] which is the mapping to the real strings
@@ -48,35 +80,8 @@ void lsd_radix_sort(const std::vector<std::string> & strings, int N)
    * we start from the least significant place (right) and move to the left 
    */
   for(int l = strings.front().length() - 1; l >= 0; l--) {
-      //do counting sort on the l-th column
-      int counts[256 + 1] = {0};
-
-      for(int i = 0; i < N; i++) {
-          int offset = v[i]; //offset of the ith string
-          const std::string & currstr = strings[offset];
-          counts[(currstr.at(l)) + 1]++;
-          out("%d) strings[%d]=%s  counts[%c + 1]=%d \n",i, offset, strings[offset].c_str(), currstr.at(l),  counts[(currstr.at(l)) + 1]);
-      }
-
-      //accumulate the counts
-      for(int i = 0; i < R; i++) {
-          if(counts[i+1] > 0)
-              out("counts[%c]=%d+%d\n",i, counts[i + 1], counts[i]);
-          counts[i + 1] += counts[i];
-      }
-
-      std::vector<int> aux(N); //map to sorted strings
-      for(int i = 0; i < N; i++) {
-          int offset = v[i]; //offset of the ith string
-          const std::string & currstr = strings[offset];
-          int newpos = counts[currstr.at(l)]++; //++ for next occurnc of this char
-          aux[newpos] = v[i];
-          out("aux[%d]=%d\n",counts[currstr.at(l)], v[i]);
-      }
-
-      for(int i = 0; i < N; i++) {
-          v[i] = aux[i];
-      }
+      counting_sort(strings, v, N, l);
+  
 
       out("l=%d\n",l);
       for(int i = 0; i < N; i++) {

@@ -21,8 +21,6 @@
  *   abc
  * in decoding i just need to continue until reaching correct count
  *
- * TODO: split this out so it does encoding and decoding separately
- *
  */
 
 #include <stack>
@@ -95,16 +93,10 @@ struct strpair {
     int m_length;
 };
 
-typedef std::set<strpair, std::less<strpair> > SP;
-typedef std::vector<strpair> ARR;
 
-//inverse transform is ingenuous:
-//sort the letters in the string, after assigning a node id
-//the mapping node id to what it was, is mapping of sorted follows unsorted
-//in the original string, thus we can do a simple search (DFS style) to get from
-//the first to the last node 
-//we can use radix sort, or counting sort and it will get us linear time sorting
-void inverse_transform(uint8_t * s, int len, int initialpos)
+//perform counting sort to get the order of the letters in the string
+//such order is needed to compute the inverse transform
+void counting_sort(uint8_t * s, int len, std::vector<int> &from) 
 {
     int counts[R+1] = {0};
 
@@ -120,8 +112,7 @@ void inverse_transform(uint8_t * s, int len, int initialpos)
         //out("%d: %d\n", i, counts[i]);
     }
 
-
-    std::vector<int> from(len);
+    from.resize(len);
     std::vector<int> to(len);
     std::vector<char> values(len);
     //assign the new order
@@ -133,12 +124,26 @@ void inverse_transform(uint8_t * s, int len, int initialpos)
         values[newpos] = s[i];
     }
 
+    //values contain the sorted output, from contains positin each letter came from
     for(int i = 0; i < len; i++) {
         //std::cout << values[i];
         out("%d: value %c from %d to %d\n", i, values[i], from[i], to[i]);
     }
+}
 
-    //values contain the sorted output, from contains positin each letter came from
+
+
+//inverse transform is ingenuous:
+//sort the letters in the string, after assigning a node id
+//the mapping node id to what it was, is mapping of sorted follows unsorted
+//in the original string, thus we can do a simple search (DFS style) to get from
+//the first to the last node 
+//we can use radix sort, or counting sort and it will get us linear time sorting
+void inverse_transform(uint8_t * s, int len, int initialpos)
+{
+    std::vector<int> from;
+    counting_sort(s, len, from);
+
     //we start from $, find the from until $ again
     //mark $ will now be the first in the values, so we start from from[0]
     int next = initialpos;  //start at $ mark
@@ -239,15 +244,15 @@ void encode(int argc, char**argv)
             exit(1);
         }
         fin = rc;
-    }
 
-    std::string s(argv[1]);
-    s += ".brw";
-    int tmp2 = creat(s.c_str(), S_IRUSR | S_IWUSR);
-    if(tmp2 < 0)
-        printf("encode:Can not open file for writing %s\n", s.c_str());
-    else
-        fout = tmp2;
+        std::string s(argv[1]);
+        s += ".brw";
+        int tmp2 = creat(s.c_str(), S_IRUSR | S_IWUSR);
+        if(tmp2 < 0)
+            printf("encode:Can not open file for writing %s\n", s.c_str());
+        else
+            fout = tmp2;
+    }
 
     uint8_t c = 0;
     uint8_t buffer[BUFFERSIZE+1] = {0}; 
@@ -274,15 +279,15 @@ void decode(int argc, char**argv)
             exit(1);
         }
         fin = rc;
-    }
 
-    std::string s(argv[1]);
-    s += ".out";
-    int tmp2 = creat(s.c_str(), S_IRUSR | S_IWUSR);
-    if(tmp2 < 0)
-        printf("encode:Can not open file for writing %s\n", s.c_str());
-    else
-        fout = tmp2;
+        std::string s(argv[1]);
+        s += ".out";
+        int tmp2 = creat(s.c_str(), S_IRUSR | S_IWUSR);
+        if(tmp2 < 0)
+            printf("encode:Can not open file for writing %s\n", s.c_str());
+        else
+            fout = tmp2;
+    }
 
     uint8_t buffer[BUFFERSIZE+1] = {0}; 
     while(1) {

@@ -1,11 +1,13 @@
-/* msd radix sort
- * utilizes counting sort to sort on the leftmost column first, 
- * then for each subgroup, calls recursively msdsort 
- * with next letter position
- * going rightwards until the first column. 
- * since it can be expensive to sort a few very long strings,
- * it is commonly optimized to do insertion sort if less than
- * a certain number of items in subgroup.
+/* 
+ * Three way quicksort is similar to quicksort, in that it selects a pivot,
+ * and it divides the elements of the array into smaller, equal, and greater
+ * than the character at the pivot. 
+ *
+ * Then it proceeds to sort recursively each of the three subarrays above
+ * and it has the advantage that to sort the subarray that had equal first 
+ * character, when sorting it recursively it start the search from the second
+ * character, thus saving time by not looking at the common parts which it
+ * already looked at.
  */
 
 #include <stack>
@@ -28,7 +30,13 @@
 #define out
 #endif
 
-int R = 256; //radix 2^8
+
+inline void swap(int & a, int & b)
+{
+    int tmp = b;
+    b = a;
+    a = tmp;
+}
 
 
 inline
@@ -43,9 +51,7 @@ void insertion_sort(const std::vector<char *> & strings, std::vector<int> &v, in
     for(int i = start; i < end - 1; i++){
         for(int j = i; j < end; j++) {
             if( strcmp(&strings[v[i]][chrindx], &strings[v[j]][chrindx]) > 0) {
-                    int temp = v[i];
-                    v[i] = v[j];
-                    v[j] = temp;
+                swap(v[i], v[j]);
             }
         }
     }
@@ -56,61 +62,50 @@ void insertion_sort(const std::vector<char *> & strings, std::vector<int> &v, in
 
 //pick a pivot, maybe randomly
 //put all points above, less than and equal to in separate places of v[i]
-void threeway_quicksort(const std::vector<char *> & strings, std::vector<int> &v, int start, int end, int chrindx)
+//NOTICE: that we dont swap characters or strings, but rather utilize
+//a vector of indices which is the one that determines the sorted order 
+void threeway_quicksort(const std::vector<char *> & strings, 
+        std::vector<int> &v, int start, int end, int chrindx)
 {
     out("threeway_quicksort %d, %d, %d\n", start, end, chrindx);
     int n = end - start;
     if(n < 2) return;
     if(n < 20) { insertion_sort(strings, v, start, end, chrindx); return; }
 
-    for(int i = start; i < end; i++) {
+    for(int i = start; i < end; i++) 
         out("h %s\n", strings[v[i]]);
-    }
 
     //get the pivot
     int p = rand() % n;
     int c = charat(strings[v[start+p]],chrindx);
-    out("p %d => c %c\n", start+p, c);
+    out("pivot %d => c %c\n", start+p, c);
 
     int lessthan = start;
     int gtthan = end;
-    int eqthan = 0;
-
     int i = start;
     while(i < gtthan) {
         int lc = charat(strings[v[i]],chrindx);
         out("i %d => lc %c\n", i, lc);
-        if(lc < c)
-        {
-            int temp = v[lessthan];
-            v[lessthan] = v[i];
-            v[i] = temp;
+        if(lc < c) {
+            swap(v[lessthan], v[i]);
             lessthan++;
             i++;
         }
-        else if(lc > c)
-        {
+        else if(lc > c) {
             gtthan--;
-            int temp = v[gtthan];
-            v[gtthan] = v[i];
-            v[i] = temp;
+            swap(v[gtthan], v[i]);
         }
-        else //equal
-        {
+        else { //equal
             i++;
         }
     }
 
-    out("lessthan %d\n", lessthan);
-    out("gtthan %d\n", gtthan);
-    out("gtthan - lessthan %d\n", gtthan - lessthan);
-
-    for(int i = start; i < end; i++) {
+    out("lessthan %d, gtthan %d\n", lessthan, gtthan);
+    for(int i = start; i < end; i++) 
         out("%d) strings[%d]=%s\n", i, v[i], strings[v[i]]);
-    }
 
     threeway_quicksort(strings, v, start, lessthan, chrindx);
-    threeway_quicksort(strings, v, lessthan, gtthan, chrindx + 1);
+    if(c >=0) threeway_quicksort(strings, v, lessthan, gtthan, chrindx + 1);
     threeway_quicksort(strings, v, gtthan, end, chrindx);
 }
 

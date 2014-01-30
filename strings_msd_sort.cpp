@@ -28,7 +28,7 @@
 #define out
 #endif
 
-int R = 256; //radix 2^8
+#define R  256 //radix 2^8
 
 
 inline
@@ -52,6 +52,9 @@ void insertion_sort(const std::vector<std::string> & strings, std::vector<int> &
 
 }
 
+//recursive call, first we count sort on the leftmost column,
+//then we proceed to recursively sort the next column
+//aux is passed so we dont reallocate every time the helper array
 void msd_radix_sort(const std::vector<std::string> & strings, std::vector<int> &v, std::vector<int> &aux, int start, int end, int chrindx)
 {
     out("msd_radix_sort %d, %d, %d\n", start, end, chrindx);
@@ -65,9 +68,8 @@ void msd_radix_sort(const std::vector<std::string> & strings, std::vector<int> &
         out("h %s\n", strings[v[i]].c_str());
     }
 
-
     //do counting sort on the l-th column
-    int counts[256 + 2] = {0};
+    int counts[R + 1] = {0};
 
     for(int i = start; i < end; i++) {
         int offset = v[i]; //offset of the ith string

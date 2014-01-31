@@ -69,31 +69,6 @@ void print_byte(char b)
 }
 
 
-struct strpair {
-    strpair(const uint8_t * s, int offset, int len) : m_s(s), m_offset(offset), m_length(len) {} 
-    bool operator < (const strpair & sp) const {
-        //return memcmp(m_s, sp.m_s, BUFFERSIZE) < 0;
-        for(int i = 0; i < m_length; i++) {
-            int off1 = (m_offset + i) % m_length;
-            int off2 = (sp.m_offset + i) % m_length;
-            assert(off1 < m_length && off2 < m_length && "out of bounds");
-
-            uint8_t a = m_s[off1];
-            uint8_t b = m_s[off2];
-            if(a < b)
-                return true;
-            if (a > b)
-                return false;
-            //otherwise continue comparing
-        }
-        return false; //equal, so return false
-    }
-    const uint8_t * m_s;
-    int m_offset;
-    int m_length;
-};
-
-
 //perform counting sort to get the order of the letters in the string
 //such order is needed to compute the inverse transform
 void counting_sort(uint8_t * s, int len, std::vector<int> &from) 
@@ -162,17 +137,46 @@ struct rotsorter {
         //return memcmp(m_s, sp.m_s, BUFFERSIZE) < 0;
         const uint8_t * p1 = &m_s[o1];
         const uint8_t * p2 = &m_s[o2];
+        const uint8_t * ahead = p1;
+        const uint8_t * behind = p2;
+        const uint8_t * end = &m_s[m_length]; //one past last 
+        bool p1ahead = true;
+        int counter = 0;
 
-        for(int i = 0; i < m_length; i++) {
-            if(*p1 < *p2)
-                return true;
-            if (*p1 > *p2)
-                return false;
-            //otherwise continue comparing
-            p1++;
-            p2++;
-            if (p1 - m_s >= m_length)  p1 = m_s;
-            if (p2 - m_s >= m_length)  p2 = m_s;
+        if(p1 < p2) {
+            ahead = p2;
+            behind = p1;
+            p1ahead = false;
+        }
+
+        while( ahead < end && counter < m_length) {
+            if(*ahead < *behind)
+                return p1ahead;
+            if(*ahead > *behind)
+                return !p1ahead;
+            ahead++;
+            behind++;
+            counter++;
+        }
+        ahead = m_s;
+        while( behind < end && counter < m_length) {
+            if(*ahead < *behind)
+                return p1ahead;
+            if(*ahead > *behind)
+                return !p1ahead;
+            ahead++;
+            behind++;
+            counter++;
+        }
+        behind = m_s;
+        while(counter < m_length) {
+            if(*ahead < *behind)
+                return p1ahead;
+            if(*ahead > *behind)
+                return !p1ahead;
+            ahead++;
+            behind++;
+            counter++;
         }
         return false; //equal, so return false
     }
@@ -232,7 +236,7 @@ void encode(int argc, char**argv)
     int fout = 1; //stdout
 
     if(argc > 1) {
-        int fin = open(argv[1], O_RDONLY);
+        fin = open(argv[1], O_RDONLY);
         if(fin == -1) {
             printf("Error opening file %s\n",argv[1]);
             exit(1);
@@ -258,6 +262,7 @@ void encode(int argc, char**argv)
         write(fout, &initialpos, sizeof(initialpos));
         write(fout, res, count);
     }
+    out("read count=%d\n", count);
 }
 
 void decode(int argc, char**argv)

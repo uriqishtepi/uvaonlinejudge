@@ -126,7 +126,6 @@ void counting_sort(uint8_t * s, int len, std::vector<int> &from)
 
     //values contain the sorted output, from contains positin each letter came from
     for(int i = 0; i < len; i++) {
-        //std::cout << values[i];
         out("%d: value %c from %d to %d\n", i, values[i], from[i], to[i]);
     }
 }
@@ -139,7 +138,7 @@ void counting_sort(uint8_t * s, int len, std::vector<int> &from)
 //in the original string, thus we can do a simple search (DFS style) to get from
 //the first to the last node 
 //we can use radix sort, or counting sort and it will get us linear time sorting
-void inverse_transform(uint8_t * s, int len, int initialpos)
+void inverse_transform(uint8_t * s, int len, int initialpos, uint8_t *res)
 {
     std::vector<int> from;
     counting_sort(s, len, from);
@@ -150,7 +149,8 @@ void inverse_transform(uint8_t * s, int len, int initialpos)
     
     for(int i = 0; i < len; i++) {
         next = from[next];  //get the next and print it
-        std::cout << s[next];
+        out("%c", s[next]);
+        res[i] = s[next];
     } 
 }
 
@@ -217,16 +217,10 @@ int transform(const uint8_t * buffer, int len, uint8_t * ret)
     return initialpos;
 }
 
-inline 
-void do_run(uint8_t * buffer, int count, uint8_t * res) {
-    int initialpos = transform(buffer, count, res);
-    inverse_transform(res, count, initialpos);
-}
-
 
 /* write to file */
 inline
-void writeBuffer(int fout, uint8_t * buffer, int count)
+void writeOut(int fout, uint8_t * buffer, int count)
 {
     for(int i = 0; i < count; i++)
         write(fout, &buffer[i], sizeof(uint8_t));
@@ -238,15 +232,13 @@ void encode(int argc, char**argv)
     int fout = 1; //stdout
 
     if(argc > 1) {
-        int rc = open(argv[1], O_RDONLY);
-        if(rc == -1) {
+        int fin = open(argv[1], O_RDONLY);
+        if(fin == -1) {
             printf("Error opening file %s\n",argv[1]);
             exit(1);
         }
-        fin = rc;
 
-        std::string s(argv[1]);
-        s += ".brw";
+        std::string s = std::string(argv[1]) + ".brw";
         int tmp2 = creat(s.c_str(), S_IRUSR | S_IWUSR);
         if(tmp2 < 0)
             printf("encode:Can not open file for writing %s\n", s.c_str());
@@ -261,9 +253,10 @@ void encode(int argc, char**argv)
 
     while((count = read(fin, buffer, BUFFERSIZE)) > 0) {
         int initialpos = transform(buffer, count, res);
-        out("count=%d initialpos=%d\n",count, initialpos);
+        assert(initialpos >= 0 && initialpos < count && "bad initialpos");
+        out("count=%d initialpos=%d\n", count, initialpos);
         write(fout, &initialpos, sizeof(initialpos));
-        writeBuffer(fout, res, count);
+        write(fout, res, count);
     }
 }
 
@@ -273,15 +266,12 @@ void decode(int argc, char**argv)
     int fout = 1; //stdout
 
     if(argc > 1) {
-        int rc = open(argv[1], O_RDONLY);
-        if(rc == -1) {
+        fin = open(argv[1], O_RDONLY);
+        if(fin == -1) {
             printf("Error opening file %s\n",argv[1]);
             exit(1);
         }
-        fin = rc;
-
-        std::string s(argv[1]);
-        s += ".out";
+        std::string s = std::string(argv[1]) + ".out";
         int tmp2 = creat(s.c_str(), S_IRUSR | S_IWUSR);
         if(tmp2 < 0)
             printf("encode:Can not open file for writing %s\n", s.c_str());
@@ -289,19 +279,72 @@ void decode(int argc, char**argv)
             fout = tmp2;
     }
 
+    int bcounter = 0;
     uint8_t buffer[BUFFERSIZE+1] = {0}; 
     while(1) {
         int initialpos = 0;
-        read(fin, &initialpos, sizeof(int));
+        if(read(fin, &initialpos, sizeof(initialpos)) <= 0) {
+            break;
+        }
         out("initialpos=%d\n",initialpos);
+        bcounter++;
+        if(!(initialpos >= 0 && initialpos < BUFFERSIZE))
+            printf("initialpos=%d bcounter=%d\n", initialpos, bcounter);
         assert(initialpos >= 0 && initialpos < BUFFERSIZE && "bad first byte in file");
 
         int count = read(fin, buffer, BUFFERSIZE);
         if(count <= 0) {
             break;
         }
-        inverse_transform(buffer, count, initialpos);
-        writeBuffer(fout, buffer, count);
+        uint8_t res[BUFFERSIZE+1] = {0}; 
+        inverse_transform(buffer, count, initialpos, res);
+        write(fout, res, count);
+    }
+}
+
+
+
+//this is only for testing, do the transform and the reverse transform
+//and check that the final result is same as original buffer
+inline void do_run(uint8_t * buffer, int count, int fout) {
+    //forward transform
+    uint8_t brw[BUFFERSIZE+1] = {0};
+    int initialpos = transform(buffer, count, brw);
+
+    //inverse transform
+    uint8_t rev[BUFFERSIZE+1] = {0};
+    inverse_transform(brw, count, initialpos, rev);
+    write(fout, rev, count);
+}
+
+void do_both(int argc, char**argv)
+{
+    int fin = 0; //stdin
+    int fout = 1; //stdout
+    if(argc > 1) {
+        int rc = open(argv[1], O_RDONLY);
+        if(rc == -1) {
+            printf("Error opening file %s\n",argv[1]);
+            exit(1);
+        }
+        fin = rc;
+    }
+
+    uint8_t c = 0;
+    uint8_t buffer[BUFFERSIZE+1] = {0}; 
+    int count = 0;
+
+    while(read(fin, &c, 1)) {
+        out("c(%d)=%x ",count, c);
+        buffer[count++] = c;
+        if(count >= BUFFERSIZE - 1) {
+            do_run(buffer, count, fout);
+            count = 0; 
+        }
+    }
+
+    if(count > 0) {
+        do_run(buffer, count, fout);
     }
 }
 
@@ -321,35 +364,8 @@ int main(int argc, char**argv)
         }
     }
 
-
-
-    int fin = 0; //stdin
-    if(argc > 1) {
-        int rc = open(argv[1], O_RDONLY);
-        if(rc == -1) {
-            printf("Error opening file %s\n",argv[1]);
-            exit(1);
-        }
-        fin = rc;
-    }
-
-    uint8_t c = 0;
-    uint8_t buffer[BUFFERSIZE+1] = {0}; 
-    uint8_t res[BUFFERSIZE+1] = {0};
-    int count = 0;
-
-    while(read(fin, &c, 1)) {
-        out("c(%d)=%x ",count, c);
-        buffer[count++] = c;
-        if(count >= BUFFERSIZE - 1) {
-            do_run(buffer, count, res);
-            count = 0; 
-        }
-    }
-
-    if(count > 0) {
-        do_run(buffer, count, res);
-    }
+    do_both(argc, argv);
+    
 
     return 0;
 }

@@ -63,7 +63,7 @@ void counting_sort(const std::vector<std::string> & strings, std::vector<int> &v
     for(int i = start; i < end; i++) {
         int offset = v[i]; //offset of the ith string
         const std::string & currstr = strings[offset];
-        counts[charat(currstr,chrindx) + 2]++;
+        counts[charat(currstr,chrindx) + 1]++;
         out("%d) strings[%d]=%s  counts[%c + 1]=%d \n",i, offset, strings[offset].c_str(), charat(currstr,chrindx),  counts[charat(currstr,chrindx) + 1]);
     }
 
@@ -77,7 +77,7 @@ void counting_sort(const std::vector<std::string> & strings, std::vector<int> &v
     for(int i = start; i < end; i++) {
         int offset = v[i]; //offset of the ith string
         const std::string & currstr = strings[offset];
-        aux[counts[charat(currstr,chrindx) + 1]++ ] = v[i];
+        aux[counts[charat(currstr,chrindx) ]++ ] = v[i];
         out("aux[%d]=%d\n", start + counts[charat(currstr,chrindx)], v[i]);
     }
 
@@ -106,7 +106,7 @@ void msd_radix_sort(const std::vector<std::string> & strings, std::vector<int> &
         out("h %s\n", strings[v[i]].c_str());
     }
 
-    int counts[R + 1] = {0};
+    int counts[R + 2] = {0};
     counting_sort(strings, v, aux, start, end, chrindx, counts);
 
     for(int r = 0; r < R; r++) {

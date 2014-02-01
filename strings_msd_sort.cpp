@@ -57,28 +57,35 @@ void insertion_sort(const std::vector<std::string> & strings, std::vector<int> &
 }
 
 
-void counting_sort(const std::vector<std::string> & strings, std::vector<int> &v, std::vector<int> &aux, int start, int end, int chrindx, int counts[])
+//notice that this version of counting sort is a bit different because we are
+//using strings and we are trying to get the character for the counts via the
+//charat function which can return -1 so in order to have that correctly index
+//into counts i need to add one more than usual when dereferencing counts
+void counting_sort(const std::vector<std::string> & strings,std::vector<int> &v,
+        std::vector<int> &aux, int start, int end, int chrindx, int counts[])
 {
     //do counting sort on the l-th column
     for(int i = start; i < end; i++) {
         int offset = v[i]; //offset of the ith string
         const std::string & currstr = strings[offset];
-        counts[charat(currstr,chrindx) + 1]++;
-        out("%d) strings[%d]=%s  counts[%c + 1]=%d \n",i, offset, strings[offset].c_str(), charat(currstr,chrindx),  counts[charat(currstr,chrindx) + 1]);
+        char c = charat(currstr,chrindx); 
+        counts[c + 2]++;
+        out("%d) strings[%d]=%s  counts[%d + 1]=%d \n",i, offset, currstr.c_str(), c,  counts[c + 1]);
     }
 
     //accumulate the counts
     for(int i = 0; i < R+1; i++) {
         if(counts[i+1] > 0)
-            out("counts[%c]=%d+%d\n",i-1, counts[i + 1], counts[i]);
+            out("counts[%d]=%d+%d\n",i-1, counts[i + 1], counts[i]);
         counts[i + 1] += counts[i];
     }
 
     for(int i = start; i < end; i++) {
         int offset = v[i]; //offset of the ith string
         const std::string & currstr = strings[offset];
-        aux[counts[charat(currstr,chrindx) ]++ ] = v[i];
-        out("aux[%d]=%d\n", start + counts[charat(currstr,chrindx)], v[i]);
+        char c = charat(currstr,chrindx); 
+        aux[counts[c + 1]++ ] = v[i];
+        out("aux[%d]=%d\n", start + counts[c], v[i]);
     }
 
     out("chrindx=%d\n",chrindx);
@@ -86,8 +93,6 @@ void counting_sort(const std::vector<std::string> & strings, std::vector<int> &v
         v[i] = aux[i - start];
         out("%d) strings[%d]=%s\n", i, v[i], strings[v[i]].c_str());
     }
-
-
 }
 
 //recursive call, first we count sort on the leftmost column,
@@ -114,6 +119,10 @@ void msd_radix_sort(const std::vector<std::string> & strings, std::vector<int> &
             msd_radix_sort(strings, v, aux, start + counts[r], 
                     start + counts[r + 1], chrindx + 1);
         }
+    }
+
+    for(int i = start; i < end; i++) {
+        out("s %s\n", strings[v[i]].c_str());
     }
 }
 

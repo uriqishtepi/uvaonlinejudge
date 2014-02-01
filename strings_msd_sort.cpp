@@ -34,8 +34,9 @@
 inline
 char charat(const std::string & s, int i)
 {
+    if(i == s.size()) return 0; //works out same way: instead of returning -1 and plussing it by 1 at the caller's end, just return 0 here
     if(i < s.size()) return s.at(i);
-    else return -1;
+    assert(false && "should not have any indices that surpass size");
 }
 
 
@@ -69,7 +70,7 @@ void counting_sort(const std::vector<std::string> & strings,std::vector<int> &v,
         int offset = v[i]; //offset of the ith string
         const std::string & currstr = strings[offset];
         char c = charat(currstr,chrindx); 
-        counts[c + 2]++;
+        counts[c + 1]++;
         out("%d) strings[%d]=%s  counts[%d + 1]=%d \n",i, offset, currstr.c_str(), c,  counts[c + 1]);
     }
 
@@ -84,7 +85,7 @@ void counting_sort(const std::vector<std::string> & strings,std::vector<int> &v,
         int offset = v[i]; //offset of the ith string
         const std::string & currstr = strings[offset];
         char c = charat(currstr,chrindx); 
-        aux[counts[c + 1]++ ] = v[i];
+        aux[counts[c]++ ] = v[i];
         out("aux[%d]=%d\n", start + counts[c], v[i]);
     }
 
@@ -111,7 +112,7 @@ void msd_radix_sort(const std::vector<std::string> & strings, std::vector<int> &
         out("h %s\n", strings[v[i]].c_str());
     }
 
-    int counts[R + 2] = {0};
+    int counts[R + 1] = {0};
     counting_sort(strings, v, aux, start, end, chrindx, counts);
 
     for(int r = 0; r < R; r++) {

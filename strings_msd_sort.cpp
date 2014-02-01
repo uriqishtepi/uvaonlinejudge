@@ -38,39 +38,28 @@ char charat(const std::string & s, int i)
     else return -1;
 }
 
+
+inline void swap(int & a, int & b) {
+    int tmp = b;
+    b = a;
+    a = tmp;
+}
+
+
 void insertion_sort(const std::vector<std::string> & strings, std::vector<int> &v, std::vector<int> &aux, int start, int end, int chrindx)
 {
     for(int i = start; i < end - 1; i++){
         for(int j = i; j < end; j++) {
-            if( strcmp(&strings[v[i]][chrindx], &strings[v[j]][chrindx]) > 0) {
-                    int temp = v[i];
-                    v[i] = v[j];
-                    v[j] = temp;
-            }
+            if( strcmp(&strings[v[i]][chrindx], &strings[v[j]][chrindx]) > 0) 
+                swap(v[i],v[j]);
         }
     }
-
 }
 
-//recursive call, first we count sort on the leftmost column,
-//then we proceed to recursively sort the next column
-//aux is passed so we dont reallocate every time the helper array
-void msd_radix_sort(const std::vector<std::string> & strings, std::vector<int> &v, std::vector<int> &aux, int start, int end, int chrindx)
+
+void counting_sort(const std::vector<std::string> & strings, std::vector<int> &v, std::vector<int> &aux, int start, int end, int chrindx, int counts[])
 {
-    out("msd_radix_sort %d, %d, %d\n", start, end, chrindx);
-    if(end - start < 2) return;
-    if(end - start < 24) {
-        insertion_sort(strings, v, aux, start, end, chrindx);
-        return;
-    }
-
-    for(int i = start; i < end; i++) {
-        out("h %s\n", strings[v[i]].c_str());
-    }
-
     //do counting sort on the l-th column
-    int counts[R + 1] = {0};
-
     for(int i = start; i < end; i++) {
         int offset = v[i]; //offset of the ith string
         const std::string & currstr = strings[offset];
@@ -97,6 +86,28 @@ void msd_radix_sort(const std::vector<std::string> & strings, std::vector<int> &
         v[i] = aux[i - start];
         out("%d) strings[%d]=%s\n", i, v[i], strings[v[i]].c_str());
     }
+
+
+}
+
+//recursive call, first we count sort on the leftmost column,
+//then we proceed to recursively sort the next column
+//aux is passed so we dont reallocate every time the helper array
+void msd_radix_sort(const std::vector<std::string> & strings, std::vector<int> &v, std::vector<int> &aux, int start, int end, int chrindx)
+{
+    out("msd_radix_sort %d, %d, %d\n", start, end, chrindx);
+    if(end - start < 2) return;
+    if(end - start < 24) {
+        insertion_sort(strings, v, aux, start, end, chrindx);
+        return;
+    }
+
+    for(int i = start; i < end; i++) {
+        out("h %s\n", strings[v[i]].c_str());
+    }
+
+    int counts[R + 1] = {0};
+    counting_sort(strings, v, aux, start, end, chrindx, counts);
 
     for(int r = 0; r < R; r++) {
         if(counts[r+1] - counts[r] > 1) {

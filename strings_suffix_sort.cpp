@@ -237,28 +237,15 @@ struct comp1 {
 };
 
 
-struct comp2 {
-    comp2(const std::vector<int> &v, const std::vector<int> &nV) : m_v(v), m_nV(nV) {}
-    bool operator () (int a, int b) {
-        return m_nV[a] < m_nV[b];
-
-        //if(m_v[a] == m_v[b])
-         //   return m_nV[a] < m_nV[b];
-
-        //return m_v[a] < m_v[b];
-    }
-    const std::vector<int> &m_v;
-    const std::vector<int> &m_nV;
-};
 
 //
 //perform counting sort to get the order of the letters in the string
 //such order is needed to compute the inverse transform
-void counting_sort_once(uint8_t * str, int len, std::vector<int> &v, int counts[]) 
+void counting_sort_once(const uint8_t * str, int len, std::vector<int> &v, int counts[]) 
 {
     //get counts
-    for(int i = 0; i < len; i++) {
-        counts[str[i]]++;
+    for(int i = 0; i <= len; i++) {
+        counts[str[i]+1]++;
     }
 
     //accumulate
@@ -266,13 +253,28 @@ void counting_sort_once(uint8_t * str, int len, std::vector<int> &v, int counts[
         counts[i+1]+= counts[i];
     }
 
-    v.resize(len);
-    for(int i = 0; i < len; i++) {
+    v.resize(len+1);
+    for(int i = 0; i <= len; i++) {
         int newpos = counts[str[i]]++;
+        assert(newpos <= len && newpos >= 0 && "newpos out of range");
         v[newpos] = i;
     }
 }
 
+struct comp2 {
+    comp2(const std::vector<int> &sim, const std::vector<int> &v, const std::vector<int> &nV) : m_sim(sim), m_v(v), m_nV(nV) {}
+    bool operator () (int a, int b) { //these are the v[i] values that are passed in
+        printf("comparing %c vs %c (%d,%d)\n", m_sim[a], m_sim[b], a,b);
+
+        if(m_sim[a] == m_sim[b])
+            return m_nV[a] < m_nV[b];
+
+        return m_sim[a] < m_sim[b];
+    }
+    const std::vector<int> &m_sim;
+    const std::vector<int> &m_v;
+    const std::vector<int> &m_nV;
+};
 
 //use counting sort to get the first position sorted,
 //then sort second based on the first, then col 3 and 4 based on first two,
@@ -280,30 +282,44 @@ void counting_sort_once(uint8_t * str, int len, std::vector<int> &v, int counts[
 //
 //
 //first iteration of this use std::sort then see if couting sort can be faster
-void nlogn_msd_sort(const char * str, std::vector<int> &v, int start, int end, int chrindx, int len)
+void nlogn_msd_sort(const uint8_t * str, std::vector<int> &v, int start, int end, int chrindx, int len)
 {
-    comp1 cs(str);
-    std::stable_sort(v.begin(), v.end(), cs);
-    std::vector<int> nV(len);
+    int counts[R+1] = {0};
+    counting_sort_once(str, len, v, counts);
+
+    //sim will be the object to sort on from now on
+    std::vector<int> sim(len+1);
+    printf("sim: ");
+    for(int i = 0; i <= len; i++) {
+        sim[i] = str[i];
+        //printf("s[%d]=%d, ", v[i], sim[v[i]]);
+    }
+    printf("\n");
+     
+    std::vector<int> nV(len+1);
     
     for(int e = 1; e < len; e = e * 2) {
         //first col sorted in v 
         //now prepare v for second col sorting
-        std::vector<int> rev(len);
+        std::vector<int> rev(len+1);
         for(int i = 0; i < len; i++) {
-            
             rev[v[i]] = i;
         } 
 
-        for(int i = 0; i < len; i++) {
+        for(int i = 0; i <= len; i++) {
             int offset = v[i] + e;
             if(offset >= len - 1) offset = len - 1;
             nV[i] = rev[offset];
         }
 
-        comp2 ct(v, nV);
+        comp2 ct(sim, v, nV);
+        std::vector<int> vcp = v;
         std::sort(v.begin(), v.end(), ct);
-        return;
+        for(int i = 0; i <= len; i++) {
+            printf("%d: %d vs %d\n", i,v[i],vcp[i]);
+            sim[i] += nV[i];
+        }
+        //assert( vcp == v);
     }
 
 }
@@ -384,8 +400,8 @@ int main(void)
   }
 
   {
-  std::vector<int> copy5 = suffixes;
-  nlogn_msd_sort(s.c_str(), copy5, 0, len, 0, len);
+  std::vector<int> copy5;
+  nlogn_msd_sort((uint8_t*)s.c_str(), copy5, 0, len, 0, len);
   timediff("nlogn_msd_sort");
 
   printf("sorted offsets: ");

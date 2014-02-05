@@ -157,29 +157,7 @@ void threeway_quicksort(const char * string,
 }
 
 
-//
-//perform counting sort to get the order of the letters in the string
-//such order is needed to compute the inverse transform
-void counting_sort_other(uint8_t * str, int len, std::vector<int> &v) 
-{
-    int counts[R+1] = {0};
-    //get counts
-    for(int i = 0; i < len; i++) {
-        counts[str[i]]++;
-    }
 
-    //accumulate
-    for(int i = 0; i < R; i++) {
-        counts[i+1]+= counts[i];
-    }
-
-    v.resize(len);
-    for(int i = 0; i < len; i++) {
-        int newpos = counts[str[i]]++;
-        v[newpos] = i;
-    }
-
-}
 
 
 //this is counting sort for radix msd sort, needs to return the counts
@@ -250,6 +228,51 @@ void msd_radix_sort(const char * string, std::vector<int> &v, std::vector<int> &
 
 }
 
+struct comp1 {
+    comp1(const char * str) : m_s(str) {}
+    bool operator () (int a, int b) {
+        return m_s[a] < m_s[b];
+    }
+    const char * m_s;
+};
+
+
+struct comp2 {
+    comp2(const std::vector<int> &v, const std::vector<int> &nV) : m_v(v), m_nV(nV) {}
+    bool operator () (int a, int b) {
+        return m_nV[a] < m_nV[b];
+
+        //if(m_v[a] == m_v[b])
+         //   return m_nV[a] < m_nV[b];
+
+        //return m_v[a] < m_v[b];
+    }
+    const std::vector<int> &m_v;
+    const std::vector<int> &m_nV;
+};
+
+//
+//perform counting sort to get the order of the letters in the string
+//such order is needed to compute the inverse transform
+void counting_sort_once(uint8_t * str, int len, std::vector<int> &v, int counts[]) 
+{
+    //get counts
+    for(int i = 0; i < len; i++) {
+        counts[str[i]]++;
+    }
+
+    //accumulate
+    for(int i = 0; i < R; i++) {
+        counts[i+1]+= counts[i];
+    }
+
+    v.resize(len);
+    for(int i = 0; i < len; i++) {
+        int newpos = counts[str[i]]++;
+        v[newpos] = i;
+    }
+}
+
 
 //use counting sort to get the first position sorted,
 //then sort second based on the first, then col 3 and 4 based on first two,
@@ -257,13 +280,32 @@ void msd_radix_sort(const char * string, std::vector<int> &v, std::vector<int> &
 //
 //
 //first iteration of this use std::sort then see if couting sort can be faster
-void msd_logn(const char * str, std::vector<int> &v, int start, int end, int chrindx, int len)
+void nlogn_msd_sort(const char * str, std::vector<int> &v, int start, int end, int chrindx, int len)
 {
-    for(int i = 0; i < len; i++) {
-        v[i] = i;
+    comp1 cs(str);
+    std::stable_sort(v.begin(), v.end(), cs);
+    std::vector<int> nV(len);
+    
+    for(int e = 1; e < len; e = e * 2) {
+        //first col sorted in v 
+        //now prepare v for second col sorting
+        std::vector<int> rev(len);
+        for(int i = 0; i < len; i++) {
+            
+            rev[v[i]] = i;
+        } 
+
+        for(int i = 0; i < len; i++) {
+            int offset = v[i] + e;
+            if(offset >= len - 1) offset = len - 1;
+            nV[i] = rev[offset];
+        }
+
+        comp2 ct(v, nV);
+        std::sort(v.begin(), v.end(), ct);
+        return;
     }
-    
-    
+
 }
 
 void timediff(const char * s) {
@@ -311,17 +353,24 @@ int main(void)
   timediff("reset ");
 
  
+  {
   std::vector<int> copy2 = suffixes;
   rotsorter2 r2((const uint8_t*) s.c_str(), len);
   std::sort(copy2.begin(), copy2.end(), r2); //use std sort
   timediff("quicksort rot2");
+  assert(copy1 == copy2 && "sorted results differ");
+  }
 
 
+  {
   std::vector<int> copy3 = suffixes;
   threeway_quicksort(s.c_str(), copy3, 0, len, 0, len);
   timediff("three way qsort");
+  assert(copy1 == copy3 && "sorted results differ");
+  }
   
 
+  {
   std::vector<int> copy4 = suffixes;
   std::vector<int> aux = suffixes;
   msd_radix_sort(s.c_str(), copy4, aux, 0, len, 0);
@@ -331,15 +380,25 @@ int main(void)
   for(std::vector<int >::iterator it = copy4.begin(); it !=copy4.end(); it++)
     out("%d ",*it);
 
-
-  //std::vector<int> copy4 = suffixes;
-  //msd_logn(s.c_str(), copy4, 0, len, 0, len);
-  //timediff("msd_logn");
-
-
-  assert(copy1 == copy2 && "sorted results differ");
-  assert(copy1 == copy3 && "sorted results differ");
   assert(copy1 == copy4 && "sorted results differ");
+  }
+
+  {
+  std::vector<int> copy5 = suffixes;
+  nlogn_msd_sort(s.c_str(), copy5, 0, len, 0, len);
+  timediff("nlogn_msd_sort");
+
+  printf("sorted offsets: ");
+  for(std::vector<int >::iterator it = copy5.begin(); it !=copy5.end(); it++)
+    printf("%d ",*it);
+
+  printf("\nsorted strings: \n");
+  for(std::vector<int >::iterator it = copy5.begin(); it !=copy5.end(); it++)
+    printf("%s\n",&s[*it]);
+
+
+  assert(copy1 == copy5 && "sorted results differ");
+  }
 
   return 0;
 }

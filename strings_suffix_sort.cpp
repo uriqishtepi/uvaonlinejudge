@@ -21,7 +21,7 @@
 #include <stdint.h>
 #include <sys/time.h>
 
-//#define DEBUG true
+#define DEBUG true
 #ifdef DEBUG
 #define out printf
 #else
@@ -264,12 +264,10 @@ void counting_sort_once(const uint8_t * str, int len, std::vector<int> &v, int c
 struct comp2 {
     comp2(const std::vector<int> &sim, const std::vector<int> &rev, const std::vector<int> &nV) : m_sim(sim), m_rev(rev), m_nV(nV) {}
     bool operator () (int a, int b) { //these are the v[i] values that are passed in
-        printf("comparing %c vs %c (%d,%d)\n", m_sim[a], m_sim[b], a,b);
 
-        if(m_rev[a] == m_sim[b])
-            return m_nV[a] < m_nV[b];
-
-        return m_sim[a] < m_sim[b];
+        bool res = (m_sim[m_rev[a]] < m_sim[m_rev[b]]);
+        out("comparing el: %d %c %d, offs %d %d, val %d,%d\n", m_sim[m_rev[a]], res ? '<' : '>', m_sim[m_rev[b]], m_rev[a], m_rev[b], a,b);
+        return res;
     }
     const std::vector<int> &m_sim;
     const std::vector<int> &m_rev;
@@ -289,38 +287,59 @@ void nlogn_msd_sort(const uint8_t * str, std::vector<int> &v, int start, int end
 
     //sim will be the object to sort on from now on
     std::vector<int> sim(len+1);
-    //printf("sim: ");
     for(int i = 0; i <= len; i++) {
-        sim[i] = str[i];
-        //printf("s[%d]=%d, ", v[i], sim[v[i]]);
+        sim[i] = str[v[i]];
     }
-    //printf("\n");
+    out("\n");
      
     std::vector<int> nV(len+1);
     
-    for(int e = 1; e < len; e = e * 2) {
+    for(int e = 1; e <= len; e = e * 2) {
         //first col sorted in v 
         //now prepare v for second col sorting
         std::vector<int> rev(len+1);
-        for(int i = 0; i < len; i++) {
+        for(int i = 0; i <= len; i++) {
             rev[v[i]] = i;
         } 
 
+        out(" i  str[i]  v[i]     rev[i]   str[v[i]]    sim[i]   newsim[i]"
+                "  offs  rev[offset]  cpSim[i]*100   sim[rev[off]] \n");
+        std::vector<int> cpSim = sim;
         for(int i = 0; i <= len; i++) {
             int offset = v[i] + e;
-            if(offset >= len - 1) offset = len - 1;
-            nV[i] = rev[offset];
+            if(offset >= len) { 
+                //out("setting from %d to %d offset for %d\n", offset, len, i);
+                offset = len;
+            }
+            int newv = cpSim[i] * 100 + cpSim[rev[offset]];
+            out("%3d    %3c    %3d    %4d     %4.*s    %8d   %8d   %8d   %8d   %8d"
+                "    + %8d\n", i, str[i], v[i], rev[i], 3, &str[v[i]], cpSim[i], 
+                newv, offset, rev[offset], cpSim[i] * 100, cpSim[rev[offset]]);
+            sim[i] = newv;
         }
 
         comp2 ct(sim, rev, nV);
         std::vector<int> vcp = v;
         std::sort(v.begin(), v.end(), ct);
-        for(int i = 0; i <= len; i++) {
-            printf("%d: %d vs %d\n", i,v[i],vcp[i]);
-        }
-        //assert( vcp == v);
-    }
 
+        out("After sorting: \ni, str[i], v[i], rev[i],    &str[v[i]], sim[i]\n" );
+        for(int i = 0; i <= len; i++) {
+            out("%3d    %3c    %3d    %4d     %4.*s    %8d   \n", i, str[i], v[i], rev[i], 3, &str[v[i]], sim[i]);
+        }
+
+        int count = 0;
+        int prev = sim[0];
+        for(int i = 0; i <= len; i++) {
+            if(sim[i] != prev) {
+                count++;
+                prev = sim[i];
+            }
+            sim[i] = count;
+        }
+        //if(count > len) break;
+        out("for turn %d, count is %d\n", e, count);
+    }
+    v.erase(v.begin());
 }
 
 void timediff(const char * s) {
@@ -403,14 +422,13 @@ int main(void)
   nlogn_msd_sort((uint8_t*)s.c_str(), copy5, 0, len, 0, len);
   timediff("nlogn_msd_sort");
 
-  printf("sorted offsets: ");
+  out("sorted offsets: ");
   for(std::vector<int >::iterator it = copy5.begin(); it !=copy5.end(); it++)
-    printf("%d ",*it);
+    out("%d ",*it);
 
-  printf("\nsorted strings: \n");
+  out("\nsorted strings: \n");
   for(std::vector<int >::iterator it = copy5.begin(); it !=copy5.end(); it++)
-    printf("%s\n",&s[*it]);
-
+    out("%s\n",&s[*it]);
 
   assert(copy1 == copy5 && "sorted results differ");
   }

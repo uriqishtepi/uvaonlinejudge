@@ -262,17 +262,17 @@ void counting_sort_once(const uint8_t * str, int len, std::vector<int> &v, int c
 }
 
 struct comp2 {
-    comp2(const std::vector<int> &sim, const std::vector<int> &v, const std::vector<int> &nV) : m_sim(sim), m_v(v), m_nV(nV) {}
+    comp2(const std::vector<int> &sim, const std::vector<int> &rev, const std::vector<int> &nV) : m_sim(sim), m_rev(rev), m_nV(nV) {}
     bool operator () (int a, int b) { //these are the v[i] values that are passed in
         printf("comparing %c vs %c (%d,%d)\n", m_sim[a], m_sim[b], a,b);
 
-        if(m_sim[a] == m_sim[b])
+        if(m_rev[a] == m_sim[b])
             return m_nV[a] < m_nV[b];
 
         return m_sim[a] < m_sim[b];
     }
     const std::vector<int> &m_sim;
-    const std::vector<int> &m_v;
+    const std::vector<int> &m_rev;
     const std::vector<int> &m_nV;
 };
 
@@ -289,12 +289,12 @@ void nlogn_msd_sort(const uint8_t * str, std::vector<int> &v, int start, int end
 
     //sim will be the object to sort on from now on
     std::vector<int> sim(len+1);
-    printf("sim: ");
+    //printf("sim: ");
     for(int i = 0; i <= len; i++) {
         sim[i] = str[i];
         //printf("s[%d]=%d, ", v[i], sim[v[i]]);
     }
-    printf("\n");
+    //printf("\n");
      
     std::vector<int> nV(len+1);
     
@@ -312,12 +312,11 @@ void nlogn_msd_sort(const uint8_t * str, std::vector<int> &v, int start, int end
             nV[i] = rev[offset];
         }
 
-        comp2 ct(sim, v, nV);
+        comp2 ct(sim, rev, nV);
         std::vector<int> vcp = v;
         std::sort(v.begin(), v.end(), ct);
         for(int i = 0; i <= len; i++) {
             printf("%d: %d vs %d\n", i,v[i],vcp[i]);
-            sim[i] += nV[i];
         }
         //assert( vcp == v);
     }

@@ -265,8 +265,8 @@ struct comp2 {
     comp2(const std::vector<int> &sim, const std::vector<int> &rev, const std::vector<int> &nV) : m_sim(sim), m_rev(rev), m_nV(nV) {}
     bool operator () (int a, int b) { //these are the v[i] values that are passed in
 
-        bool res = (m_sim[m_rev[a]] < m_sim[m_rev[b]]);
-        out("comparing el: %d %c %d, offs %d %d, val %d,%d\n", m_sim[m_rev[a]], res ? '<' : '>', m_sim[m_rev[b]], m_rev[a], m_rev[b], a,b);
+        bool res = (m_sim[a] < m_sim[b]);
+        //out("comparing el: %d %c %d, offs %d %d, val %d,%d\n", m_sim[a], res ? '<' : '>', m_sim[b], m_rev[a], m_rev[b], a,b);
         return res;
     }
     const std::vector<int> &m_sim;
@@ -288,7 +288,7 @@ void nlogn_msd_sort(const uint8_t * str, std::vector<int> &v, int start, int end
     //sim will be the object to sort on from now on
     std::vector<int> sim(len+1);
     for(int i = 0; i <= len; i++) {
-        sim[i] = str[v[i]];
+        sim[i] = str[i];
     }
     out("\n");
      
@@ -302,19 +302,20 @@ void nlogn_msd_sort(const uint8_t * str, std::vector<int> &v, int start, int end
             rev[v[i]] = i;
         } 
 
-        out(" i  str[i]  v[i]     rev[i]   str[v[i]]    sim[i]   newsim[i]"
-                "  offs  rev[offset]  cpSim[i]*100   sim[rev[off]] \n");
+        out(" i  str[i]  v[i]     rev[i]   str[v[i]]    sim[i]  "
+                " sim[v[i]]  newsim[i]  offs  rev[offset]  cpSim[i]*100   sim[off] \n");
+        //TODO: sim only updates with future -- should not need
         std::vector<int> cpSim = sim;
         for(int i = 0; i <= len; i++) {
-            int offset = v[i] + e;
+            int offset = i + e;
             if(offset >= len) { 
                 //out("setting from %d to %d offset for %d\n", offset, len, i);
                 offset = len;
             }
-            int newv = cpSim[i] * 100 + cpSim[rev[offset]];
-            out("%3d    %3c    %3d    %4d     %4.*s    %8d   %8d   %8d   %8d   %8d"
-                "    + %8d\n", i, str[i], v[i], rev[i], 3, &str[v[i]], cpSim[i], 
-                newv, offset, rev[offset], cpSim[i] * 100, cpSim[rev[offset]]);
+            int newv = cpSim[i] * 100 + cpSim[offset];
+            out("%3d    %3c    %3d    %4d     %4.*s    %8d   %8d %8d   %8d   %8d   %8d"
+                "    + %8d\n", i, str[i], v[i], rev[i], 2*e, &str[v[i]], cpSim[i], 
+                 sim[v[i]], newv, offset, rev[offset], cpSim[i] * 100, cpSim[offset]);
             sim[i] = newv;
         }
 
@@ -322,23 +323,33 @@ void nlogn_msd_sort(const uint8_t * str, std::vector<int> &v, int start, int end
         std::vector<int> vcp = v;
         std::sort(v.begin(), v.end(), ct);
 
-        out("After sorting: \ni, str[i], v[i], rev[i],    &str[v[i]], sim[i]\n" );
+        out("After sorting: \ni, str[i], cpV[i], v[i], rev[i],    &str[v[i]], sim[i]\n" );
         for(int i = 0; i <= len; i++) {
-            out("%3d    %3c    %3d    %4d     %4.*s    %8d   \n", i, str[i], v[i], rev[i], 3, &str[v[i]], sim[i]);
+            out("%3d    %3c    %3d   %3d    %4d     %4.*s    %8d   \n", i, str[i], vcp[i], v[i], rev[i], 2*e, &str[v[i]], sim[i]);
+            //out("%d: %c   %d vs %d   %c\n", i, str[v[i]], v[i], vcp[i], str[vcp[i]]);
         }
 
         int count = 0;
-        int prev = sim[0];
+        int prev = sim[v[0]];
         for(int i = 0; i <= len; i++) {
-            if(sim[i] != prev) {
+            int indx = v[i];
+            if(sim[indx] != prev) {
                 count++;
-                prev = sim[i];
+                prev = sim[indx];
             }
-            sim[i] = count;
+            sim[indx] = count;
         }
-        //if(count > len) break;
-        out("for turn %d, count is %d\n", e, count);
+        out("for e=%d, count is %d\n", e, count);
+        if(count >= len) break;
     }
+        out("Finally\n");
+        out(" i  str[i]  v[i]     str[v[i]]      "
+                " sim[v[i]]  sim[i]  \n");
+        for(int i = 0; i <= len; i++) {
+            out("%3d    %3c    %3d     %4.8s    %8d   %8d   \n", 
+                  i, str[i], v[i], &str[v[i]], sim[v[i]], sim[i]);
+        }
+
     v.erase(v.begin());
 }
 
@@ -429,6 +440,10 @@ int main(void)
   out("\nsorted strings: \n");
   for(std::vector<int >::iterator it = copy5.begin(); it !=copy5.end(); it++)
     out("%s\n",&s[*it]);
+
+  for(int i =0; i < len; i++)
+      if(copy1[i] - copy5[i] !=  0)
+         out("%d %d %d\n",i, copy1[i], copy5[i]);
 
   assert(copy1 == copy5 && "sorted results differ");
   }

@@ -302,33 +302,6 @@ void nlogn_msd_sort(const uint8_t * str, std::vector<int> &v, int start, int end
             rev[v[i]] = i;
         } 
 
-        out(" i  str[i]  v[i]     rev[i]   str[v[i]]    sim[i]  "
-                " sim[v[i]]  newsim[i]  offs  rev[offset]  cpSim[i]*100   sim[off] \n");
-        //TODO: sim only updates with future -- should not need
-        std::vector<int> cpSim = sim;
-        for(int i = 0; i <= len; i++) {
-            int offset = i + e;
-            if(offset >= len) { 
-                //out("setting from %d to %d offset for %d\n", offset, len, i);
-                offset = len;
-            }
-            int newv = cpSim[i] * 100 + cpSim[offset];
-            out("%3d    %3c    %3d    %4d     %4.*s    %8d   %8d %8d   %8d   %8d   %8d"
-                "    + %8d\n", i, str[i], v[i], rev[i], 2*e, &str[v[i]], cpSim[i], 
-                 sim[v[i]], newv, offset, rev[offset], cpSim[i] * 100, cpSim[offset]);
-            sim[i] = newv;
-        }
-
-        comp2 ct(sim, rev, nV);
-        std::vector<int> vcp = v;
-        std::sort(v.begin(), v.end(), ct);
-
-        out("After sorting: \ni, str[i], cpV[i], v[i], rev[i],    &str[v[i]], sim[i]\n" );
-        for(int i = 0; i <= len; i++) {
-            out("%3d    %3c    %3d   %3d    %4d     %4.*s    %8d   \n", i, str[i], vcp[i], v[i], rev[i], 2*e, &str[v[i]], sim[i]);
-            //out("%d: %c   %d vs %d   %c\n", i, str[v[i]], v[i], vcp[i], str[vcp[i]]);
-        }
-
         int count = 0;
         int prev = sim[v[0]];
         for(int i = 0; i <= len; i++) {
@@ -341,6 +314,44 @@ void nlogn_msd_sort(const uint8_t * str, std::vector<int> &v, int start, int end
         }
         out("for e=%d, count is %d\n", e, count);
         if(count >= len) break;
+
+        out(" i  str[i]  v[i]     rev[i]   str[v[i]]    cpSim[i]  "
+                " cpSim[v[i]]  newsim[i]  offs  rev[offset]  cpSim[i]*R   cpSim[off] \n");
+        //TODO: sim only updates with future -- should not need
+        std::vector<int> cpSim = sim;
+        for(int i = 0; i <= len; i++) {
+            int offset = i + e;
+            if(offset >= len) { 
+                //out("setting from %d to %d offset for %d\n", offset, len, i);
+                offset = len;
+            }
+            /* fundamental problem of this method is that we get collisions:
+210    ABBACANDOABBACAN    sim 42 * 256 = 10240    + 298 (sim[offset]) = 10538  
+219    ABBACANOABBACANT    sim 43 * 256 = 10538    +  42               = 10496    
+
+            so now 210 which should be < than 219, will sort to be > than 219, 
+            thus not sort properly.  
+            */
+
+            //mult sim by len because the smallest thing needs to be > len;
+            int newv = cpSim[i] * (len+1) + cpSim[offset];
+            out("%3d    %4.*s    %3d    %4d     %4.*s    %8d   %8d %8d   %8d   %8d   %8d"
+                "    + %8d\n", i, 2*e, &str[i], v[i], rev[i], 2*e, 
+                 &str[v[i]], cpSim[i], 
+                 cpSim[v[i]], newv, offset, rev[offset], cpSim[i]*(len+1), cpSim[offset]);
+            sim[i] = newv;
+        }
+
+        comp2 ct(sim, rev, nV);
+        std::vector<int> vcp = v;
+        std::sort(v.begin(), v.end(), ct);
+
+        out("After sorting: \ni, str[i], cpV[i], v[i], rev[i],    &str[v[i]], sim[v[i]]\n" );
+        for(int i = 0; i <= len; i++) {
+            out("%3d    %3c    %3d   %3d    %4d     %4.*s    %8d   \n", i, str[i], vcp[i], v[i], rev[i], 2*e, &str[v[i]], sim[v[i]]);
+            //out("%d: %c   %d vs %d   %c\n", i, str[v[i]], v[i], vcp[i], str[vcp[i]]);
+        }
+
     }
         out("Finally\n");
         out(" i  str[i]  v[i]     str[v[i]]      "

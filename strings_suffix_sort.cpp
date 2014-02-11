@@ -21,7 +21,7 @@
 #include <stdint.h>
 #include <sys/time.h>
 
-#define DEBUG true
+//#define DEBUG true
 #ifdef DEBUG
 #define out printf
 #else
@@ -262,7 +262,7 @@ void counting_sort_once(const uint8_t * str, int len, std::vector<int> &v, int c
 }
 
 struct comp2 {
-    comp2(const std::vector<int> &sim, const std::vector<int> &rev, const std::vector<int> &nV) : m_sim(sim), m_rev(rev), m_nV(nV) {}
+    comp2(const std::vector<int> &sim) : m_sim(sim) {}
     bool operator () (int a, int b) { //these are the v[i] values that are passed in
 
         bool res = (m_sim[a] < m_sim[b]);
@@ -270,8 +270,6 @@ struct comp2 {
         return res;
     }
     const std::vector<int> &m_sim;
-    const std::vector<int> &m_rev;
-    const std::vector<int> &m_nV;
 };
 
 //use counting sort to get the first position sorted,
@@ -291,16 +289,11 @@ void nlogn_msd_sort(const uint8_t * str, std::vector<int> &v, int start, int end
         sim[i] = str[i];
     }
     out("\n");
-     
-    std::vector<int> nV(len+1);
-    
+
     for(int e = 1; e <= len; e = e * 2) {
         //first col sorted in v 
         //now prepare v for second col sorting
-        std::vector<int> rev(len+1);
-        for(int i = 0; i <= len; i++) {
-            rev[v[i]] = i;
-        } 
+        std::vector<int> rev;
 
         int count = 0;
         int prev = sim[v[0]];
@@ -315,52 +308,28 @@ void nlogn_msd_sort(const uint8_t * str, std::vector<int> &v, int start, int end
         out("for e=%d, count is %d\n", e, count);
         if(count >= len) break;
 
-        out(" i  str[i]  v[i]     rev[i]   str[v[i]]    cpSim[i]  "
-                " cpSim[v[i]]  newsim[i]  offs  rev[offset]  cpSim[i]*R   cpSim[off] \n");
-        //TODO: sim only updates with future -- should not need
-        std::vector<int> cpSim = sim;
+        out(" i  str[i]  v[i]     rev[i]   str[v[i]]    sim[i]  "
+                " sim[v[i]]  newsim[i]  offs  rev[offset]  sim[i]*R   sim[off] \n");
         for(int i = 0; i <= len; i++) {
             int offset = i + e;
             if(offset >= len) { 
                 //out("setting from %d to %d offset for %d\n", offset, len, i);
                 offset = len;
             }
-            /* fundamental problem of this method is that we get collisions:
-210    ABBACANDOABBACAN    sim 42 * 256 = 10240    + 298 (sim[offset]) = 10538  
-219    ABBACANOABBACANT    sim 43 * 256 = 10538    +  42               = 10496    
-
-            so now 210 which should be < than 219, will sort to be > than 219, 
-            thus not sort properly.  
-            */
 
             //mult sim by len because the smallest thing needs to be > len;
-            int newv = cpSim[i] * (len+1) + cpSim[offset];
+            int newv = sim[i] * (len+1) + sim[offset];
             out("%3d    %4.*s    %3d    %4d     %4.*s    %8d   %8d %8d   %8d   %8d   %8d"
-                "    + %8d\n", i, 2*e, &str[i], v[i], rev[i], 2*e, 
-                 &str[v[i]], cpSim[i], 
-                 cpSim[v[i]], newv, offset, rev[offset], cpSim[i]*(len+1), cpSim[offset]);
+                    "    + %8d\n", i, 2*e, &str[i], v[i], rev[i], 2*e, 
+                    &str[v[i]], sim[i], 
+                    sim[v[i]], newv, offset, rev[offset], sim[i]*(len+1), sim[offset]);
             sim[i] = newv;
         }
 
-        comp2 ct(sim, rev, nV);
+        comp2 ct(sim);
         std::vector<int> vcp = v;
         std::sort(v.begin(), v.end(), ct);
-
-        out("After sorting: \ni, str[i], cpV[i], v[i], rev[i],    &str[v[i]], sim[v[i]]\n" );
-        for(int i = 0; i <= len; i++) {
-            out("%3d    %3c    %3d   %3d    %4d     %4.*s    %8d   \n", i, str[i], vcp[i], v[i], rev[i], 2*e, &str[v[i]], sim[v[i]]);
-            //out("%d: %c   %d vs %d   %c\n", i, str[v[i]], v[i], vcp[i], str[vcp[i]]);
-        }
-
     }
-        out("Finally\n");
-        out(" i  str[i]  v[i]     str[v[i]]      "
-                " sim[v[i]]  sim[i]  \n");
-        for(int i = 0; i <= len; i++) {
-            out("%3d    %3c    %3d     %4.8s    %8d   %8d   \n", 
-                  i, str[i], v[i], &str[v[i]], sim[v[i]], sim[i]);
-        }
-
     v.erase(v.begin());
 }
 
@@ -454,7 +423,7 @@ int main(void)
 
   for(int i =0; i < len; i++)
       if(copy1[i] - copy5[i] !=  0)
-         out("%d %d %d\n",i, copy1[i], copy5[i]);
+         printf("%d %d %d\n",i, copy1[i], copy5[i]);
 
   assert(copy1 == copy5 && "sorted results differ");
   }

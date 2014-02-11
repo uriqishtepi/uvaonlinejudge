@@ -30,6 +30,7 @@
 
 
 #define R 256
+const unsigned long long int intmax = 1ULL << 31;
 
 
 //comparator for the sorting of the indices
@@ -262,14 +263,14 @@ void counting_sort_once(const uint8_t * str, int len, std::vector<int> &v, int c
 }
 
 struct comp2 {
-    comp2(const std::vector<int> &sim) : m_sim(sim) {}
+    comp2(const std::vector<unsigned long long int> &sim) : m_sim(sim) {}
     bool operator () (int a, int b) { //these are the v[i] values that are passed in
 
         bool res = (m_sim[a] < m_sim[b]);
         //out("comparing el: %d %c %d, offs %d %d, val %d,%d\n", m_sim[a], res ? '<' : '>', m_sim[b], m_rev[a], m_rev[b], a,b);
         return res;
     }
-    const std::vector<int> &m_sim;
+    const std::vector<unsigned long long int> &m_sim;
 };
 
 //use counting sort to get the first position sorted,
@@ -284,7 +285,7 @@ void nlogn_msd_sort(const uint8_t * str, std::vector<int> &v, int start, int end
     counting_sort_once(str, len, v, counts);
 
     //sim will be the object to sort on from now on
-    std::vector<int> sim(len+1);
+    std::vector<unsigned long long int> sim(len+1);
     for(int i = 0; i <= len; i++) {
         sim[i] = str[i];
     }
@@ -296,7 +297,7 @@ void nlogn_msd_sort(const uint8_t * str, std::vector<int> &v, int start, int end
         std::vector<int> rev;
 
         int count = 0;
-        int prev = sim[v[0]];
+        unsigned long long int prev = sim[v[0]];
         for(int i = 0; i <= len; i++) {
             int indx = v[i];
             if(sim[indx] != prev) {
@@ -318,7 +319,7 @@ void nlogn_msd_sort(const uint8_t * str, std::vector<int> &v, int start, int end
             }
 
             //mult sim by len because the smallest thing needs to be > len;
-            int newv = sim[i] * (len+1) + sim[offset];
+            unsigned long long int newv = sim[i] * intmax + sim[offset];
             out("%3d    %4.*s    %3d    %4d     %4.*s    %8d   %8d %8d   %8d   %8d   %8d"
                     "    + %8d\n", i, 2*e, &str[i], v[i], rev[i], 2*e, 
                     &str[v[i]], sim[i], 
@@ -327,7 +328,6 @@ void nlogn_msd_sort(const uint8_t * str, std::vector<int> &v, int start, int end
         }
 
         comp2 ct(sim);
-        std::vector<int> vcp = v;
         std::sort(v.begin(), v.end(), ct);
     }
     v.erase(v.begin());

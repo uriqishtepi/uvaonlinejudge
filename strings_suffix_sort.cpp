@@ -265,9 +265,8 @@ void counting_sort_once(const uint8_t * str, int len, std::vector<int> &v, int c
 struct comp2 {
     comp2(const std::vector<unsigned long long int> &sim) : m_sim(sim) {}
     bool operator () (int a, int b) { //these are the v[i] values that are passed in
-
         bool res = (m_sim[a] < m_sim[b]);
-        //out("comparing el: %d %c %d, offs %d %d, val %d,%d\n", m_sim[a], res ? '<' : '>', m_sim[b], m_rev[a], m_rev[b], a,b);
+        out("comparing a=%d, b=%d, %ld %c %ld\n", a,b, m_sim[a], (res ? '<' : '>'), m_sim[b]);
         return res;
     }
     const std::vector<unsigned long long int> &m_sim;
@@ -279,39 +278,33 @@ struct comp2 {
 //
 //
 //first iteration of this use std::sort then see if couting sort can be faster
+//in the case of normal strings, this will be quite slower because the constant
+//factor makes this relatively worse sort. However for strings such as 
+//AAAAAABBBBBBCCCCCAAAAABBBBB 
+//it is quite faster than all the others, except threewayquicksort.
 void nlogn_msd_sort(const uint8_t * str, std::vector<int> &v, int start, int end, int chrindx, int len)
 {
     int counts[R+1] = {0};
     counting_sort_once(str, len, v, counts);
+    int N = len + 1;
 
     //sim will be the object to sort on from now on
-    std::vector<unsigned long long int> sim(len+1);
-    for(int i = 0; i <= len; i++) {
+    std::vector<unsigned long long int> sim(N);
+    for(int i = 0; i < N; i++) {
         sim[i] = str[i];
     }
     out("\n");
+    comp2 ct(sim);
+    std::vector<int> rev(N);
+    std::vector<int> oldsim(N);
 
-    for(int e = 1; e <= len; e = e * 2) {
+    for(int e = 1; e < N; e = e * 2) {
         //first col sorted in v 
         //now prepare v for second col sorting
-        std::vector<int> rev;
 
-        int count = 0;
-        unsigned long long int prev = sim[v[0]];
-        for(int i = 0; i <= len; i++) {
-            int indx = v[i];
-            if(sim[indx] != prev) {
-                count++;
-                prev = sim[indx];
-            }
-            sim[indx] = count;
-        }
-        out("for e=%d, count is %d\n", e, count);
-        if(count >= len) break;
-
-        out(" i  str[i]  v[i]     rev[i]   str[v[i]]    sim[i]  "
+        out("  i  str[i]  v[i]     rev[i]   str[v[i]]    sim[i]  "
                 " sim[v[i]]  newsim[i]  offs  rev[offset]  sim[i]*R   sim[off] \n");
-        for(int i = 0; i <= len; i++) {
+        for(int i = 0; i < N; i++) {
             int offset = i + e;
             if(offset >= len) { 
                 //out("setting from %d to %d offset for %d\n", offset, len, i);
@@ -319,19 +312,74 @@ void nlogn_msd_sort(const uint8_t * str, std::vector<int> &v, int start, int end
             }
 
             //mult sim by len because the smallest thing needs to be > len;
-            unsigned long long int newv = sim[i] * intmax + sim[offset];
+            unsigned long long int newv = sim[i] * N + sim[offset];
             out("%3d    %4.*s    %3d    %4d     %4.*s    %8d   %8d %8d   %8d   %8d   %8d"
-                    "    + %8d\n", i, 2*e, &str[i], v[i], rev[i], 2*e, 
-                    &str[v[i]], sim[i], 
-                    sim[v[i]], newv, offset, rev[offset], sim[i]*(len+1), sim[offset]);
+                "    + %8d\n", i, 2*e, &str[i], v[i], rev[i], 2*e, 
+                &str[v[i]], sim[i], 
+                sim[v[i]], newv, offset, rev[offset], sim[i]*N, sim[offset]);
+            oldsim[i] = sim[i];
             sim[i] = newv;
         }
+        //std::sort(v.begin(), v.end(), ct);
+        //need to sort before reassigning the next counters, otherwise we'd assign
+        //the wrong indices and they would never sort
+        int prev_i = 0;
+        int prevind = 0;
+        unsigned long long int prev = oldsim[v[0]];
+        for(int i = 0; i < N; i++) {
+            int indx = v[i];
+            out("indx = %d\n", indx);
+            if(oldsim[indx] != prev) {
+                std::sort(v.begin() + prev_i, v.begin() + i, ct);
+                prev = oldsim[indx];
+                prevind = indx;
+                prev_i = i;
+            }
+        }
+        if(prevind < N) std::sort(v.begin() + prev_i, v.end(), ct);
+        
+        
+        int count = 0;
+        //reassign to sim values from 0 to len (at worse)
+        prevind = 0;
+        prev = sim[v[0]];
+        for(int i = 0; i < N; i++) {
+            int indx = v[i];
+            if(sim[indx] != prev) {
+                count++;
+                prev = sim[indx];
+                prevind = indx;
+            }
+            sim[indx] = count;
+        }
 
-        comp2 ct(sim);
-        std::sort(v.begin(), v.end(), ct);
+        out("for e=%d, count is %d\n", e, count);
+        if(count++ >= len) break; //if we assigned len different values, we are done
+
+
     }
-    v.erase(v.begin());
+    v.erase(v.begin()); //the first item is \0, we want to erase it
 }
+
+
+//array v comming in must be sorted in e - 1 level, we now recursively sort
+//it at the e level
+//need to have v presorted on the zeroth level, outside of this function
+//have sim be same size as v, here will access only sim[start] to sim[end]
+void rec_nlogn_msd_sort(const uint8_t * str, std::vector<int> &v, int start, int end, int len, int e, std::vector<int> & sim)
+{
+    //sort with comparator based on sim
+    
+    //for i start:end
+    //offset = v[i] + e;
+    //new_sim[i] = offset;
+    //if sim[v[i]] != prev
+    //    call rec_nlogn_msd_sort(...prev, i-1, new_sim)
+
+    //call one last time 
+    //rec_nlogn_msd_sort(...prev, len, new_sim)
+}
+
 
 void timediff(const char * s) {
     static timeval tv;

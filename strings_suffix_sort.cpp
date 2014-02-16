@@ -170,13 +170,10 @@ void counting_sort(const char * string, std::vector<int> &v,
         int offset = v[i]; //offset of the ith string
         const char c = string[offset + chrindx];
         counts[c + 2]++;
-        out("%d) strings[%d]=%s  counts[%c + 1]=%d \n",i, offset, &string[offset], string[offset+chrindx], counts[string[offset+chrindx] + 1]);
     }
 
     //accumulate the counts
     for(int i = 0; i < R+1; i++) {
-        if(counts[i+1] > 0)
-            out("counts[%c]=%d+%d\n",i-1, counts[i + 1], counts[i]);
         counts[i + 1] += counts[i];
     }
 
@@ -184,13 +181,10 @@ void counting_sort(const char * string, std::vector<int> &v,
         int offset = v[i]; //offset of the ith string
         const char c = string[offset + chrindx];
         aux[counts[c + 1]++ ] = v[i];
-        out("aux[%d]=%d\n", counts[c], v[i]);
     }
 
-    out("chrindx=%d\n",chrindx);
     for(int i = start; i < end; i++) {
         v[i] = aux[i - start];
-        out("%d) strings[%d]=%s\n", i, v[i], &string[v[i]]);
     }
 }
 
@@ -199,7 +193,6 @@ void counting_sort(const char * string, std::vector<int> &v,
 //aux is passed so we dont reallocate every time the helper array
 void msd_radix_sort(const char * string, std::vector<int> &v, std::vector<int> &aux, int start, int end, int chrindx)
 {
-    out("msd_radix_sort %d, %d, %d\n", start, end, chrindx);
     if(end - start < 2) return;
     /*
     if(end - start < 24) {
@@ -207,10 +200,6 @@ void msd_radix_sort(const char * string, std::vector<int> &v, std::vector<int> &
         return;
     }
     */
-
-    for(int i = start; i < end; i++) {
-        out("h %s\n", &string[v[i]]);
-    }
 
     int counts[R + 2] = {0};
     counting_sort(string, v, aux, start, end, chrindx, counts);
@@ -221,12 +210,6 @@ void msd_radix_sort(const char * string, std::vector<int> &v, std::vector<int> &
                     start + counts[r + 1], chrindx + 1);
         }
     }
-
-    out("finally:\n");
-    for(int i = start; i < end; i++) {
-        out("s %s\n", &string[v[i]]);
-    }
-
 }
 
 struct comp1 {
@@ -264,11 +247,8 @@ void counting_sort_once(const uint8_t * str, int len, std::vector<int> &v, int c
 
 struct comp2 {
     comp2(const std::vector<unsigned long long int> &sim) : m_sim(sim) {}
-    bool operator () (int a, int b) { //these are the v[i] values that are passed in
-        bool res = (m_sim[a] < m_sim[b]);
-        out("comparing a=%d, b=%d, %ld %c %ld\n", a,b, m_sim[a], (res ? '<' : '>'), m_sim[b]);
-        return res;
-    }
+    //these are the v[i] values that are passed in
+    bool operator () (int a, int b) { return (m_sim[a] < m_sim[b]); }
     const std::vector<unsigned long long int> &m_sim;
 };
 
@@ -281,8 +261,12 @@ struct comp2 {
 //in the case of normal strings, this will be quite slower because the constant
 //factor makes this relatively worse sort. However for strings such as 
 //AAAAAABBBBBBCCCCCAAAAABBBBB 
-//it is quite faster than all the others, except threewayquicksort.
-void nlogn_msd_sort(const uint8_t * str, std::vector<int> &v, int start, int end, int chrindx, int len)
+//it is quite faster than all the others, *even* threewayquicksort.
+//the only downside to this algorithm is that it does three N loops
+//for each e, if there were a way to compress to two or one, that would
+//mean that we could get a bit faster algorithm (maybe).
+//
+void nlogn_msd_sort(const uint8_t * str, std::vector<int> &v, int len)
 {
     int counts[R+1] = {0};
     counting_sort_once(str, len, v, counts);
@@ -293,55 +277,39 @@ void nlogn_msd_sort(const uint8_t * str, std::vector<int> &v, int start, int end
     for(int i = 0; i < N; i++) {
         sim[i] = str[i];
     }
-    out("\n");
     comp2 ct(sim);
-    std::vector<int> rev(N);
-    std::vector<int> oldsim(N);
 
+    //e-th col sorted in v -- now prepare v for 2*e col sorting
     for(int e = 1; e < N; e = e * 2) {
-        //first col sorted in v 
-        //now prepare v for second col sorting
-
-        out("  i  str[i]  v[i]     rev[i]   str[v[i]]    sim[i]  "
-                " sim[v[i]]  newsim[i]  offs  rev[offset]  sim[i]*R   sim[off] \n");
+        //iterate over sim, prepare the next round of sim values
         for(int i = 0; i < N; i++) {
             int offset = i + e;
             if(offset >= len) { 
-                //out("setting from %d to %d offset for %d\n", offset, len, i);
                 offset = len;
             }
 
             //mult sim by len because the smallest thing needs to be > len;
-            unsigned long long int newv = sim[i] * N + sim[offset];
-            out("%3d    %4.*s    %3d    %4d     %4.*s    %8d   %8d %8d   %8d   %8d   %8d"
-                "    + %8d\n", i, 2*e, &str[i], v[i], rev[i], 2*e, 
-                &str[v[i]], sim[i], 
-                sim[v[i]], newv, offset, rev[offset], sim[i]*N, sim[offset]);
-            oldsim[i] = sim[i];
-            sim[i] = newv;
+            sim[i] = (sim[i] << 32) + sim[offset];
         }
-        //std::sort(v.begin(), v.end(), ct);
-        //need to sort before reassigning the next counters, otherwise we'd assign
-        //the wrong indices and they would never sort
+        
+        //to sort correctly, sort each bucket before reassigning the next counters
         int prev_i = 0;
-        int prevind = 0;
-        unsigned long long int prev = oldsim[v[0]];
+        unsigned long long int prev = sim[v[0]] >> 32;
+        //iterate over v, sort each bucket (v-s for which oldsim was equal)
         for(int i = 0; i < N; i++) {
             int indx = v[i];
-            out("indx = %d\n", indx);
-            if(oldsim[indx] != prev) {
+            int cursim = sim[indx] >> 32;
+            if(cursim != prev) {
                 std::sort(v.begin() + prev_i, v.begin() + i, ct);
-                prev = oldsim[indx];
-                prevind = indx;
+                prev = cursim;
                 prev_i = i;
             }
         }
-        if(prevind < N) std::sort(v.begin() + prev_i, v.end(), ct);
-        
+        if(prev_i < N) std::sort(v.begin() + prev_i, v.end(), ct);
         
         int count = 0;
-        //reassign to sim values from 0 to len (at worse)
-        prevind = 0;
+        //iterate over sim, reassign to sim values from 0 to len (at worse)
+        int prevind = 0;
         prev = sim[v[0]];
         for(int i = 0; i < N; i++) {
             int indx = v[i];
@@ -352,33 +320,11 @@ void nlogn_msd_sort(const uint8_t * str, std::vector<int> &v, int start, int end
             }
             sim[indx] = count;
         }
-
-        out("for e=%d, count is %d\n", e, count);
         if(count++ >= len) break; //if we assigned len different values, we are done
-
-
     }
     v.erase(v.begin()); //the first item is \0, we want to erase it
 }
 
-
-//array v comming in must be sorted in e - 1 level, we now recursively sort
-//it at the e level
-//need to have v presorted on the zeroth level, outside of this function
-//have sim be same size as v, here will access only sim[start] to sim[end]
-void rec_nlogn_msd_sort(const uint8_t * str, std::vector<int> &v, int start, int end, int len, int e, std::vector<int> & sim)
-{
-    //sort with comparator based on sim
-    
-    //for i start:end
-    //offset = v[i] + e;
-    //new_sim[i] = offset;
-    //if sim[v[i]] != prev
-    //    call rec_nlogn_msd_sort(...prev, i-1, new_sim)
-
-    //call one last time 
-    //rec_nlogn_msd_sort(...prev, len, new_sim)
-}
 
 
 void timediff(const char * s) {
@@ -458,7 +404,7 @@ int main(void)
 
   {
   std::vector<int> copy5;
-  nlogn_msd_sort((uint8_t*)s.c_str(), copy5, 0, len, 0, len);
+  nlogn_msd_sort((uint8_t*)s.c_str(), copy5, len);
   timediff("nlogn_msd_sort");
 
   out("sorted offsets: ");

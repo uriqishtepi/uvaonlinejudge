@@ -295,14 +295,18 @@ void nlogn_msd_sort(const uint8_t * str, std::vector<int> &v, int len)
         //to sort correctly, sort each bucket before reassigning the next counters
         int prev_i = 0;
         unsigned long long int prev = sim[v[0]] >> 32;
+        int gc = 0;
         //iterate over v, sort each bucket (v-s for which oldsim was equal)
         for(int i = 0; i < N; i++) {
             int indx = v[i];
             int cursim = sim[indx] >> 32;
+            gc++;
             if(cursim != prev) {
-                std::sort(v.begin() + prev_i, v.begin() + i, ct);
+                if(gc > 1) 
+                    std::sort(v.begin() + prev_i, v.begin() + i, ct);
                 prev = cursim;
                 prev_i = i;
+                gc = 0;
             }
         }
         if(prev_i < N) std::sort(v.begin() + prev_i, v.end(), ct);

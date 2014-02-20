@@ -252,6 +252,24 @@ struct comp2 {
     const std::vector<unsigned long long int> &m_sim;
 };
 
+
+inline void printall(const uint8_t * str, std::vector<int> &v, 
+        std::vector<unsigned long long int> &sim, 
+        std::vector<int> &buckets, int e, int len)
+{
+    printf("  i  str[i]  v[i]      str[v[i]]    "
+            "sim[i]  sim[v[i]]   buckets[sim[v[i] \n");
+    //iterate over sim, prepare the next round of sim values
+    for(int i = 0; i <= len; i++) {
+        //mult sim by len because the smallest thing needs to be > len;
+        printf("%3d    %4.*s    %3d     %4.*s"    
+                "   %8llu    %8llu    %8d \n", 
+                i,  2*e, &str[i],  v[i], 2*e, &str[v[i]], 
+                sim[i], sim[v[i]], buckets[sim[v[i]]]);
+    }
+
+}
+
 //use counting sort to get the first position sorted,
 //then sort second based on the first, then col 3 and 4 based on first two,
 //and so on, to get a N*logN solution
@@ -274,13 +292,39 @@ void nlogn_msd_sort(const uint8_t * str, std::vector<int> &v, int len)
 
     //sim will be the object to sort on from now on
     std::vector<unsigned long long int> sim(N);
+    //buckets to store the sim[i] information
+    //multiple sim[i] can map to the same bucket 
+    std::vector<int> buckets(N);
+
     for(int i = 0; i < N; i++) {
         sim[i] = str[i];
     }
     comp2 ct(sim);
 
     //e-th col sorted in v -- now prepare v for 2*e col sorting
-    for(int e = 1; e < N; e = e * 2) {
+    for(int e = 1; e < N; e = e * 2) 
+    {
+        int bucketcount = 0;
+        //iterate over sim, reassign to sim values from 0 to len (at worse)
+        int prevind = 0;
+        unsigned long long int prev = sim[v[0]];
+        for(int i = 0; i < N; i++) {
+            int indx = v[i];
+            if(sim[indx] != prev) {
+                prev = sim[indx];
+                prevind = indx;
+                bucketcount++;
+            }
+            sim[indx] = bucketcount;
+            buckets[bucketcount]++;
+        }
+
+        if(bucketcount > len) break; //if we assigned len different values, we are done
+        //printf("bucketcount=%d\n", bucketcount);
+        //printall(str, v, sim, buckets, e, len);
+
+
+        //can the below be merged with the above, if starting from N to 0?
         //iterate over sim, prepare the next round of sim values
         for(int i = 0; i < N; i++) {
             int offset = i + e;
@@ -291,40 +335,26 @@ void nlogn_msd_sort(const uint8_t * str, std::vector<int> &v, int len)
             //mult sim by len because the smallest thing needs to be > len;
             sim[i] = (sim[i] << 32) + sim[offset];
         }
+
+        //printall(str, v, sim, buckets, e, len);
         
         //to sort correctly, sort each bucket before reassigning the next counters
         int prev_i = 0;
-        unsigned long long int prev = sim[v[0]] >> 32;
         int gc = 0;
+        int offset = 0;
         //iterate over v, sort each bucket (v-s for which oldsim was equal)
-        for(int i = 0; i < N; i++) {
-            int indx = v[i];
-            int cursim = sim[indx] >> 32;
-            gc++;
-            if(cursim != prev) {
-                if(gc > 1) 
-                    std::sort(v.begin() + prev_i, v.begin() + i, ct);
-                prev = cursim;
-                prev_i = i;
-                gc = 0;
+        //if v[1] is in the same bucket as v[2], buckets[sim[v[1]]] will be > 1
+        for(int i = 0; i <= bucketcount; i++) {
+            int indx = v[offset];
+            int bucketsz = buckets[i];
+            //printf( "%d) offset=%d, sim[%d] %llu != i %d, bucketsz=%d\n",i, offset, indx, sim[indx], i, bucketsz);
+            if( bucketsz > 1) {
+                std::sort(v.begin() + offset, v.begin() + offset + bucketsz, ct);
             }
+            offset+=bucketsz;
         }
-        if(prev_i < N) std::sort(v.begin() + prev_i, v.end(), ct);
         
-        int count = 0;
-        //iterate over sim, reassign to sim values from 0 to len (at worse)
-        int prevind = 0;
-        prev = sim[v[0]];
-        for(int i = 0; i < N; i++) {
-            int indx = v[i];
-            if(sim[indx] != prev) {
-                count++;
-                prev = sim[indx];
-                prevind = indx;
-            }
-            sim[indx] = count;
-        }
-        if(count++ >= len) break; //if we assigned len different values, we are done
+        std::fill(buckets.begin(), buckets.begin() + bucketcount+1, 0); //zero out bucket counts
     }
     v.erase(v.begin()); //the first item is \0, we want to erase it
 }
@@ -393,7 +423,7 @@ int main(void)
   }
   
 
-  {
+  if(false) {
   std::vector<int> copy4 = suffixes;
   std::vector<int> aux = suffixes;
   msd_radix_sort(s.c_str(), copy4, aux, 0, len, 0);

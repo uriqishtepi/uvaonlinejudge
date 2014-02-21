@@ -301,32 +301,34 @@ void nlogn_msd_sort(const uint8_t * str, std::vector<int> &v, int len)
     }
     comp2 ct(sim);
 
+    int bucketcount = 0;
+    //iterate over sim, reassign to sim values from 0 to len (at worse)
+    unsigned long long int prev = sim[v[0]];
+    buckets[bucketcount] = 0; //[0] <- 0
+    for(int i = 0; i < N; i++) {
+        int indx = v[i];
+        if(sim[indx] != prev) {
+            prev = sim[indx];
+            bucketcount++;
+            buckets[bucketcount] = 0;
+        }
+        sim[indx] = bucketcount;
+        buckets[bucketcount]++;
+    }
+
+
     //e-th col sorted in v -- now prepare v for 2*e col sorting
     for(int e = 1; e < N; e = e * 2) 
     {
-        int bucketcount = 0;
-        //iterate over sim, reassign to sim values from 0 to len (at worse)
-        int prevind = 0;
-        unsigned long long int prev = sim[v[0]];
-        for(int i = 0; i < N; i++) {
-            int indx = v[i];
-            if(sim[indx] != prev) {
-                prev = sim[indx];
-                prevind = indx;
-                bucketcount++;
-            }
-            sim[indx] = bucketcount;
-            buckets[bucketcount]++;
-        }
-
-        if(bucketcount > len) break; //if we assigned len different values, we are done
         //printf("bucketcount=%d\n", bucketcount);
         //printall(str, v, sim, buckets, e, len);
 
+        if(bucketcount > len) break; //if we assigned len different values, we are done
 
         //can the below be merged with the above, if starting from N to 0?
         //iterate over sim, prepare the next round of sim values
         for(int i = 0; i < N; i++) {
+            if(buckets[sim[i]] < 2) continue;
             int offset = i + e;
             if(offset >= len) { 
                 offset = len;
@@ -335,26 +337,37 @@ void nlogn_msd_sort(const uint8_t * str, std::vector<int> &v, int len)
             //mult sim by len because the smallest thing needs to be > len;
             sim[i] = (sim[i] << 32) + sim[offset];
         }
-
-        //printall(str, v, sim, buckets, e, len);
         
         //to sort correctly, sort each bucket before reassigning the next counters
-        int prev_i = 0;
-        int gc = 0;
         int offset = 0;
+        std::vector<int> nbuckets(N);
+        int nbucketcount = 0;
+        prev = sim[v[offset]];
+
         //iterate over v, sort each bucket (v-s for which oldsim was equal)
         //if v[1] is in the same bucket as v[2], buckets[sim[v[1]]] will be > 1
         for(int i = 0; i <= bucketcount; i++) {
-            int indx = v[offset];
             int bucketsz = buckets[i];
             //printf( "%d) offset=%d, sim[%d] %llu != i %d, bucketsz=%d\n",i, offset, indx, sim[indx], i, bucketsz);
             if( bucketsz > 1) {
                 std::sort(v.begin() + offset, v.begin() + offset + bucketsz, ct);
             }
+
+            //can now rebucket sim[v[offset]: v[offset + bucketsz]] onto a new vect
+            for(int j = 0; j < bucketsz; j++) {
+                int l = offset + j;
+                int indx = v[l];
+                if(sim[indx] != prev) {
+                    prev = sim[indx];
+                    nbucketcount++;
+                }
+                sim[indx] = nbucketcount;
+                nbuckets[nbucketcount]++;
+            }
             offset+=bucketsz;
         }
-        
-        std::fill(buckets.begin(), buckets.begin() + bucketcount+1, 0); //zero out bucket counts
+        buckets = nbuckets;
+        bucketcount = nbucketcount;
     }
     v.erase(v.begin()); //the first item is \0, we want to erase it
 }

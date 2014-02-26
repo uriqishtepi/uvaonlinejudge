@@ -21,7 +21,7 @@
 #define msi std::map<std::string, int>
 #define INF 1<<30;
 
-#define DEBUG true
+//#define DEBUG true
 #ifdef DEBUG
 #define out printf
 #else
@@ -42,11 +42,9 @@ struct comparator {
         g_maxPtr = NULL;
     }
 
-    bool operator()(int a, int b) {
-        assert(a < m_n);
-        assert(b < m_n);
-        const char*pa = m_str+a;
-        const char*pb = m_str+b;
+    bool operator()(const char * pa, const char * pb) {
+        const char * spa = pa;
+        const char * spb = pb;
         int len = 0;
         while(*pa && *pb && *pa == *pb && len < m_n) {
             pa++;
@@ -54,16 +52,17 @@ struct comparator {
             len++;
         }
 
-        out("maxlen=%d, cmp %d %d, determined by %.*s %.*s\n", 
-                g_maxLen, a, b, len+1, m_str+a, len+1, m_str+b);
 
-        if(len > g_maxLen) {
+        if(len > g_maxLen || (len == g_maxLen && strncmp(spa, g_maxPtr,len)<0))
+        {
             out(" inc maxlen %d (<= len %d), ", g_maxLen, len);
             g_maxLen = len;
-            g_maxPtr = pa;
+            g_maxPtr = spa;
         }
 
-        out(" maxlen=%d, cmp %d %d, determined by %c %c\n", g_maxLen, a, b, *pa, *pb);
+        out("maxlen=%d, cmp %c %c, determined by '%.*s' and '%.*s'\n", 
+                g_maxLen, *spa, *spb, len+1, spa, len+1, spb);
+
         return (*pa < *pb);
     }
 
@@ -79,43 +78,67 @@ void find_smallest_repeating(char * str)
 
     maxPtr = str + 1;
     maxLen = 3;
-    size_t N = strlen(str);
-    assert(1 <= N && N <= 1000);
+    size_t N = strnlen(str, 1000);
 
     //sort strs
-    std::vector<int>v(N);
-    forl(i, 0, N) v[i]=i;
+    std::vector<const char*>v(N);
+    forl(i, 0, N) v[i]=str+i;
 
     comparator cmp(str, N);
     std::sort(v.begin(), v.end(), cmp);
 
-    forl(i, 0, N) out("%d ", v[i]);
+
+    for(std::vector<const char *>::iterator it = v.begin(); it != v.end(); ++it)
+    {
+        out("  %c (%d)", **it, *it);
+    }
     out("\n");
 
-    for( std::vector<int>::iterator it = v.begin(); it != v.end(); ++it) {
-        out("%c\n", str[*it]);
+    if(g_maxLen < 1) {
+        printf("No repetitions found!\n");
+        return;
     }
     
-    //find longest repeating
+    //The comparator will give us the longest repeated substring, smaller 
+    //than any other substring with the same length of repeititon
+    //Now we just need to find how many times such string repeats
+    
     out("maxlen = %d\n", g_maxLen);
+    std::vector<const char*>::iterator it = std::find(v.begin(), v.end(), g_maxPtr);
+    assert(it != v.end());
+    out("Found g_maxPtr: %.*s (%d) \n", g_maxLen, *it, *it);
+    std::vector<const char*>::iterator sit = it;
+
     int freq = 0; //compute freq of the maxPtr
 
-    if(g_maxLen < 2)
-        printf("No repetitions found!\n");
-    else
-        printf("%.*s %d\n", g_maxLen, g_maxPtr, freq);
+    //the while loop counts *it as well
+    while(it != v.end() && strncmp(g_maxPtr, *it, g_maxLen) == 0) {
+        out("next *it: %.*s\n", g_maxLen, *it);
+        freq++;
+        it++;
+    }
+
+    //we dont know where in the range of same reps g_maxPtr fell
+    //so count backwards too, until reaching begin or a different substring
+    //v.begin will almost always be '\n', except for last line in file
+    while(v.begin() <= --sit && strncmp(g_maxPtr, *sit, g_maxLen) == 0) {
+        out("next *it: %.*s\n", g_maxLen, *sit);
+        freq++;
+    }
+
+
+    printf("%.*s %d\n", g_maxLen, g_maxPtr, freq);
 }
 
 int main(int argc, char **argv)
 {
     out("Starting...\n");
 
-    char str[21] = {0};
     char *buff = NULL;
     size_t sz;
     int n;
     scanf("%d\n",&n);
-    assert(1 <= n && n <= 100);
+    assert(1 <= n && n <= 100000);
 
     for(int i = 0; i < n; i++) {
         if(getline(&buff, &sz, stdin) < 0) return 0;

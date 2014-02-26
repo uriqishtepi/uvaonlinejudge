@@ -90,9 +90,8 @@ int main(int argc, char **argv)
             //and can not have x moves to be ahead more than 1
             printf("no\n");
         }
-        else if((xwin == 1 && owin == 1) || xwin > 1 || owin > 1) {
-            //can not x and o both win, 
-            //and can not have x or o have more than 1 win
+        else if(xwin == 1 && owin == 1) {
+            //can not x and o both win 
             printf("no\n");
         }
         else if(xwin == 1 && xcount == ocount) {

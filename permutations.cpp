@@ -45,43 +45,79 @@ void print(std::vector<int> &v)
     printf("\n");
 }
 
-void multcombinations(int N, std::vector<int> &v, int mult)
+void swap(int &a, int &b)
 {
-    if(N < 0) { print(v); return; }
+    int tmp = b;
+    b = a;
+    a = tmp;
+}
 
-    forl(i, 0, mult) {
-        v[N] = i;
-        multcombinations(N-1, v, mult);
+//permutations does *not* repeat same number twice: 1 2 3, 1 3 2, ....
+//initialize the v before getting here with the N items to permute
+//these are solutions to n-rooks problem
+void permutations(int N, int k, std::vector<int> &v)
+{
+    if(k >= N) { print(v); return; }
+
+    //by starting for loop at k, we avoid redoing a previous permutation
+    //(ie we avoid getting combinations)
+    forl(i, k, N) {
+        swap(v[k], v[i]);
+        permutations(N, k+1, v);
+        swap(v[k], v[i]);
     }
 }
 
 
-void combinations(int N, std::vector<int> &v)
+void multcombinations(int N, int k, std::vector<int> &v, int mult)
 {
-    if(N < 0) { print(v); return; }
+    if(k >= N) { print(v); return; }
 
-    v[N] = 0;
-    combinations(N-1, v);
-    v[N] = 1;
-    combinations(N-1, v);
+    forl(i, 0, mult) {
+        v[k] = i;
+        multcombinations(N, k+1, v, mult);
+    }
+}
+
+
+void combinations(int N, int k, std::vector<int> &v)
+{
+    if(k >= N) { print(v); return; }
+
+    v[k] = 0;
+    combinations(N, k+1, v);
+    v[k] = 1;
+    combinations(N, k+1, v);
 }
 
 int main(int argc, char **argv)
 {
     out("Starting...\n");
 
-    int N = 5;
     forl(i, 0, 5)
         forl(j, 0, 2)
             printf("i=%d, j=%d\n", i, j);
 
     {
+        printf("\nCombinations binary\n");
+        int N = 5;
         std::vector<int> v(N);
-        combinations(N-1, v);
+        combinations(N, 0,  v);
     }
 
     {
+        printf("\nCombinations n-ary \n");
+        int N = 3;
         std::vector<int> v(N);
-        multcombinations(4, v, 3);
+        multcombinations(N, 0, v, N);
+    }
+    
+    {
+        printf("\nPermutations \n");
+        int N = 3;
+        std::vector<int> v(N);
+        forl(i, 0, N)
+            v[i] = i;   
+        permutations(N, 0, v);
     }
 }

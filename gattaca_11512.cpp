@@ -1,3 +1,20 @@
+/* the goal of this problem is to find the longest repeating substring 
+ * so one way to do it is to sort all the substrings, keep track of
+ * the longest one and then count how many times it shows up 
+ * (obviously two or more). 
+ * Since we are sorting the array, that takes nlogn (where n is the strlen). 
+ *
+ * It could possibly be achieved with order N, by using two pointers, 
+ * the second one moving ahead of the first finding char same value, 
+ * then record length of how long is the same substring (like strcmp). 
+ * Then you set the first ptr to the second, and continue from
+ * begginning. Problem with this is that it will find the longest substring
+ * but not how many times it shows up, so one needs to do another go
+ * through the string to then find how many times it shows up. 
+ * This second part can be done by building a FSM of the longest repeated 
+ * substring that we found.
+ *
+ */
 #include<stdio.h>
 #include<math.h>
 #include<iostream>
@@ -126,7 +143,6 @@ void find_smallest_repeating(char * str)
         freq++;
     }
 
-
     printf("%.*s %d\n", g_maxLen, g_maxPtr, freq);
 }
 
@@ -145,5 +161,6 @@ int main(int argc, char **argv)
         out("buff=%s\n", buff);
         find_smallest_repeating(buff);
     }
+    free(buff); //cleanup
     return 0;
 }

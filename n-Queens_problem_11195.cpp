@@ -8,8 +8,8 @@
 #include<bitset>
 #include<set>
 #include<map>
-#include <string.h>
 #include <iomanip>
+#include <assert.h>
 
 #define forl(i,init, max) for(int i = init; i < max; i++) 
 #define vi std::vector<int>
@@ -88,6 +88,7 @@ int main(int argc, char **argv)
     int n;
     char board[15][15];
     while(scanf("%d\n",&n) && n > 0) {
+        assert(n > 3 && n < 15);
         g_nsol = 0;
         g_case++;       
         char *buff = NULL;

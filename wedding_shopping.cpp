@@ -78,7 +78,7 @@ int main(int argc, char **argv)
                 {
                     int l = s1[j] + d;
                     if(l <= M) {
-                        slots.insert(l);
+                        slots[l] = 1;
                         perfcounter++;
                     }
                     perfcounter++;
@@ -93,7 +93,6 @@ int main(int argc, char **argv)
                     s1[size++] = i;
                 slots[i]=0;
             }
-            slots.clear();
         }
 
         out("Perfcounter: %d\n", perfcounter);

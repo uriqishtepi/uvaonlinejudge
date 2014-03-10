@@ -103,6 +103,13 @@ void printSP(std::vector<edge> P, int i, int final)
 void printMatrix(matrix & D, int size)
 {
     forl(i, 0, size) { 
+        if(D(i,i) < 0) {
+            printf("negative cycles exists distance %d to %d is %f\n", i, i, D(i,i));
+            return;
+        }
+    }
+
+    forl(i, 0, size) { 
         forl(j, 0, size) { 
             if(INFINITY == D(i,j))
                 printf("%d -> %d sp=INF ");

@@ -128,49 +128,51 @@ void AllPairShortestPath(const graphtp & g)
 {
     int comparisons = 0;
     matrix D(g.size()); //initialized to infinity except for the diagonal
-    matrix visited(g.size());
-    forl(i, 0, g.size()) {
-        forl(j, 0, g.size()) {
-            visited(i,j) = 0;
-        }
-    }
+    mdi q;
 
-    mwp q;
-
-    forl(i, 0, g.size()) {
-        edge e; e.from = i; e.to = i; e.weight = 0.0;
-        q.insert(std::make_pair(0.0,e));
-    }
-
-    while( !q.empty() ) 
+    //call Dijkstra N times
+    forl(i, 0, g.size()) 
     {
-        //pop first
-        edge e = q.begin()->second;
-        q.erase(q.begin());
+        q.insert(std::make_pair(0.0,i));
+        out("initial i %d\n", i);
+        vi visited(g.size());
 
-        visited(e.from, e.to) = 1; 
-        out("node %d->%d (%f)\n", e.from, e.to, e.weight);
-
-        for(se::const_iterator it = g[e.to].begin(); it != g[e.to].end(); ++it) 
+        while( !q.empty() ) 
         {
-            out("considering %d -> %d -> %d \n", e.from, e.to, it->to);
-            if(visited(e.from,it->to) > 0)
-                continue;
+            //pop first
+            int node = q.begin()->second;
+            q.erase(q.begin());
 
-            assert(e.to == it->from);
-            //compute new D(e.from, it->to)
-            float dist = D(e.from,e.to) + it->weight;
-            out("dist = %f \n", dist);
-            if(D(e.from, it->to) > dist)
-                D(e.from, it->to) = dist;
+            visited[node] = true;
+            out("n - %d\n", node);
 
-            edge ne; ne.from = e.from; ne.to = it->to; ne.weight = D(e.from, it->to);
-            q.insert(std::make_pair(D(e.from, it->to), ne));
-            visited(e.from,it->to) = 1;
+            for(se::const_iterator it = g[node].begin(); it != g[node].end(); ++it) 
+            {
+
+                assert(it->from == node && "encountered an inconsistend element");
+                out("considering %d -> %d \n", node, it->to);
+                if(visited[it->to]) { //need to check because q allows dup nodes
+                    out("encountered a prev. visited node %d\n", it->to);
+                    continue;
+                }
+                float dist = D(i, node) + it->weight;
+                out("dist from %d to %d; old dist %.2f vs new dist %.2f\n", 
+                        node, it->to, D(i, it->to), dist);
+
+                comparisons++;
+                if(D(i, it->to) > dist) { //this is the relaxation step
+                    D(i, it->to) = dist;
+                }
+
+                //if this were a priority queue, we would search for the to elements
+                //and do decrease key on it -- so we would not insert again key
+                //unfortunately we can not do so with a map
+                q.insert(std::make_pair(D(i, it->to), it->to));
+            }
+
         }
-
     }
-    
+
     printMatrix(D, g.size());
 }
 

@@ -1,6 +1,10 @@
 /* this is an attempt to have all pairs shortest paths using the dijkstra 
  * algorigthm, by using a priority queue to insert all edges. 
- * Note that this does not currently find the shortest paths.
+ * There are two ways to search via dijkstra: one is to search once
+ * for each edge, ie N*dijkstra, and the other is to put each node
+ * in the queue with a weight of zero, then to do search on the first
+ * node of the queue, inserting items as we go. The second method may
+ * provide speedup if we use a proper priority queue.
  */
 #include <stack>
 #include <queue>
@@ -27,7 +31,7 @@
 #define vd std::vector<double>
 #define mwp std::multimap<double, edge> //map weight and destination point 
 #define mdi std::map<double, int>  //map double int
-#define se std::set<edge, cmpedge>  //set of edges
+#define se std::multiset<edge, cmpedge>  //set of edges
 #define graphtp std::vector< se >  //graph is a vector of maps -- the edges
 #define INFINITY 200000000
 
@@ -123,8 +127,7 @@ void printMatrix(matrix & D, int size)
 }
 
 
-
-void AllPairShortestPath(const graphtp & g)
+void DijkstraNTimesShortestPath(const graphtp & g)
 {
     int comparisons = 0;
     matrix D(g.size()); //initialized to infinity except for the diagonal
@@ -173,6 +176,58 @@ void AllPairShortestPath(const graphtp & g)
         }
     }
 
+    printMatrix(D, g.size());
+}
+
+
+void AllPairShortestPath(const graphtp & g)
+{
+    int comparisons = 0;
+    matrix D(g.size()); //initialized to infinity except for the diagonal
+    matrix visited(g.size());
+    forl(i, 0, g.size()) {
+        forl(j, 0, g.size()) {
+            visited(i,j) = 0;
+        }
+    }
+
+    mwp q;
+
+    forl(i, 0, g.size()) {
+        edge e; e.from = i; e.to = i; e.weight = 0.0;
+        q.insert(std::make_pair(0.0,e));
+    }
+
+    while( !q.empty() ) 
+    {
+        //pop first
+        edge e = q.begin()->second;
+        q.erase(q.begin());
+
+        visited(e.from, e.to) = 1; 
+        out("node %d->%d (%f)\n", e.from, e.to, e.weight);
+
+        for(se::const_iterator it = g[e.to].begin(); it != g[e.to].end(); ++it) 
+        {
+            out("considering %d -> %d -> %d \n", e.from, e.to, it->to);
+
+            assert(e.to == it->from);
+            //compute new D(e.from, it->to)
+            float dist = D(e.from,e.to) + it->weight;
+            out("dist from %d to %d; old dist %.2f vs new dist %.2f\n", 
+                            e.from, it->to, D(e.from, it->to), dist);
+
+            if(D(e.from, it->to) > dist)
+                D(e.from, it->to) = dist;
+
+            if(visited(e.from,it->to) > 0)
+                continue;
+            edge ne; ne.from = e.from; ne.to = it->to; ne.weight = D(e.from, it->to);
+            q.insert(std::make_pair(D(e.from, it->to), ne));
+            visited(e.from,it->to) = 1;
+        }
+    }
+    
     printMatrix(D, g.size());
 }
 

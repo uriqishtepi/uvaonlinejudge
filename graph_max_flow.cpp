@@ -1,4 +1,4 @@
-/* Ford fulkerson to find max flow, min cut
+/* Ford-Fulkerson to find max flow, min cut
  * its a grid algorithm although it can be solved via simplex algorithm */
 
 #include <stack>

@@ -1,6 +1,8 @@
 /* Shortest paths for any directed graph even with negative edges 
- * this is what is referred to as the bllman-ford-rao algorithm
- * where we relax all edges E times, once for each vertex.
+ * this is what is referred to as the Bellman-Ford-Moore algorithm
+ * where we relax all edges V times, once for each vertex.
+ * this this is a V^2 algorithm, with V amount of space for the Distances
+ * of each vertex from the starting vertex.
  */
 
 #include <stack>
@@ -109,6 +111,8 @@ void ShortestPath(const graphtp & g, int n)
         lastupdated.insert(i);
     }
 
+
+    //without optimization loop would be: for(int i = 0; i < g.size(); i++) 
     int counter = 0;
     while(!lastupdated.empty()) {
         si newlast;
@@ -123,8 +127,8 @@ void ShortestPath(const graphtp & g, int n)
                 assert(v == it->from && "not the same node");
                 if(D[it->to] > dist) { //this is the relaxation step
                     out("counter %d, it->to %d\n", counter, it->to);
-                    if(counter == g.size() - 1 && it->weight < 0) { 
-                        //we should not update a node in a stage greater than its node id
+                    if(counter >= g.size() - 1) { 
+                        //we should not update a node in a stage greater than sz-1
                         printf("negative cycles exists distance %d to %d is %f\n", v, it->to, dist);
                         //need to trace back from P[v]
                         printSP(P, it->to, v);

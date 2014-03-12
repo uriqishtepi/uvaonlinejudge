@@ -125,7 +125,7 @@ void printMatrix(matrix & D, int size)
 void AllPairShortestPath(const graphtp & g)
 {
     int comparisons = 0;
-    matrix D(g.size()); //initialized to infinity except for teh diagonal
+    matrix D(g.size()); //initialized to infinity except for the diagonal
 
     forl(i, 0, g.size()) { //for all vertices v get the distance from n
         for(se::const_iterator it = g[i].begin(); it != g[i].end(); ++it)
@@ -136,7 +136,7 @@ void AllPairShortestPath(const graphtp & g)
         forl(i, 0, g.size()) { //relax the distance between i and j
             forl(j, 0, g.size()) { 
                 double d = D(i,k) + D(k,j);
-                if(D(i,j) > d)
+                if(D(i,j) > d) //the so called relaxation step
                     D(i,j) = d;
             }
         }

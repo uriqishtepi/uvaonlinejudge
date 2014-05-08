@@ -79,6 +79,7 @@ void ModShortestPath(const graphtp & g, int h, int H[])
     q.insert(std::make_pair(0,0));
 
     int counter = 0;
+    int considered = 0;
     while(!q.empty()) 
     {
         //pop first
@@ -112,10 +113,12 @@ void ModShortestPath(const graphtp & g, int h, int H[])
                 out("\ninserting %d (%d,%d) \n", it->to, nd, nexth);
                 q.insert(std::make_pair(nd*1000+nexth, it->to));
              }
-            if( H[node] ) { //if it is not a hotel, nothing to do
+            if( H[it->to] ) { //if it is not a hotel, nothing to do
                 out("\nHinserting %d (%d,%d) \n", it->to, nd+1, it->weight);
                 q.insert(std::make_pair((nd+1)*1000+it->weight, it->to));
             }
+
+            out("considered = %d \n", ++considered);
 
             //out("dist from %d to %d; old dist %.2f vs new dist %.2f\n", node, it->to, D[it->to], dist);
         }
@@ -170,7 +173,6 @@ int main(void)
         assert(b >= 1 && b <= N); // start from 1
         assert(t >= 1 && t <= 600); // start from 1
 
-        if(t > 600) continue;
         edge e;
         e.from = a-1;
         e.to = b-1;

@@ -104,6 +104,4 @@ int main(int argc, char **argv)
         n_queens_problem(n, 0, v, board);
         printf("Case %d: %d\n",g_case,g_nsol);
     }
-
-
 }

@@ -123,7 +123,7 @@ int main(void)
                 out("red tok='%s'\n", tok);
                 e.push_back(nodeto);
 
-                if(from > nodeto) {
+                if(from < nodeto) {
                     edge eg;
                     eg.from = from;
                     eg.to = nodeto;

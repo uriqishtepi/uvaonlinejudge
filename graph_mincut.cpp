@@ -1,3 +1,7 @@
+/* ccmpute the min cut of a UNDIRECTED graph -- that is the input 
+ * will have symmetrical inital adjacency matrix.
+ */
+
 #include <stack>
 #include <queue>
 #include <assert.h>
@@ -19,8 +23,6 @@
 
 #define vi std::vector<int>
 #define graphtp std::vector< vi > 
-
-enum {white=0, gray=1, black=2,};
 
 struct edge {
     int from;
@@ -55,27 +57,38 @@ int mincut(int nodes, ve alledges)
         out("merging eg(%d,%d), nodes = %d\n", eg.from, eg.to, nodes);
 
         //merge node with neigbor, any .to turn it into .from
-        for(ve::iterator it = alledges.begin(); it != alledges.end(); ) {
+        for(ve::iterator it = alledges.begin(); it != alledges.end(); ++it) {
             //remove self loops
             if((it->from == eg.to && it->to == eg.from) 
               || (it->from == eg.from && it->to == eg.to)) {
-                it = alledges.erase(it); //returns the it following the erased
+                //skip
             }
             else if(it->from == eg.to) {
                 it->from = eg.from;
-                it++;
+                nall.push_back(*it);
             }
             else if(it->to == eg.to) {
                 it->to = eg.from;
-                it++;
+                nall.push_back(*it);
             }
-            else it++;
+            else
+                nall.push_back(*it);
         }
+        alledges = nall;
         nodes--;
     }
 
     //whatever is left is the cut
-    return alledges.size();
+    int mincut = 100000;
+    int node1 = alledges.begin()->from;
+    int n1count = 0;
+    int n2count = 0;
+    //two nodes are left
+    for(ve::iterator it = alledges.begin(); it != alledges.end(); ++it) {
+        if(it->from == node1) n1count++;
+        else n2count++;
+    }
+    return n1count < n2count ? n1count : n2count;
 }
 
 

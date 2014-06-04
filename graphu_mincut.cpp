@@ -56,24 +56,41 @@ void print_alls(const lseg & alledges)
     out("\n");
 }
 
+void swap(int &a, int &b)
+{
+    int tmp = b;
+    b = a;
+    a = tmp;
+}
 
 //need genuine copy of the parameters
-int mincut(graphtp incomming, graphtp outgoing, lseg alledges)
+int mincut(lseg alledges)
 {
-    while(incomming.size() > 2) {
+    graphtp g;
+    for(lseg::iterator it = alledges.begin(); it != alledges.end(); ++it) 
+    {
+        g[it->to].push_back(it);
+        g[it->from].push_back(it);
+    }
+
+    out("g: ");
+    print_graph(g);
+    print_alls(alledges);
+
+    while(g.size() > 2) {
         //pick edge randomly 
         int i = rand() % alledges.size();
         lseg::iterator it;
         for(it = alledges.begin(); it != alledges.end() && i > 0; it++, i--) ;
         edge eg = *it;
-        out("merging eg(%d,%d), incomming.size() = %d\n", eg.from, eg.to, incomming.size());
+        out("merging eg(%d,%d), incomming.size() = %d\n", eg.from, eg.to, g.size());
 
         //remove eg.to from the graph, substitute all references to 
         
         //work with incomming
         {
-            graphtp::iterator fit_i = incomming.find(it->to);
-            assert(fit_i != incomming.end() && "not found in incomming");
+            graphtp::iterator fit_i = g.find(it->to);
+            assert(fit_i != g.end() && "not found in incomming");
             vit & t_i = fit_i->second;
             vit::iterator jt = t_i.begin(); 
             while(jt != t_i.end()) {
@@ -81,21 +98,23 @@ int mincut(graphtp incomming, graphtp outgoing, lseg alledges)
                     jt = t_i.erase(jt);
                 else {
                     (*jt)->to = eg.from;
-                    incomming[eg.from].push_back(*jt);
+                    if((*jt)->to < (*jt)->from)
+                        swap((*jt)->to, (*jt)->from);
+                    g[eg.from].push_back(*jt);
                     jt++;
                 }
             }
-            incomming.erase(fit_i);
-            out("After merging pair, incomming: ");
-            print_graph(incomming);
+            g.erase(fit_i);
+            out("After merging pair, g: ");
+            print_graph(g);
         }
         out("After merging incomming, alls: ");
         print_alls(alledges); 
 
         //work with outgoing from it->from
         {
-            graphtp::iterator fit_o = outgoing.find(it->from);
-            assert(fit_o != outgoing.end() && "not found in outgoing");
+            graphtp::iterator fit_o = g.find(it->from);
+            assert(fit_o != g.end() && "not found in outgoing");
             vit & t_o = fit_o->second;
             vit::iterator jt = t_o.begin(); 
             while(jt != t_o.end()) {
@@ -107,30 +126,8 @@ int mincut(graphtp incomming, graphtp outgoing, lseg alledges)
             }
         }
 
-        out("After merging outgoing from, alls: ");
-        print_alls(alledges);
-        
-        //then work with outgoing from it->to
-        {
-            graphtp::iterator fit_o = outgoing.find(it->to);
-            assert(fit_o != outgoing.end() && "not found in outgoing");
-            vit & t_o = fit_o->second;
-            vit::iterator jt = t_o.begin(); 
-            while(jt != t_o.end()) {
-                if((*jt)->from == eg.from) //loop
-                    jt = t_o.erase(jt);
-                else {
-                    (*jt)->from = eg.from;
-                    outgoing[eg.from].push_back(*jt);
-                    jt++;
-                }
-            }
-            outgoing.erase(fit_o);
-            out("After merging pair, outgoing: ");
-            print_graph(outgoing);
-        }
-        out("After merging pair, incomming again: ");
-        print_graph(incomming);
+                out("After merging pair, incomming again: ");
+        print_graph(g);
 
         out("After merging outgoing to, alls: ");
         print_alls(alledges);
@@ -156,8 +153,6 @@ int main(void)
     
   while(N-- > 0) {
     char * buff = NULL;
-    graphtp incomming;
-    graphtp outgoing;
     lseg alledges;
     size_t n;
     int m; //nodes
@@ -184,12 +179,6 @@ int main(void)
             if(nodeto <= m && from != nodeto) {
                 out("red tok='%s'\n", tok);
 
-                graphtp::iterator it = incomming.find(nodeto);
-                if(it == incomming.end()) {
-                    vit b;
-                    incomming[nodeto] = b;
-                }
-
                 if(from < nodeto) {
                     edge eg;
                     eg.from = from;
@@ -197,8 +186,6 @@ int main(void)
                     alledges.push_front(eg);  //push_back()
                     lseg::iterator nn = alledges.begin();
                     e.push_back(nn); //end()--
-                    
-                    incomming.find(nodeto)->second.push_back(nn); //edges comming into 'to'
                 }
 
             }
@@ -207,18 +194,12 @@ int main(void)
             }
             tok = strtok(NULL, " \n\t");
         }
-        outgoing[from] = e; //edges going out of 'from'
 
         out("size of alledges %d\n", alledges.size());
     }
 
 
     printf("Case %d:\n", ++ord);
-    out("Incomming: ");
-    print_graph(incomming);
-    out("Outgoing: ");
-    print_graph(outgoing);
-    print_alls(alledges);
 
     static timeval now;
     gettimeofday(&now, 0);
@@ -226,8 +207,8 @@ int main(void)
 
     int allmin = 100000;
     int  mn;
-    for(int i = 0; i < incomming.size()*incomming.size() ; i++) { //run n*n times
-        mn = mincut(incomming, outgoing, alledges);
+    for(int i = 0; i < counter*counter ; i++) { //run n*n times
+        mn = mincut(alledges);
         printf("%d) min = %d allmin = %d\n", i, mn, allmin);
         if(allmin > mn) 
             allmin = mn;

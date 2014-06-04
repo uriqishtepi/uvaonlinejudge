@@ -49,6 +49,12 @@ void print_graph(const graphtp & g)
     }
 }
 
+void print_alls(const lseg & alledges)
+{
+    for(lseg::const_iterator it = alledges.begin(); it != alledges.end(); ++it) 
+        out("(%d, %d), ", it->from, it->to);
+    out("\n");
+}
 
 
 //need genuine copy of the parameters
@@ -80,11 +86,31 @@ int mincut(graphtp incomming, graphtp outgoing, lseg alledges)
                 }
             }
             incomming.erase(fit_i);
-            out("After merging pair, incomming\n");
+            out("After merging pair, incomming: ");
             print_graph(incomming);
         }
+        out("After merging incomming, alls: ");
+        print_alls(alledges); 
 
-        //work with outgoing
+        //work with outgoing from it->from
+        {
+            graphtp::iterator fit_o = outgoing.find(it->from);
+            assert(fit_o != outgoing.end() && "not found in outgoing");
+            vit & t_o = fit_o->second;
+            vit::iterator jt = t_o.begin(); 
+            while(jt != t_o.end()) {
+                if((*jt)->to == eg.to) //loop
+                    jt = t_o.erase(jt);
+                else {
+                    jt++;
+                }
+            }
+        }
+
+        out("After merging outgoing from, alls: ");
+        print_alls(alledges);
+        
+        //then work with outgoing from it->to
         {
             graphtp::iterator fit_o = outgoing.find(it->to);
             assert(fit_o != outgoing.end() && "not found in outgoing");
@@ -95,16 +121,19 @@ int mincut(graphtp incomming, graphtp outgoing, lseg alledges)
                     jt = t_o.erase(jt);
                 else {
                     (*jt)->from = eg.from;
-                    incomming[eg.from].push_back(*jt);
+                    outgoing[eg.from].push_back(*jt);
                     jt++;
                 }
             }
             outgoing.erase(fit_o);
-            out("After merging pair, outgoing\n");
+            out("After merging pair, outgoing: ");
             print_graph(outgoing);
         }
-        out("After merging pair, incomming again\n");
+        out("After merging pair, incomming again: ");
         print_graph(incomming);
+
+        out("After merging outgoing to, alls: ");
+        print_alls(alledges);
 
         alledges.erase(it);
 
@@ -185,10 +214,11 @@ int main(void)
 
 
     printf("Case %d:\n", ++ord);
-    out("Incomming\n");
+    out("Incomming: ");
     print_graph(incomming);
-    out("Outgoing\n");
+    out("Outgoing: ");
     print_graph(outgoing);
+    print_alls(alledges);
 
     static timeval now;
     gettimeofday(&now, 0);

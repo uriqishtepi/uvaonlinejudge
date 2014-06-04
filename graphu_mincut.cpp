@@ -56,83 +56,111 @@ void print_alls(const lseg & alledges)
     out("\n");
 }
 
-void swap(int &a, int &b)
-{
-    int tmp = b;
-    b = a;
-    a = tmp;
-}
 
 //need genuine copy of the parameters
 int mincut(lseg alledges)
 {
-    graphtp g;
+    graphtp incomming;
+    graphtp outgoing;
     for(lseg::iterator it = alledges.begin(); it != alledges.end(); ++it) 
     {
-        g[it->to].push_back(it);
-        g[it->from].push_back(it);
+        incomming[it->to].push_back(it);
+        if(incomming[it->from].empty()) ;
+        outgoing[it->from].push_back(it);
+        if(outgoing[it->to].empty()) ;
     }
 
-    out("g: ");
-    print_graph(g);
+    out("Incomming: ");
+    print_graph(incomming);
+    out("Outgoing: ");
+    print_graph(outgoing);
     print_alls(alledges);
 
-    while(g.size() > 2) {
+    while(incomming.size() > 2) {
         //pick edge randomly 
         int i = rand() % alledges.size();
         lseg::iterator it;
         for(it = alledges.begin(); it != alledges.end() && i > 0; it++, i--) ;
         edge eg = *it;
-        out("merging eg(%d,%d), incomming.size() = %d\n", eg.from, eg.to, g.size());
+        out("merging eg(%d,%d), incomming.size() = %d\n", eg.from, eg.to, incomming.size());
 
         //remove eg.to from the graph, substitute all references to 
         
         //work with incomming
         {
-            graphtp::iterator fit_i = g.find(it->to);
-            assert(fit_i != g.end() && "not found in incomming");
+            graphtp::iterator fit_i = incomming.find(it->to);
+            assert(fit_i != incomming.end() && "not found in incomming");
             vit & t_i = fit_i->second;
             vit::iterator jt = t_i.begin(); 
             while(jt != t_i.end()) {
-                if((*jt)->from == eg.from) //loop
+                if((*jt)->from == eg.from) { //loop
+                    alledges.erase(*jt);
+                    *jt = NULL;
                     jt = t_i.erase(jt);
+                }
                 else {
                     (*jt)->to = eg.from;
-                    if((*jt)->to < (*jt)->from)
-                        swap((*jt)->to, (*jt)->from);
-                    g[eg.from].push_back(*jt);
+                    incomming[eg.from].push_back(*jt);
                     jt++;
                 }
             }
-            g.erase(fit_i);
-            out("After merging pair, g: ");
-            print_graph(g);
+            incomming.erase(fit_i);
+            out("After merging pair, incomming: ");
+            print_graph(incomming);
         }
         out("After merging incomming, alls: ");
         print_alls(alledges); 
 
         //work with outgoing from it->from
         {
-            graphtp::iterator fit_o = g.find(it->from);
-            assert(fit_o != g.end() && "not found in outgoing");
+            graphtp::iterator fit_o = outgoing.find(it->from);
+            if(fit_o != outgoing.end()) {
             vit & t_o = fit_o->second;
             vit::iterator jt = t_o.begin(); 
             while(jt != t_o.end()) {
-                if((*jt)->to == eg.to) //loop
+                if((*jt) && (*jt)->to == eg.to) { //loop
+                    alledges.erase(*jt);
+                    jt = t_o.erase(jt);
+                }
+                else if(*jt == NULL)
                     jt = t_o.erase(jt);
                 else {
                     jt++;
                 }
             }
+            }
         }
 
-                out("After merging pair, incomming again: ");
-        print_graph(g);
+        out("After merging outgoing from, alls: ");
+        print_alls(alledges);
+        
+        //then work with outgoing from it->to
+        {
+            graphtp::iterator fit_o = outgoing.find(it->to);
+            assert(fit_o != outgoing.end() && "not found in outgoing");
+            vit & t_o = fit_o->second;
+            vit::iterator jt = t_o.begin(); 
+            while(jt != t_o.end()) {
+                if((*jt)->from == eg.from) { //loop
+                    alledges.erase(*jt);
+                    jt = t_o.erase(jt);
+                }
+                else {
+                    (*jt)->from = eg.from;
+                    outgoing[eg.from].push_back(*jt);
+                    jt++;
+                }
+            }
+            outgoing.erase(fit_o);
+            out("After merging pair, outgoing: ");
+            print_graph(outgoing);
+        }
+        out("After merging pair, incomming again: ");
+        print_graph(incomming);
 
         out("After merging outgoing to, alls: ");
         print_alls(alledges);
 
-        alledges.erase(it);
 
     }
 

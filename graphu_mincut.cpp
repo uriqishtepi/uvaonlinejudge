@@ -6,6 +6,8 @@
 #include <queue>
 #include <assert.h>
 #include <vector>
+#include <map>
+#include <list>
 #include <iostream>
 #include <string>
 #include <stdio.h>
@@ -14,31 +16,34 @@
 
 #include <sys/time.h>
 
-//#define DEBUG true
+#define DEBUG true
 #ifdef DEBUG
 #define out printf
 #else
 #define out
 #endif
 
-#define vi std::vector<int>
-#define graphtp std::vector< vi > 
 
 struct edge {
     int from;
     int to;
 };
 
-#define ve std::vector<edge>
+#define ve std::vector < edge >
+#define lseg std::list < edge >
+#define sit std::set < lseg::iterator >
+#define vit std::vector < lseg::iterator >
+#define graphtp std::map< int, vit >  
 
 void print_graph(const graphtp & g)
 {
     out("Printing Graph\n");
-    for(int n = 0; n < g.size(); n++)
+    for(graphtp::const_iterator jt = g.begin(); jt != g.end(); jt++)
     {
-        out("%d: ", n);
-        for(vi::const_iterator it = g[n].begin(); it != g[n].end(); ++it) {
-            out("%d, ", *it);
+        out("%d: ", jt->first);
+        for(vit::const_iterator it = jt->second.begin(); it != jt->second.end(); ++it) {
+            lseg::iterator lit = *it;
+            out("(%d, %d) ", *lit);
         }
         out("\n");
     }
@@ -47,35 +52,62 @@ void print_graph(const graphtp & g)
 
 
 //need genuine copy of the parameters
-int mincut(int nodes, ve alledges)
+int mincut(graphtp incomming, graphtp outgoing, lseg alledges)
 {
-    while(nodes > 2) {
+    while(incomming.size() > 2) {
         //pick edge randomly 
-        ve nall;
         int i = rand() % alledges.size();
-        edge eg = alledges[i];
-        out("merging eg(%d,%d), nodes = %d\n", eg.from, eg.to, nodes);
+        lseg::iterator it;
+        for(it = alledges.begin(); it != alledges.end() && i > 0; it++, i--) ;
+        edge eg = *it;
+        out("merging eg(%d,%d), incomming.size() = %d\n", eg.from, eg.to, incomming.size());
 
-        //merge node with neigbor, any .to turn it into .from
-        for(ve::iterator it = alledges.begin(); it != alledges.end(); ++it) {
-            //remove self loops
-            if((it->from == eg.to && it->to == eg.from) 
-              || (it->from == eg.from && it->to == eg.to)) {
-                //skip
+        //remove eg.to from the graph, substitute all references to 
+        
+        //work with incomming
+        {
+            graphtp::iterator fit_i = incomming.find(it->to);
+            assert(fit_i != incomming.end() && "not found in incomming");
+            vit & t_i = fit_i->second;
+            vit::iterator jt = t_i.begin(); 
+            while(jt != t_i.end()) {
+                if((*jt)->from == eg.from) //loop
+                    jt = t_i.erase(jt);
+                else {
+                    (*jt)->to = eg.from;
+                    incomming[eg.from].push_back(*jt);
+                    jt++;
+                }
             }
-            else if(it->from == eg.to) {
-                it->from = eg.from;
-                nall.push_back(*it);
-            }
-            else if(it->to == eg.to) {
-                it->to = eg.from;
-                nall.push_back(*it);
-            }
-            else
-                nall.push_back(*it);
+            incomming.erase(fit_i);
+            out("After merging pair, incomming\n");
+            print_graph(incomming);
         }
-        alledges = nall;
-        nodes--;
+
+        //work with outgoing
+        {
+            graphtp::iterator fit_o = outgoing.find(it->to);
+            assert(fit_o != outgoing.end() && "not found in outgoing");
+            vit & t_o = fit_o->second;
+            vit::iterator jt = t_o.begin(); 
+            while(jt != t_o.end()) {
+                if((*jt)->from == eg.from) //loop
+                    jt = t_o.erase(jt);
+                else {
+                    (*jt)->from = eg.from;
+                    incomming[eg.from].push_back(*jt);
+                    jt++;
+                }
+            }
+            outgoing.erase(fit_o);
+            out("After merging pair, outgoing\n");
+            print_graph(outgoing);
+        }
+        out("After merging pair, incomming again\n");
+        print_graph(incomming);
+
+        alledges.erase(it);
+
     }
 
     //whatever is left is the cut
@@ -95,8 +127,9 @@ int main(void)
     
   while(N-- > 0) {
     char * buff = NULL;
-    graphtp g;
-    ve alledges;
+    graphtp incomming;
+    graphtp outgoing;
+    lseg alledges;
     size_t n;
     int m; //nodes
     scanf("%d\n", &m);
@@ -114,20 +147,29 @@ int main(void)
         }
         int from = atoi(tok);
 
-        vi e;
+        vit e;
         tok = strtok(NULL, " \n\t");
         while(tok > 0) 
         {
             int nodeto = atoi(tok); 
             if(nodeto <= m && from != nodeto) {
                 out("red tok='%s'\n", tok);
-                e.push_back(nodeto);
+
+                graphtp::iterator it = incomming.find(nodeto);
+                if(it == incomming.end()) {
+                    vit b;
+                    incomming[nodeto] = b;
+                }
 
                 if(from < nodeto) {
                     edge eg;
                     eg.from = from;
                     eg.to = nodeto;
-                    alledges.push_back(eg); 
+                    alledges.push_front(eg);  //push_back()
+                    lseg::iterator nn = alledges.begin();
+                    e.push_back(nn); //end()--
+                    
+                    incomming.find(nodeto)->second.push_back(nn); //edges comming into 'to'
                 }
 
             }
@@ -136,15 +178,17 @@ int main(void)
             }
             tok = strtok(NULL, " \n\t");
         }
-        g.push_back(e);
+        outgoing[from] = e; //edges going out of 'from'
 
-        
-        out("size of g %d\n",g.size());
+        out("size of alledges %d\n", alledges.size());
     }
 
 
     printf("Case %d:\n", ++ord);
-    print_graph(g);
+    out("Incomming\n");
+    print_graph(incomming);
+    out("Outgoing\n");
+    print_graph(outgoing);
 
     static timeval now;
     gettimeofday(&now, 0);
@@ -152,8 +196,8 @@ int main(void)
 
     int allmin = 100000;
     int  mn;
-    for(int i = 0; i < g.size()*g.size() ; i++) { //run n*n times
-        mn = mincut(g.size(), alledges);
+    for(int i = 0; i < incomming.size()*incomming.size() ; i++) { //run n*n times
+        mn = mincut(incomming, outgoing, alledges);
         printf("%d) min = %d allmin = %d\n", i, mn, allmin);
         if(allmin > mn) 
             allmin = mn;

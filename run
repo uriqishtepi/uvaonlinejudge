@@ -1,6 +1,6 @@
 #!/bin/bash
 task=${1}
-make CPPFLAGS=-g ${task}
+make CPPFLAGS='-Wall -g' ${task}
 if [ $? -ne 0 ] ; then 
     exit;
 fi

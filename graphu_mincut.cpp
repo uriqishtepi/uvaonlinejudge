@@ -105,6 +105,8 @@ int mincut(lseg alledges)
         //work with incomming
         {
             graphtp::iterator fit_i = incomming.find(goes);
+            if(fit_i == incomming.end())
+               out("goes %d not found in incomming\n", goes);
             assert(fit_i != incomming.end() && "not found in incomming");
             vit & t_i = fit_i->second;
             vit::iterator jt = t_i.begin(); 
@@ -119,10 +121,11 @@ int mincut(lseg alledges)
                     jt = t_i.erase(jt);
                 }
                 else {
+                    out("1 was (%d,%d) -> (%d,%d)\n", (*jt)->from, (*jt)->to, (*jt)->from, stays);
                     (*jt)->to = stays;
                     if( (*jt)->to < (*jt)->from) {
                         swap( (*jt)->to , (*jt)->from) ;
-                        outgoing[stays].push_back(*jt);
+                        outgoing[(*jt)->from].push_back(*jt);
                     }
                     else
                         incomming[stays].push_back(*jt);
@@ -179,14 +182,14 @@ int mincut(lseg alledges)
                             out("4 adding to erase (%d,%d)\n", (*jt)->from,(*jt)->to);
                             toerase.push_back(*jt);
                         }
-                        alledges.erase(*jt);
                         jt = t_o.erase(jt);
                     }
                     else {
+                        out("2 was (%d,%d) -> (%d,%d)\n", (*jt)->from, (*jt)->to, stays, (*jt)->to);
                         (*jt)->from = stays;
                         if( (*jt)->to < (*jt)->from) {
                             swap( (*jt)->to , (*jt)->from) ;
-                            incomming[stays].push_back(*jt);
+                            incomming[(*jt)->to].push_back(*jt);
                         }
                         else
                             outgoing[stays].push_back(*jt);

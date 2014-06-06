@@ -7,6 +7,7 @@
 #include <assert.h>
 #include <vector>
 #include <map>
+#include <set>
 #include <list>
 #include <iostream>
 #include <string>
@@ -35,6 +36,14 @@ struct edge {
 #define vit std::vector < lseg::iterator >
 #define graphtp std::map< int, vit >  
 
+
+void swap(int & a, int & b)
+{
+    int tmp = b;
+    b = a;
+    a = tmp;
+}
+
 void print_graph(const graphtp & g)
 {
     out("Printing Graph\n");
@@ -43,7 +52,7 @@ void print_graph(const graphtp & g)
         out("%d: ", jt->first);
         for(vit::const_iterator it = jt->second.begin(); it != jt->second.end(); ++it) {
             lseg::iterator lit = *it;
-            out("(%d, %d) ", *lit);
+            out("(%d, %d) ", lit->from, lit->to);
         }
         out("\n");
     }
@@ -70,97 +79,136 @@ int mincut(lseg alledges)
         if(outgoing[it->to].empty()) ;
     }
 
-    out("Incomming: ");
-    print_graph(incomming);
-    out("Outgoing: ");
-    print_graph(outgoing);
+    out("Incomming: "); print_graph(incomming);
+    out("Outgoing: "); print_graph(outgoing);
+
     print_alls(alledges);
 
     while(incomming.size() > 2) {
+        int stays = -1;
+        int goes = -1;
+        vit toerase;
         //pick edge randomly 
-        int i = rand() % alledges.size();
-        lseg::iterator it;
-        for(it = alledges.begin(); it != alledges.end() && i > 0; it++, i--) ;
-        edge eg = *it;
-        out("merging eg(%d,%d), incomming.size() = %d\n", eg.from, eg.to, incomming.size());
+        {
+            int i = rand() % alledges.size();
+            lseg::iterator it;
+            for(it = alledges.begin(); it != alledges.end() && i > 0; it++, i--) ;
+            stays = it->from;
+            goes = it->to;
+            out("merging eg(%d,%d), incomming.size() = %d\n", stays, goes, incomming.size());
+            out("1 adding to erase (%d,%d)\n", stays,goes);
+            toerase.push_back(it);
+        }
 
-        //remove eg.to from the graph, substitute all references to 
+        //remove goes from the graph, substitute all references to 
         
         //work with incomming
         {
-            graphtp::iterator fit_i = incomming.find(it->to);
+            graphtp::iterator fit_i = incomming.find(goes);
             assert(fit_i != incomming.end() && "not found in incomming");
             vit & t_i = fit_i->second;
             vit::iterator jt = t_i.begin(); 
             while(jt != t_i.end()) {
-                if((*jt)->from == eg.from) { //loop
-                    alledges.erase(*jt);
-                    *jt = NULL;
+                if((*jt)->from == stays) { //loop
+                    bool found = false;
+                    for(vit::iterator tit = toerase.begin(); tit != toerase.end(); tit++) if (*tit == *jt) { found = true; break; }
+                    if(!found) {
+                        out("2 adding to erase (%d,%d)\n", (*jt)->from,(*jt)->to);
+                        toerase.push_back(*jt);
+                    }
                     jt = t_i.erase(jt);
                 }
                 else {
-                    (*jt)->to = eg.from;
-                    incomming[eg.from].push_back(*jt);
+                    (*jt)->to = stays;
+                    if( (*jt)->to < (*jt)->from) {
+                        swap( (*jt)->to , (*jt)->from) ;
+                        outgoing[stays].push_back(*jt);
+                    }
+                    else
+                        incomming[stays].push_back(*jt);
                     jt++;
                 }
             }
             incomming.erase(fit_i);
             out("After merging pair, incomming: ");
-            print_graph(incomming);
+            out("Incomming: "); print_graph(incomming);
+            out("Outgoing: "); print_graph(outgoing);
         }
         out("After merging incomming, alls: ");
         print_alls(alledges); 
 
-        //work with outgoing from it->from
+        //work with outgoing from stays
         {
-            graphtp::iterator fit_o = outgoing.find(it->from);
+            graphtp::iterator fit_o = outgoing.find(stays);
             if(fit_o != outgoing.end()) {
-            vit & t_o = fit_o->second;
-            vit::iterator jt = t_o.begin(); 
-            while(jt != t_o.end()) {
-                if((*jt) && (*jt)->to == eg.to) { //loop
-                    alledges.erase(*jt);
-                    jt = t_o.erase(jt);
-                }
-                else if(*jt == NULL)
-                    jt = t_o.erase(jt);
-                else {
-                    jt++;
+                vit & t_o = fit_o->second;
+                vit::iterator jt = t_o.begin(); 
+                while(jt != t_o.end()) {
+                    if( (*jt)->to == goes) { //loop
+                        bool found = false;
+                        for(vit::iterator tit = toerase.begin(); tit != toerase.end(); tit++) if (*tit == *jt) { found = true; break; }
+                        if(!found) { 
+                            out("3 adding to erase (%d,%d)\n", (*jt)->from,(*jt)->to);
+                            toerase.push_back(*jt);
+                        }
+                        jt = t_o.erase(jt);
+                    }
+                    else {
+                        jt++;
+                    }
                 }
             }
-            }
+            else
+                out("not found in outgoing stays %d\n", stays);
         }
 
         out("After merging outgoing from, alls: ");
         print_alls(alledges);
         
-        //then work with outgoing from it->to
+        //then work with outgoing from goes
         {
-            graphtp::iterator fit_o = outgoing.find(it->to);
-            assert(fit_o != outgoing.end() && "not found in outgoing");
-            vit & t_o = fit_o->second;
-            vit::iterator jt = t_o.begin(); 
-            while(jt != t_o.end()) {
-                if((*jt)->from == eg.from) { //loop
-                    alledges.erase(*jt);
-                    jt = t_o.erase(jt);
+            graphtp::iterator fit_o = outgoing.find(goes);
+            if(fit_o != outgoing.end()) {
+                vit & t_o = fit_o->second;
+                vit::iterator jt = t_o.begin(); 
+                while(jt != t_o.end()) {
+                    if((*jt)->from == stays) { //loop
+                        bool found = false;
+                        for(vit::iterator tit = toerase.begin(); tit != toerase.end(); tit++) if (*tit == *jt) { found = true; break; }
+                        if(!found) {
+                            out("4 adding to erase (%d,%d)\n", (*jt)->from,(*jt)->to);
+                            toerase.push_back(*jt);
+                        }
+                        alledges.erase(*jt);
+                        jt = t_o.erase(jt);
+                    }
+                    else {
+                        (*jt)->from = stays;
+                        if( (*jt)->to < (*jt)->from) {
+                            swap( (*jt)->to , (*jt)->from) ;
+                            incomming[stays].push_back(*jt);
+                        }
+                        else
+                            outgoing[stays].push_back(*jt);
+                        jt++;
+                    }
                 }
-                else {
-                    (*jt)->from = eg.from;
-                    outgoing[eg.from].push_back(*jt);
-                    jt++;
-                }
+                outgoing.erase(fit_o);
             }
-            outgoing.erase(fit_o);
+            else
+                out("not found in outgoing goes %d\n", goes);
+
             out("After merging pair, outgoing: ");
-            print_graph(outgoing);
+            out("Incomming: "); print_graph(incomming);
+            out("Outgoing: "); print_graph(outgoing);
         }
-        out("After merging pair, incomming again: ");
-        print_graph(incomming);
 
-        out("After merging outgoing to, alls: ");
+        for(vit::iterator jt = toerase.begin(); jt != toerase.end(); ++jt) 
+            alledges.erase(*jt);
+
+        out("After removingall: ");
         print_alls(alledges);
-
+        out("\n");
 
     }
 
@@ -172,7 +220,6 @@ int mincut(lseg alledges)
 int main(void)
 {
   out("starting ...\n");
-  std::cout << " DFS " << std::endl;
 
   int N; //test cases
   scanf("%d\n", &N);
@@ -227,8 +274,6 @@ int main(void)
     }
 
 
-    printf("Case %d:\n", ++ord);
-
     static timeval now;
     gettimeofday(&now, 0);
     srand(now.tv_usec);
@@ -237,12 +282,11 @@ int main(void)
     int  mn;
     for(int i = 0; i < counter*counter ; i++) { //run n*n times
         mn = mincut(alledges);
-        printf("%d) min = %d allmin = %d\n", i, mn, allmin);
+        out("%d) min = %d allmin = %d\n", i, mn, allmin);
         if(allmin > mn) 
             allmin = mn;
     }
-    printf("Tot mn = %d\n", allmin);
-
+    printf("Case %d: %d\n", ++ord, allmin);
   }
 
   return 0;

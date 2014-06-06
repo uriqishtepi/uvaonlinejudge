@@ -383,7 +383,6 @@ void timediff(const char * s) {
     int msec = (tmp.tv_usec - tv.tv_usec);
     printf("%20.20s diff = %12.dusec\n", s, sec + msec);
     tv = tmp;
-    
 }
 
 int main(void)

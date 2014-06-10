@@ -45,6 +45,7 @@ void swap(int & a, int & b)
     a = tmp;
 }
 
+#ifdef DEBUG
 void print_graph(const graphtp & g)
 {
     out("Printing Graph\n");
@@ -65,6 +66,10 @@ void print_alls(const lseg & alledges)
         out("(%d, %d), ", it->from, it->to);
     out("\n");
 }
+#else
+#define print_graph
+#define print_alls
+#endif
 
 
 lseg::iterator getRandEdge(lseg & alledges)

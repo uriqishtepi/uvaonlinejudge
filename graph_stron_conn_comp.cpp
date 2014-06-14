@@ -2,14 +2,13 @@
 #include <queue>
 #include <assert.h>
 #include <vector>
-#include <map>
 #include <iostream>
 #include <string>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 
-#define DEBUG true
+//#define DEBUG true
 #ifdef DEBUG
 #define out printf
 #else
@@ -17,7 +16,7 @@
 #endif
 
 #define vi std::vector<int>
-#define graphtp std::map<int, vi > 
+#define graphtp std::vector< vi > 
 
 enum {white=0, gray=1, black=2,};
 
@@ -25,10 +24,10 @@ enum {white=0, gray=1, black=2,};
 void print_graph(const graphtp & g)
 {
     out("Printing Graph\n");
-    for(graphtp::const_iterator cjt = g.begin(); cjt != g.end(); cjt++)
+    for(int n = 0; n < g.size(); n++)
     {
-        out("%d: ", cjt->first);
-        for(vi::const_iterator it = cjt->second.begin(); it != cjt->second.end(); ++it) {
+        out("%d: ", n);
+        for(vi::const_iterator it = g[n].begin(); it != g[n].end(); ++it) {
             out("%d, ", *it);
         }
         out("\n");
@@ -39,11 +38,7 @@ void print_graph(const graphtp & g)
 void rec_topological_sort(const graphtp &g, vi & visited, vi & postorder, int node)
 {
     visited[node] = gray;
-    graphtp::const_iterator git = g.find(node);
-    assert(git != g.end() && "eoc ");
-    for(vi::const_iterator it = git->second.begin(); 
-            it != (git->second).end(); 
-            ++it)
+    for(vi::const_iterator it = g[node].begin(); it != g[node].end(); ++it)
     {
         if(visited[*it] == gray) {
             out("cycle detected node %d->%d\n", node, *it);
@@ -62,23 +57,22 @@ void rec_topological_sort(const graphtp &g, vi & visited, vi & postorder, int no
 
 vi recursive_topological_sort(const graphtp &g)
 {
-    vi visited(g.size()+1);
+    vi visited(g.size());
     vi postorder;
-    for(graphtp::const_iterator cjt = g.begin(); cjt != g.end(); cjt++)
+    for(int n = 0; n < g.size(); n++)
     {
-        if(visited[cjt->first])
+        if(visited[n])
             continue;
-        rec_topological_sort(g, visited, postorder, cjt->first);
+        rec_topological_sort(g, visited, postorder, n);
     } 
 
-    assert(postorder.size() <= g.size() + 1 && "sizes must match");
     out("postorder: ");
-    for(unsigned int n = 0; n < postorder.size(); n++)
+    for(int n = 0; n < postorder.size(); n++)
         out("%d ", postorder[n]);
     out("\n");
 
     out("reverse postorder: ");
-    for(unsigned int n = postorder.size() - 1; n >= 0; n--)
+    for(int n = postorder.size() - 1; n >= 0; n--)
         out("%d ", postorder[n]);
     out("\n");
 
@@ -89,11 +83,12 @@ vi recursive_topological_sort(const graphtp &g)
 //compute the reverse graph
 void get_reverse_graph(const graphtp &g, graphtp &rev)
 {
-    for(graphtp::const_iterator cjt = g.begin(); cjt != g.end(); cjt++)
+    rev.resize(g.size());
+    for(int n = 0; n < g.size(); n++)
     {
-        for(vi::const_iterator it = cjt->second.begin(); it != cjt->second.end(); ++it)
+        for(vi::const_iterator it = g[n].begin(); it != g[n].end(); ++it)
         {
-            rev[*it].push_back(cjt->first);
+            rev[*it].push_back(n);
         }
     }
 }
@@ -134,9 +129,7 @@ void strongly_connected_components_kos_sharir(const graphtp &g)
             out("%d ", node);
 
             int anynew = 0;
-            graphtp::const_iterator git = g.find(node);
-            assert(git != g.end() && "eoc ");
-            for(vi::const_reverse_iterator it = (git->second).rbegin(); it != git->second.rend(); ++it)
+            for(vi::const_reverse_iterator it = g[node].rbegin(); it != g[node].rend(); ++it)
             {
                 out("considering %d -> %d \n", node, *it);
                 if(visited[*it]) {
@@ -148,13 +141,14 @@ void strongly_connected_components_kos_sharir(const graphtp &g)
         }
     }
 
-    for(unsigned int n = 0; n < g.size(); n++)
+    printf("\n");
+    for(int n = 0; n < g.size(); n++)
         printf("%d ", n);
     printf("\n");
-    for(unsigned int n = 0; n < g.size(); n++)
+    for(int n = 0; n < g.size(); n++)
         printf("^ ");
     printf("\n");
-    for(unsigned int n = 0; n < g.size(); n++)
+    for(int n = 0; n < g.size(); n++)
         printf("%d ", visited[n]-1);
     printf("\n");
 
@@ -174,23 +168,22 @@ int main(void)
     
   while(N-- > 0) {
     char * buff = NULL;
+    graphtp g;
     size_t n;
     int m; //nodes
     scanf("%d\n", &m);
     out("m %d\n",m);
     int counter = 0;
-    graphtp g;
 
     while(counter++ < m && getline(&buff, &n, stdin) != -1 )
     {
         out("this is buff ='%s'\n", buff);
         char * tok = strtok(buff, " \n\t");
+        out("this is node ='%s'\n", tok);
         if(tok == NULL) {
-            printf("Error in input file -- tok is NULL");
+            printf("Error in input file");
             exit(1);
         }
-        int nodefrom = atoi(tok);
-        out("this is node ='%d'\n", nodefrom);
 
         vi e;
         tok = strtok(NULL, " \n\t");
@@ -206,7 +199,7 @@ int main(void)
             }
             tok = strtok(NULL, " \n\t");
         }
-        g[nodefrom] = e;
+        g.push_back(e);
         out("size of g %d\n",g.size());
     }
 
@@ -216,6 +209,7 @@ int main(void)
 
     strongly_connected_components_kos_sharir(g);
     printf("\n");
+
   }
 
   return 0;

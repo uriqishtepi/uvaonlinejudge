@@ -82,36 +82,33 @@ int main (void)
 {
     long long int in;
     si coll;
-    vi raw;
+    bool arr[200001] = {0};
+
     while(scanf("%lld\n", &in) != EOF) {
         std::pair<si::iterator,bool> ret = coll.insert(in);
-        if(ret.second == true)
-            raw.push_back(in);
-    }
-    int counter = 0;
-    for(int i = -10000; i <= 10000; i++) {
-        for(vi::iterator it = raw.begin(); it != raw.end(); ++it)
+        if(ret.second == false)  //not newly inserted
+            continue;
+        for(int i = -10000; i <= 10000; i++) 
         {
-            long long int y = (i - *it);
-            if(y == *it) continue;
+            if(arr[i+10000] == true) continue;               
+
+            long long int y = (i - in);
+            if(y == in) continue;
+
             si::iterator jt = coll.find(y);
+
             if(jt != coll.end() ) {
-                    printf("found i=%d  %lld,%lld\n",i,*it, *jt);
-                    counter++;
-                    break;
+                printf("found i=%d  %lld,%lld\n",i,in, *jt);
+                arr[i+10000] = true;               
             }
-            /*
-            do {
-                if(jt != coll.end() && jt != it) {
-                    printf("found i=%d  %d,%d\n",i,*it, *jt);
-                    counter++;
-                    goto out;
-                }
-                ++jt;
-            } while(jt != coll.end() && *jt == y);
-            */
         }
     }
+
+    int counter = 0;
+    for(int i = -10000; i <= 10000; i++) {
+        if(arr[i+10000]) counter++;
+    }
+
     printf("counter=%d\n",counter);
     return 0;
 }

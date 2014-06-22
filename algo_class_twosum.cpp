@@ -2,9 +2,11 @@
  * compute the number of target values t in the interval [-10000,10000]
  * (inclusive) such that there are distinct numbers x,y in the input file that
  * satisfy x+y=t. 
+ * g++ -std=c++11 -Wall -g   algo_class_twosum.cpp   -o algo_class_twosum
  */
 #include <set>
 #include <vector>
+#include <unordered_set>
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
@@ -75,7 +77,7 @@ struct point {
     int x;
     int y;
 };
-#define si std::set<long long int>
+#define si std::unordered_set<long long int>
 #define vi std::vector<long long int>
 
 int main (void)

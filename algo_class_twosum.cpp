@@ -80,29 +80,43 @@ struct point {
 #define si std::unordered_set<long long int>
 #define vi std::vector<long long int>
 
+
+
+inline void find_in_cont(long long int & in, const si & coll, bool arr[])
+{
+    for(int i = -10000; i <= 10000; i++) 
+    {
+        if(arr[i+10000] == true) continue;               
+
+        long long int y = (i - in);
+        if(y == in) continue;
+
+        si::const_iterator jt = coll.find(y);
+
+        if(jt != coll.end() ) {
+            printf("found i=%d  %lld,%lld\n",i,in, *jt);
+            arr[i+10000] = true;               
+        }
+    }
+}
+
 int main (void)
 {
     long long int in;
-    si coll;
     bool arr[200001] = {0};
+    si pcoll;
+    si ncoll;
 
     while(scanf("%lld\n", &in) != EOF) {
-        std::pair<si::iterator,bool> ret = coll.insert(in);
-        if(ret.second == false)  //not newly inserted
-            continue;
-        for(int i = -10000; i <= 10000; i++) 
-        {
-            if(arr[i+10000] == true) continue;               
-
-            long long int y = (i - in);
-            if(y == in) continue;
-
-            si::iterator jt = coll.find(y);
-
-            if(jt != coll.end() ) {
-                printf("found i=%d  %lld,%lld\n",i,in, *jt);
-                arr[i+10000] = true;               
-            }
+        if(in > 0) { 
+            std::pair<si::iterator,bool> ret = pcoll.insert(in);
+            if(ret.second == true)  //not newly inserted
+                find_in_cont(in, ncoll, arr);
+        }
+        else {
+            std::pair<si::iterator,bool> ret = ncoll.insert(in);
+            if(ret.second == true)  //not newly inserted
+                find_in_cont(in, pcoll, arr);
         }
     }
 

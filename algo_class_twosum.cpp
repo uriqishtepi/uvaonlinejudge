@@ -6,7 +6,6 @@
  */
 #include <set>
 #include <vector>
-#include <unordered_set>
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
@@ -77,26 +76,25 @@ struct point {
     int x;
     int y;
 };
-#define si std::unordered_set<long long int>
+#define si std::set<long long int>
 #define vi std::vector<long long int>
 
 
 
 inline void find_in_cont(long long int & in, const si & coll, bool arr[])
 {
-    for(int i = -10000; i <= 10000; i++) 
-    {
-        if(arr[i+10000] == true) continue;               
-
-        long long int y = (i - in);
-        if(y == in) continue;
-
-        si::const_iterator jt = coll.find(y);
-
-        if(jt != coll.end() ) {
-            printf("found i=%d  %lld,%lld\n",i,in, *jt);
-            arr[i+10000] = true;               
+    //printf("find_in_cont() in=%lld\n", in);
+    //find -10000 - in, do next until > 10000 - in
+    si::const_iterator it = coll.lower_bound((-10000 - in));
+    while(it != coll.end()) {
+        //printf("find_in_cont() looking for (-10000-%lld)=%lld, found it=%lld\n", in, (-10000-in), *it);
+        long long int diff = *it + in;
+        if(diff > 10000) break;
+        if(diff >= -10000) {
+            //printf("found diff=%lld  %lld,%lld\n",diff,in, *it);
+            arr[diff + 10000] = true;
         }
+        it++;
     }
 }
 
@@ -110,12 +108,12 @@ int main (void)
     while(scanf("%lld\n", &in) != EOF) {
         if(in > 0) { 
             std::pair<si::iterator,bool> ret = pcoll.insert(in);
-            if(ret.second == true)  //not newly inserted
+            if(ret.second == true)  
                 find_in_cont(in, ncoll, arr);
         }
         else {
             std::pair<si::iterator,bool> ret = ncoll.insert(in);
-            if(ret.second == true)  //not newly inserted
+            if(ret.second == true) 
                 find_in_cont(in, pcoll, arr);
         }
     }

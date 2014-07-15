@@ -17,13 +17,64 @@
 
 #include <sys/time.h>
 
-//#define DEBUG true
+#define DEBUG true
 #ifdef DEBUG
 #define out printf
 #else
 #define out
 #endif
 
+struct llist {
+    edge data;
+    llist * next;
+    llist * prev;
+    int counter; //count of nodes in list
+    llist() { //constructor -- create dummy node
+        this.prev = NULL;
+        this.next = NULL;
+        this.edge.from = -1;
+        this.edge.to = -1;
+        this.counter = 0;
+    }
+    llist*insert(const edge &data) { //insert after this -- first el always dummy
+        llist *n = new llist();
+        n.next = this.next;
+        n.prev = this;
+        n.data = data;
+        this.next = n;
+        counter++;
+    }
+    llist*erase(llist *toerase) { // remove node from list -- leak node
+        llist *prev = toerase.prev;
+        assert(prev != NULL); //can not erase first node
+        prev.next = toerase.next; //can be null
+        toerase.prev = NULL; //reset
+        toerase.next = NULL;
+        assert(counter > 0);
+        counter--;
+    }
+    int size() { return counter; }
+    llist *nth(int n) { 
+        assert(counter < n && "asking for element larger than counter");
+        llist* l = this.next;
+        for(; l != NULL && n > 0; l = l.next, i--) 
+        { }
+        assert(l != NULL && "reached the end of the list");
+        return l;
+    }
+    void print() {
+        llist* l = this.next;
+        for(; l != NULL && n > 0; l = l.next, i--) 
+            out("(%d, %d), ", l->data.from, l->data.to);
+        out("\n");
+    }
+    llist *clone() {
+        llist *n = new llist();
+        for(llist* l = this.next; l != NULL; l = l.next) 
+            n.insert(l->data);
+        return n;
+    }
+};
 
 struct edge {
     int from;
@@ -32,9 +83,7 @@ struct edge {
 
 #define ve std::vector < edge >
 #define lseg std::list < edge >
-#define sit std::set < lseg::iterator >
-#define si std::set < int >
-#define vit std::vector < lseg::iterator >
+#define vit std::vector < llist* >
 #define graphtp std::map< int, vit >  
 
 
@@ -45,7 +94,6 @@ void swap(int & a, int & b)
     a = tmp;
 }
 
-#ifdef DEBUG
 void print_graph(const graphtp & g)
 {
     out("Printing Graph\n");
@@ -53,153 +101,156 @@ void print_graph(const graphtp & g)
     {
         out("%d: ", jt->first);
         for(vit::const_iterator it = jt->second.begin(); it != jt->second.end(); ++it) {
-            lseg::iterator lit = *it;
-            out("(%d, %d) ", lit->from, lit->to);
+            llist *l = *it;
+            out("(%d, %d) ", l->data.from, l->data.to);
         }
         out("\n");
     }
-}
-
-void print_alls(const lseg & alledges)
-{
-    for(lseg::const_iterator it = alledges.begin(); it != alledges.end(); ++it) 
-        out("(%d, %d), ", it->from, it->to);
-    out("\n");
-}
-#else
-#define print_graph
-#define print_alls
-#endif
-
-
-lseg::iterator getRandEdge(lseg & alledges)
-{
-    int i = rand() % alledges.size();
-    lseg::iterator it;
-    for(it = alledges.begin(); it != alledges.end() && i > 0; it++, i--) ;
-    return it;
-}
-
-
-
-//for all iterateors in it list, if node->to is goes, replace with stays
-//if node->from is stays and node->to is goes, delete as is loop
-void fixConnected(graphtp & g, lseg & alledges, int orignode, int stays, int goes)
-{
-
-    vit & itlist = g.find(orignode)->second;
-
-    out("fixConnected ( %d ) : vector of conts ex from (%d,x)\n", orignode, (*itlist.begin())->from);
-    assert(!itlist.empty() && "vector of iterators can not be empty, we got here because goes has a connection to this node (orignode)");
-
-    vit::iterator it = itlist.begin(); 
-    while(it != itlist.end()) {
-        lseg::iterator & nodeit = *it;
-        if(nodeit->to != goes && nodeit->from != goes) {
-            out("fixConnected not relevant (%d,%d)\n",nodeit->from,nodeit->to);
-            ++it;
-            continue;
-        }
-
-
-        if((nodeit->to == goes && nodeit->from == stays) ||  
-           (nodeit->from == goes && nodeit->to == stays) ) { //loop
-            out("loop on (%d,%d)\n", nodeit->from, nodeit->to);
-            alledges.erase(nodeit);
-            it = itlist.erase(it);
-            continue;
-        }
-
-        out("fixConnected %d: working on (%d,%d)\n",orignode,nodeit->from,nodeit->to);
-
-        out("%d: (%d,%d) turning %d -> %d\n", orignode, nodeit->from, nodeit->to, goes, stays);
-        if(nodeit->to == goes)
-            nodeit->to = stays;
-        else 
-            nodeit->from = stays;
-
-        if( nodeit->to < nodeit->from) {
-            swap( nodeit->to , nodeit->from) ;
-        }
-        g[stays].push_back(nodeit);
-        ++it;
-    }
-    out("After merging pair, incomming: ");
-    out("furst pass: "); print_graph(g);
-
-    out("After merging incomming, alls: ");
-    print_alls(alledges); 
 }
 
 
 //need genuine copy of the parameters
-int mincut(lseg alledges)
+int mincut(llist * orig)
 {
-    graphtp g; //populate the graph with pointers to alledges
-    for(lseg::iterator it = alledges.begin(); it != alledges.end(); ++it) 
+    llist * alledges = orig->clone();
+    graphtp incomming;
+    graphtp outgoing;
+
+    
+    for(llist* l = alledges.next; l != NULL; l = l.next) 
     {
-        g[it->to].push_back(it);
-        g[it->from].push_back(it);
+        incomming[l->to].push_back(l);
+        if(incomming[l->from].empty()) ;
+        outgoing[l->from].push_back(l);
+        if(outgoing[l->to].empty()) ;
     }
 
-    out("g: "); print_graph(g);
+    out("Incomming: "); print_graph(incomming);
+    out("Outgoing: "); print_graph(outgoing);
+
     print_alls(alledges);
 
-    while(g.size() > 2) {
+    while(incomming.size() > 2) {
         int stays = -1;
         int goes = -1;
+        vit toerase;
         //pick edge randomly 
-        
-        lseg::iterator ersit = getRandEdge(alledges);
-        stays = ersit->from;
-        goes = ersit->to;
-        out("\nMerging eg(%d,%d), %d -> %d, g.size() = %d\n", stays, goes, goes, stays, g.size());
+        {
+            int i = rand() % alledges.size();
+
+            llist* l = alledges.nth(i);
+            stays = l->data.from;
+            goes = l->data.to;
+            out("merging eg(%d,%d), incomming.size() = %d\n", stays, goes, incomming.size());
+            out("1 erase (%d,%d)\n", stays, goes);
+            alledges.erase(l);
+
+        }
 
         //remove goes from the graph, substitute all references to 
         
-        //work with node that goes first, replace it with stays
-        graphtp::iterator eras_it = g.find(goes);
-        if(eras_it == g.end())
-           out("goes %d not found \n", goes);
-        assert(eras_it != g.end() && "not found in incomming");
-        out("goes %d: eras_it key is (%d,x)\n",goes, eras_it->first);
-
-        
-        si nodelistcopy;
-        for(vit::iterator v_it = eras_it->second.begin(); 
-                    v_it != eras_it->second.end(); ++v_it)
+        //work with incomming
         {
-            lseg::iterator & con_edge = (*v_it);
-            out("goes %d: conn_edge is (%d,%d)\n", goes, con_edge->from, con_edge->to);
-            assert( (con_edge->from == goes || con_edge->to == goes) && "one of the nodes is not same as goes");
-            assert( (con_edge->from != con_edge->to) && "From and to are same");
-            
-            //find if goes is from or to in link (for (1,3) can be 0,3 or 3,4
-            int worknode;
-            if(con_edge->from == goes)
-                worknode = con_edge->to;
+            graphtp::iterator fit_i = incomming.find(goes);
+            assert(fit_i != incomming.end() && "not found in incomming");
+            vit & t_i = fit_i->second;
+            vit::iterator jt = t_i.begin(); 
+            while(jt != t_i.end()) {
+                llist * l = *jt;
+
+                if (l->data.from != stays) {
+                    l->to = stays;
+                    if( l->to < l->from) {
+                        swap( l->to , l->from) ;
+                        outgoing[stays].push_back(l);
+                    }
+                    else
+                        incomming[stays].push_back(l);
+                    jt++;
+                }
+                else {
+                    if(l->data.from == stays && l->data.from >= 0) { //loop
+                        out("2 erase (%d,%d)\n", l->data.from, l->data.to);
+                        alledges.erase(l);
+                    }
+                    jt = t_i.erase(jt);
+                }
+            }
+            incomming.erase(fit_i);
+            out("After merging pair, incomming: ");
+            out("Incomming: "); print_graph(incomming);
+            out("Outgoing: "); print_graph(outgoing);
+        }
+        out("After merging incomming, alls: ");
+        alledges.print();
+
+        //work with outgoing from stays
+        {
+            graphtp::iterator fit_o = outgoing.find(stays);
+            if(fit_o != outgoing.end()) {
+                vit & t_o = fit_o->second;
+                vit::iterator jt = t_o.begin(); 
+                while(jt != t_o.end()) {
+                    llist * l = *jt;
+                    if( l->data.to == goes) { //loop
+                        if(l->data.from >= 0) {
+                            out("3 erase (%d,%d)\n", l->data.from, l->data.to);
+                            alledges.erase(l);
+                        }
+                        jt = t_o.erase(jt);
+                    }
+                    else {
+                        jt++;
+                    }
+                }
+            }
             else
-                worknode = con_edge->from;
-
-            assert(worknode != goes && "worknode can not be goes");
-
-            nodelistcopy.insert(worknode);
+                out("not found in outgoing stays %d\n", stays);
         }
 
-
-        //for every item connected to g[goes], do work in fixConnected
-        for(si::iterator work = nodelistcopy.begin(); 
-                    work != nodelistcopy.end(); ++work)
+        out("After merging outgoing from, alls: ");
+        alledges.print();
+        
+        //then work with outgoing from goes
         {
-            //work on list of nodes
-            fixConnected(g,  alledges, *work, stays, goes); 
+            graphtp::iterator fit_o = outgoing.find(goes);
+            if(fit_o != outgoing.end()) {
+                vit & t_o = fit_o->second;
+                vit::iterator jt = t_o.begin(); 
+                while(jt != t_o.end()) {
+                    llist * l = *jt;
+                    if(l->from == stays) { //loop
+                        if(l->data.from >= 0) {
+                            out("4 erase (%d,%d)\n", l->data.from, l->data.to);
+                            alledges.erase(l);
+                        }
+                        jt = t_o.erase(jt);
+                    }
+                    else {
+                        l->from = stays;
+                        if( l->to < l->from) {
+                            swap( l->to , l->from) ;
+                            incomming[stays].push_back(l);
+                        }
+                        else
+                            outgoing[stays].push_back(l);
+                        jt++;
+                    }
+                }
+                outgoing.erase(fit_o);
+            }
+            else
+                out("not found in outgoing goes %d\n", goes);
+
+            out("After merging pair, outgoing: ");
+            out("Incomming: "); print_graph(incomming);
+            out("Outgoing: "); print_graph(outgoing);
         }
 
-        g.erase(eras_it);
-
-        out("final pass g: "); print_graph(g);
-        out("final all: "); print_alls(alledges);
+        out("At the end: ");
+        alledges.print();
         out("\n");
+
     }
 
     //whatever is left is the cut
@@ -218,7 +269,7 @@ int main(void)
     
   while(N-- > 0) {
     char * buff = NULL;
-    lseg alledges;
+    llist *alledges;
     size_t n;
     int m; //nodes
     scanf("%d\n", &m);
@@ -264,17 +315,15 @@ int main(void)
     }
 
 
-    /*
     static timeval now;
     gettimeofday(&now, 0);
     srand(now.tv_usec);
-    */
 
     int allmin = 100000;
     int  mn;
     for(int i = 0; i < counter*counter ; i++) { //run n*n times
         mn = mincut(alledges);
-        printf("%d) min = %d allmin = %d\n", i, mn, allmin);
+        out("%d) min = %d allmin = %d\n", i, mn, allmin);
         if(allmin > mn) 
             allmin = mn;
     }

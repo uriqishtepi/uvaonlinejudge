@@ -45,7 +45,7 @@ enum {white=0, gray=1, black=2,};
 void print_graph(const graphtp & g)
 {
     out("Printing Graph\n");
-    for(int n = 0; n < g.size(); n++)
+    for(unsigned int n = 0; n < g.size(); n++)
     {
         out("%d: ", n);
         for(mwp::const_iterator it = g[n].begin(); it != g[n].end(); ++it) {
@@ -53,6 +53,22 @@ void print_graph(const graphtp & g)
         }
         out("\n");
     }
+}
+
+
+inline int findroot(vi &uf, int node)
+{
+    int parent = uf[node];
+
+    while(uf[parent] != parent) //we found the root, its parent
+    {
+        uf[node] = uf[parent]; //path compression to only the parent
+        node = parent; //load next parent
+        parent = uf[parent];
+    }
+
+    return parent; //finally root of the tree
+
 }
 
 //
@@ -66,29 +82,13 @@ void print_graph(const graphtp & g)
 //
 bool unionfind(vi & uf, int a, int b)
 {
-    int curr_a = a;
-    int parent_a = uf[curr_a];
+    int parent_a = findroot(uf, a);
+    int parent_b = findroot(uf, b);
 
-    while(uf[parent_a] != parent_a) //we found the root, its parent_a
-    {
-        uf[curr_a] = uf[parent_a]; //path compression to only the parent
-        curr_a = parent_a; //load next parent
-        parent_a = uf[parent_a];
-    }
-
-    int curr_b = b;
-    int parent_b = uf[curr_b];
-
-    while(uf[parent_b] != parent_b) //we found the root, its parent_b
-    {
-        uf[curr_b] = uf[parent_b]; //path compression to only the parent
-        curr_b = parent_b; //load next parent
-        parent_b = uf[parent_b];
-    }
-
-    if(uf[parent_b] == parent_a)
+    if(parent_b == parent_a)
         return false;
 
+    //randomly pick a to be the root of both trees
     uf[parent_b] = parent_a;
     return true;
 }

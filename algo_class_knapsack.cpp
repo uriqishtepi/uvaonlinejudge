@@ -12,7 +12,7 @@
 
 
 
-#define DEBUG true
+//#define DEBUG true
 #ifdef DEBUG
 #define out printf
 #else
@@ -26,12 +26,12 @@
 #define mi std::map<int, int>
 #define vi std::vector<int>
 struct item {
-    int value;
+    unsigned long long value;
     int size;
 };
 #define vt std::vector<item>
 
-inline void add_if_greaterval(mi &subValues, int currVal, int currSz)
+inline void add_if_greaterval(mi &subValues, unsigned long long currVal, int currSz)
 {
     if(subValues[currSz] < currVal) {
         subValues[currSz] = currVal;
@@ -74,7 +74,7 @@ int main (void)
 
             if(newSz > knap) continue;
 
-            int newVal = currVal + it->second;
+            unsigned long long newVal = currVal + it->second;
             add_if_greaterval(cpanswVal, newVal, newSz);
         }
 
@@ -94,4 +94,3 @@ int main (void)
     printf("Answer=%d\n", max);
     return 0;
 }
-

@@ -1,7 +1,7 @@
 /* Shortest paths for any directed graph even with negative edges 
  * this is what is referred to as the Bellman-Ford-Moore algorithm
  * where we relax all edges V times, once for each vertex.
- * this this is a V^2 algorithm, with V amount of space for the Distances
+ * This is a V^2 algorithm, with V amount of space for the Distances
  * of each vertex from the starting vertex.
  */
 
@@ -76,7 +76,7 @@ void print_graph(const graphtp & g)
 void printSP(std::vector<edge> P, int i, int source)
 {
     std::vector<edge> s;
-    while(i != source) {
+    while(i != source && s.size() <= P.size()) {
         s.push_back(P[i]);
         i = P[i].from;
     }
@@ -115,6 +115,7 @@ void ShortestPath(const graphtp & g, int n)
     //without optimization loop would be: for(int i = 0; i < g.size(); i++) 
     int counter = 0;
     while(!lastupdated.empty()) {
+        counter++;
         si newlast;
         //visit and relax all edges (two for loopxs needed to visit all edges)
         for(si::iterator jt = lastupdated.begin();jt != lastupdated.end(); jt++)
@@ -127,8 +128,8 @@ void ShortestPath(const graphtp & g, int n)
                 assert(v == it->from && "not the same node");
                 if(D[it->to] > dist) { //this is the relaxation step
                     out("counter %d, it->to %d\n", counter, it->to);
-                    if(counter >= g.size() - 1) { 
-                        //we should not update a node in a stage greater than sz-1
+                    if(counter >= g.size()) { 
+                        //we should not update a node in a stage greater than sz
                         printf("negative cycles exists distance %d to %d is %f\n", v, it->to, dist);
                         //need to trace back from P[v]
                         printSP(P, it->to, v);
@@ -144,7 +145,6 @@ void ShortestPath(const graphtp & g, int n)
             }
         }
         lastupdated = newlast;
-        counter++;
     }
 
     for(int i = 0; i < D.size(); i++) {

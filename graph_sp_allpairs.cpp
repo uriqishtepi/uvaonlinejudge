@@ -1,12 +1,13 @@
-/* this is the all pairs shortest paths algorithm known as Floyd Warshall Roy 
- * algorithm: it works by relaxing V times each pair of edges (V^2 of them) 
+/* 
+ * This is the all pairs shortest paths algorithm known as Floyd Warshall Roy 
+ * algorithm: it works by relaxing V times each pair of vertices (V^2 of them) 
  * thus it is a V^3 algorithm, with V^2 space for the Distances among each pair
- * If there are any negative cycles, this algorithm can detect them; looking
+ *
+ * If there are any negative cycles, this algorithm can detect them by looking
  * at the diagonal of the Distances, if any value is < 0 then there is a cycle.
+ *
  * To reconstruct the shortest paths would need extra VxV lists, one for each path.
  */
-#include <stack>
-#include <queue>
 #include <assert.h>
 #include <vector>
 #include <map>
@@ -16,6 +17,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <limits.h>
 
 //#define DEBUG true
 #ifdef DEBUG
@@ -32,7 +34,7 @@
 #define mdi std::map<double, int>  //map double int
 #define se std::set<edge, cmpedge>  //set of edges
 #define graphtp std::vector< se >  //graph is a vector of maps -- the edges
-#define INFINITY 200000000
+#define INFINITY INT_MAX
 
 
 
@@ -53,8 +55,10 @@ struct cmpedge {
 };
 
 
+//this abstracts a square matrix structure 
+//constructor initializes with zero in diagonal and INF elsewhere
 struct matrix {
-    matrix(int s) : m_sz(s), m_vec(s*s) 
+    matrix(size_t s) : m_sz(s), m_vec(s*s) 
     {
         forl(i, 0, m_vec.size()) {
             m_vec[i] = INFINITY;
@@ -63,20 +67,18 @@ struct matrix {
             operator()(i,i) = 0.0;
         }
     }
+    size_t getCardinality() {return m_sz;}
     inline double & operator()(int a, int b) { return m_vec[a*m_sz + b]; }
-    int m_sz;
+    size_t m_sz;
     std::vector<double>m_vec;
 };
 
 
 
-enum {white=0, gray=1, black=2,};
-
-
 void print_graph(const graphtp & g)
 {
     out("Printing Graph\n");
-    for(int n = 0; n < g.size(); n++)
+    for(size_t n = 0; n < g.size(); n++)
     {
         out("%d: ", n);
         for(se::const_iterator it = g[n].begin(); it != g[n].end(); ++it) {
@@ -87,21 +89,48 @@ void print_graph(const graphtp & g)
 }
 
 
-void printSP(std::vector<edge> P, int i, int final)
+void printSP(matrix & D, matrix & P, int src, int dest)
 {
-    std::vector<edge> s;
-    while(i != final) {
-        s.push_back(P[i]);
-        i = P[i].from;
+    if(src == dest)
+        return;
+    else if(P(src,dest) == INFINITY) //TODO:??
+        printf("%d -> %d (%.2f) ",src, dest, D(src,dest));
+    else {
+        int k = P(src, dest);
+        if(k != src) printSP(D, P, src, k);
+        if(k != dest) printSP(D, P, k, dest);
     }
-
-    for(std::vector<edge>::const_reverse_iterator rit = s.rbegin(); rit != s.rend(); ++rit)
-        printf("%d -> %d (%.2f) ",rit->from, rit->to, rit->weight);
 }
 
 
-void printMatrix(matrix & D, int size)
+
+void printAllSP(matrix & D, matrix & P)
 {
+    size_t size = D.getCardinality();
+    forl(i, 0, size) { 
+        if(D(i,i) < 0) {
+            printf("negative cycles exists distance %d to %d is %f\n", i, i, D(i,i));
+            return;
+        }
+    }
+
+    forl(i, 0, size) { 
+        forl(j, 0, size) { 
+            if(INFINITY == D(i,j))
+                printf("%d -> %d sp=INF ");
+            else {
+                printf("%d -> %d sp=%.2f ", i,j, D(i,j));
+                printSP(D, P, i, j);
+            }
+            printf("\n");
+        }
+    }
+}
+
+
+void printMatrix(matrix & D)
+{
+    size_t size = D.getCardinality();
     forl(i, 0, size) { 
         if(D(i,i) < 0) {
             printf("negative cycles exists distance %d to %d is %f\n", i, i, D(i,i));
@@ -126,23 +155,30 @@ void AllPairShortestPath(const graphtp & g)
 {
     int comparisons = 0;
     matrix D(g.size()); //initialized to infinity except for the diagonal
+    matrix P(g.size()); //initialized to infinity except for the diagonal
 
-    forl(i, 0, g.size()) { //for all vertices v get the distance from n
+    //populate D with all the edges in the graph
+    forl(i, 0, g.size()) { //for all vertices v set D entry for edges out of v
         for(se::const_iterator it = g[i].begin(); it != g[i].end(); ++it)
         D(i, it->to) = it->weight;
     }
 
-    forl(k, 0, g.size()) { //for each intermediate vertix k 
+    forl(k, 0, g.size()) { //for each intermediate vertex k 
         forl(i, 0, g.size()) { //relax the distance between i and j
             forl(j, 0, g.size()) { 
+                if(D(i,k) == INFINITY || D(k,j) == INFINITY)
+                    continue;
                 double d = D(i,k) + D(k,j);
-                if(D(i,j) > d) //the so called relaxation step
+                if(D(i,j) > d) { //the so called relaxation step
                     D(i,j) = d;
+                    P(i,j) = k; //the path from i to j uses edge k
+                }
             }
         }
     }
     
-    printMatrix(D, g.size());
+    //printMatrix(D);
+    printAllSP(D, P);
 }
 
 
@@ -170,12 +206,14 @@ int main(void)
     {
         out("this is buff ='%s'\n", buff);
         char * tok = strtok(buff, " \n\t");
-        out("this is node ='%s'\n", tok);
-        int nodefrom = atoi(tok);
         if(tok == NULL) {
             printf("Error in input file");
             exit(1);
         }
+
+        out("this is node ='%s'\n", tok);
+        int nodefrom = atoi(tok);
+        assert(nodefrom == counter-1);
 
         se me;
         tok = strtok(NULL, " \n\t");

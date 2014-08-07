@@ -172,13 +172,13 @@ int main(void)
     while(counter++ < m && getline(&buff, &n, stdin) != -1 )
     {
         out("this is buff ='%s'\n", buff);
-        char * tok = strtok(buff, " \n\t");
+        char * tok = strtok(buff, " \n\t"); //node from
         out("this is node ='%s'\n", tok);
-        int nodefrom = atoi(tok);
         if(tok == NULL) {
             printf("Error in input file");
             exit(1);
         }
+        int nodefrom = atoi(tok);
 
         se me;
         tok = strtok(NULL, " \n\t");

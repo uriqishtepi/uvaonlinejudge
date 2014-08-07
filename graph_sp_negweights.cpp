@@ -59,7 +59,7 @@ enum {white=0, gray=1, black=2,};
 void print_graph(const graphtp & g)
 {
     out("Printing Graph\n");
-    for(int n = 0; n < g.size(); n++)
+    for(size_t n = 0; n < g.size(); n++)
     {
         out("%d: ", n);
         for(se::const_iterator it = g[n].begin(); it != g[n].end(); ++it) {
@@ -73,12 +73,12 @@ void print_graph(const graphtp & g)
 //print shortest path from source vertex source to vertex i
 //the data is stored in predecesor order in p
 //so we need to traverse from i till the source vertex, and print in reverse
-void printSP(std::vector<edge> P, int i, int source)
+void printSP(std::vector<edge> P, int node, int src)
 {
     std::vector<edge> s;
-    while(i != source && s.size() <= P.size()) {
-        s.push_back(P[i]);
-        i = P[i].from;
+    while(node != src && s.size() <= P.size()) {
+        s.push_back(P[node]);
+        node = P[node].from;
     }
 
     for(std::vector<edge>::const_reverse_iterator rit = s.rbegin(); rit != s.rend(); ++rit)
@@ -92,7 +92,7 @@ void printSP(std::vector<edge> P, int i, int source)
 //as an optimization we use a queue to store vertices that changed
 //and relax paths only from that queue
 //to detect negative loops can check if node n gets updated on any the n-th iteration
-void ShortestPath(const graphtp & g, int n)
+void ShortestPath(const graphtp & g, int src)
 {
     int comparisons = 0;
     vi visited(g.size());
@@ -101,19 +101,19 @@ void ShortestPath(const graphtp & g, int n)
 
     for(vd::iterator it = D.begin(); it != D.end(); ++it) 
         *it = INFINITY;
-    D[n] = 0;
+    D[src] = 0;
 
     si lastupdated;
 
     //keep a queue (set) of vertices (nodes) that were updated last time around
     //do the relaxation V times 
-    for(int i = 0; i < g.size(); i++) {
+    for(size_t i = 0; i < g.size(); i++) {
         lastupdated.insert(i);
     }
 
 
     //without optimization loop would be: for(int i = 0; i < g.size(); i++) 
-    int counter = 0;
+    size_t counter = 0;
     while(!lastupdated.empty()) {
         counter++;
         si newlast;
@@ -132,7 +132,7 @@ void ShortestPath(const graphtp & g, int n)
                         //we should not update a node in a stage greater than sz
                         printf("negative cycles exists distance %d to %d is %f\n", v, it->to, dist);
                         //need to trace back from P[v]
-                        printSP(P, it->to, v);
+                        //printSP(P, it->to, v);
                         printSP(P, v, it->to);
                         printf("\n");
                         return;
@@ -148,8 +148,8 @@ void ShortestPath(const graphtp & g, int n)
     }
 
     for(int i = 0; i < D.size(); i++) {
-        printf("%d -> %d sp=%.2f ", n, i, D[i]);
-        printSP(P, i, n);
+        printf("%d -> %d sp=%.2f ", src, i, D[i]);
+        printSP(P, i, src);
         printf("\n");
     }
     out("comparisons %d\n", comparisons);

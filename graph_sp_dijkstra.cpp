@@ -1,6 +1,15 @@
 /* shortest path from a node n to every other node, known as
- * Dijkstra's algorithm. This is for graphs that have no negative cycles
- * start from the origin node, and expand via BFS updating shortest path as you go
+ * Dijkstra's algorithm. 
+ * This algorithm is for graphs that have no negative cycles:
+ *   start from the origin node, and expand via BFS updating 
+ *   the shortest paths as you go. 
+ * Reason why this algorithm does not work with negative weights
+ * is because in 
+ *   a -> b (1) 
+ *   a -> c (1)
+ *   b -> c (-1)
+ * the a-b edge will always be picked by this algorithm rather than
+ * the shorte a-c-b because it will never look at b again
  */ 
 #include <stack>
 #include <queue>

@@ -141,7 +141,7 @@ void printMatrix(matrix & D)
     forl(i, 0, size) { 
         forl(j, 0, size) { 
             if(INFINITY == D(i,j))
-                printf("%d -> %d sp=INF ");
+                printf("%d -> %d sp=INF ", i,j);
             else
                 printf("%d -> %d sp=%.2f ", i,j, D(i,j));
             printf("\n");
@@ -166,11 +166,17 @@ void AllPairShortestPath(const graphtp & g)
     forl(k, 0, g.size()) { //for each intermediate vertex k 
         forl(i, 0, g.size()) { //relax the distance between i and j
             forl(j, 0, g.size()) { 
-                if(D(i,k) == INFINITY || D(k,j) == INFINITY)
+                double & a = D(i,k);
+                if(a == INFINITY) 
                     continue;
-                double d = D(i,k) + D(k,j);
-                if(D(i,j) > d) { //the so called relaxation step
-                    D(i,j) = d;
+                double & b = D(k,j);
+                if(b == INFINITY)
+                    continue;
+
+                double curr = a + b;
+                double & d = D(i,j);
+                if(d > curr) { //the so called relaxation step
+                    d = curr;
                     P(i,j) = k; //the path from i to j uses edge k
                 }
             }

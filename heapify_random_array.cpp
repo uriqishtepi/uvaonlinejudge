@@ -11,7 +11,7 @@
 #include <sys/time.h>
 
 #define forl(i,init, max) for(int i = init; i < max; i++) 
-#define SZ (22234532-1)
+#define SZ (22222232-1)
 
 int swapcounter = 0;
 
@@ -26,12 +26,9 @@ inline void swap (int &a, int &b)
 #define parent(a) ((a-1)/2)
 #define left(a) (2*(a+1) - 1) //right is left + 1
 
-//percolate from el up to sz to have min heap property
-//this way of building the heap takes O(n) (not nlogn)
-inline void siftDown(std::vector<int> &arr, int el)
+
+inline void getMinChild(std::vector<int> &arr, int el, int & minchild, int sz)
 {
-    int sz = arr.size(); 
-    int minchild = -1; //min child of el, if it exists
     int l = 0;
     int r = 0;
 
@@ -39,16 +36,20 @@ inline void siftDown(std::vector<int> &arr, int el)
         minchild = l;
     if((r=l+1) < sz && arr[r] < arr[l])
         minchild = r;
+}
 
+
+//percolate from el up to sz to have min heap property
+//this way of building the heap takes O(n) (not nlogn)
+inline void siftDown(std::vector<int> &arr, int el, int sz)
+{
+    int minchild = -1; //min child of el, if it exists
+    getMinChild(arr, el, minchild, sz);
     while(minchild > el && arr[minchild] < arr[el]) 
     {
         swap(arr[minchild], arr[el]);
         el = minchild;
-
-        if((l=left(el)) < sz) 
-            minchild = l;
-        if((r=l+1) < sz && arr[r] < arr[l])
-            minchild = r;
+        getMinChild(arr, el, minchild, sz);
     } 
 }
 
@@ -56,7 +57,8 @@ void heapify(std::vector<int> &arr)
 {
     //start at last parent element down to 0, perform siftDown
     //last element is (SZ-1), and its parent is
-    for(int i = parent(arr.size() - 1); i >= 0; i--) { siftDown(arr, i); }
+    int sz = arr.size(); 
+    for(int i = parent(arr.size() - 1); i >= 0; i--) { siftDown(arr, i, sz); }
 }
 
 

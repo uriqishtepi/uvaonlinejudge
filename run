@@ -8,7 +8,15 @@ fi
 task=$(echo ${1} | sed 's/.cpp$// ; s/.c$//')
 echo "task is $task "
 
-make CPPFLAGS='-Wall -g' ${task}
+CPPFLAGS='-Wall -g' 
+
+#check if -o is passed
+if [ x${2}x == "x-ox" ]; then
+    CPPFLAGS="${CPPFLAGS} -O3"
+fi
+
+make CPPFLAGS="$CPPFLAGS" ${task}
+
 if [ $? -ne 0 ] ; then 
     exit
 fi
@@ -25,6 +33,7 @@ LINES=`tput lines`
 
 if [ -f $OUT ] ; then rm /tmp/myout.txt; fi
 
+#check if -g is passed
 if [ x${2}x == "x-gx" ]; then
     gdb ./${task} -ex "run < $IN"
     exit

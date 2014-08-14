@@ -9,9 +9,10 @@
  *
  * If the path found has length of size graph size - 1, then we have found
  * a Hamilton path.  See also graph_dfs.cpp on a way of implementing this.
- * Hamilton path is NP-complete problem: find a path that goes through every 
- * vertex exactly once
+ * Hamilton path is NP-complete problem: find a path (cycle) that goes 
+ * through every vertex exactly once
  */
+
 #include <stack>
 #include <queue>
 #include <assert.h>
@@ -28,11 +29,11 @@
 #ifdef DEBUG
 #define out printf
 #else
-#define out
+void out(...) {}
 #endif
 
 
-#define forl(i,init, max) for(int i = init; i < max; i++) 
+#define forl(i,init, max) for(size_t i = init; i < max; i++) 
 #define vi std::vector<int>
 #define ve std::vector<edge>
 #define vd std::vector<double>
@@ -72,7 +73,7 @@ struct matrix {
         }
     }
     inline double & operator()(int a, int b) { return m_vec[a*m_sz + b]; }
-    int m_sz;
+    size_t m_sz;
     std::vector<double>m_vec;
 };
 
@@ -84,7 +85,7 @@ enum {white=0, gray=1, black=2,};
 void print_graph(const graphtp & g)
 {
     out("Printing Graph\n");
-    for(int n = 0; n < g.size(); n++)
+    for(size_t n = 0; n < g.size(); n++)
     {
         out("%d: ", n);
         for(se::const_iterator it = g[n].begin(); it != g[n].end(); ++it) {
@@ -107,11 +108,11 @@ void printSP(std::vector<edge> P, int i, int final)
         printf("%d -> %d (%.2f) ",rit->from, rit->to, rit->weight);
 }
 
-void printPath(std::vector<edge> P, int maxsz)
+void printPath(std::vector<edge> P, size_t maxsz)
 {
     for(std::vector<edge>::const_iterator it = P.begin(); it != P.end(); ++it)
         printf("%d -> %d (%.2f) ",it->from, it->to, it->weight);
-    if(P.size() == maxsz - 1)
+    if(P.size() == maxsz)
         printf(" *"); //identifies a hamiltonian path
     printf("\n");
 }
@@ -124,12 +125,13 @@ void dfs(int node, vi &v, ve &P, const graphtp & g)
     { 
         assert(it->from == node);
         int next = it->to;
-        if(v[next]) continue;
+        if(next !=0 && v[next]) continue;
 
         P.push_back(*it);
         printPath(P, g.size()); //print this path
 
-        dfs(next, v, P, g);
+        if(next != 0)
+            dfs(next, v, P, g);
         P.erase(P.end()-1);
     }
     v[node] = 0; //cleanup 
@@ -137,13 +139,9 @@ void dfs(int node, vi &v, ve &P, const graphtp & g)
 
 void AllPaths(const graphtp & g)
 {
-    int comparisons = 0;
     vi v(g.size());
     ve P;
-
-    forl(i, 0, g.size()) { //for each vertex i
-        dfs(i, v, P, g);
-    }
+    dfs(0, v, P, g); //start at zero
 }
 
 

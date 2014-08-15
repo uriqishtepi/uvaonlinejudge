@@ -34,7 +34,7 @@ void out(...) {}
 
 
 #define forl(i,init, max) for(size_t i = init; i < max; i++) 
-#define vi std::vector<int>
+#define vi std::vector<bool>
 #define ve std::vector<edge>
 #define vd std::vector<double>
 #define mwp std::map<double, edge> //map weight and destination point 

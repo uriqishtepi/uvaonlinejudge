@@ -242,11 +242,28 @@ int main(void)
 
 checkSubsets(sz, thisn, d) 
 {
-    for(size_t l = 1; k < n; k++) { //l is this node
-        if(k == l) continue; //cant have same node repeat
-        for(each mask in d[l] ) {
-            newmask = mask | thisn;
-            double newdist = d[k][mask] + D(k,l);
+    A[sz][2^sz] = ;
+    int thisnshifted = (1 << thisn);
+    int mask = thisnshifted;
+    int count = 1;
+    int firstp = 0;
+    vi positions(sz); //positions to have a 1
+    forl(i,0,sz-) { positions[i] = i; }
+    int pos = sz;
+    while(positions[0] < n - sz) {
+        printf("%x", mask);
+        if(pos < n) {
+        }
+        while(count++ <= sz) {
+            
+        }
+    }
+
+    for(int newmask in subsets of size sz that includes thisn) {
+        int prevmask = mask ^ thisnshifted;
+        for(size_t k = 1; k < n; k++) { //l is this node
+            if(k == thisn) continue; //cant have same node repeat
+            double newdist = A[k][prevmask] + D(k,thisn);
             //this masks dist is prev dist plus lastnodo to this node
             if(d[thisn][newmask] > newdist) //ISSUE: d[thisn][newmask] is expensive to find
                 d[thisn][newmask] = newdist;

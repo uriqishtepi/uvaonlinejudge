@@ -1,4 +1,4 @@
-/* this is an attempt to have all pairs shortest paths using the dijkstra 
+/* This is an attempt to have all pairs shortest paths using the dijkstra 
  * algorigthm, by using a priority queue to insert all edges. 
  * There are two ways to search via dijkstra: one is to search once
  * for each edge, ie N*dijkstra, and the other is to put each node

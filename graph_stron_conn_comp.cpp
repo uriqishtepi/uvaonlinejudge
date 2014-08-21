@@ -1,3 +1,6 @@
+/* this is the two pass algorithm known as kosaraju-sharir 
+ * to compute the connected components in a directed graph
+ */
 #include <stack>
 #include <queue>
 #include <assert.h>

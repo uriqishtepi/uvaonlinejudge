@@ -39,6 +39,13 @@ if [ x${2}x == "x-gx" ]; then
     exit
 fi
 
+#check if -v is passed
+if [ x${2}x == "x-vx" ]; then
+    valgrind ./${task} < $IN
+    exit
+fi
+
+
 echo "running ${task} < $IN"
 ./${task} < $IN > $OUT && diff -w -q ${task}.out $OUT || echo run " vimdiff $OUT ${task}.out" to see diff
 

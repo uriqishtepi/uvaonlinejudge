@@ -13,7 +13,7 @@
 #include <sys/time.h>
 
 #define forl(i,init, max) for(int i = init; i < max; i++) 
-#define SZ (22222232-1)
+#define SZ (32-1)
 #define WAYS 4
 
 int swapcounter = 0;
@@ -47,6 +47,7 @@ inline void getMinChild(std::vector<int> &arr, int el, int & minchild, int sz)
 }
 
 
+//sift element down the heap towards the bottom (back of array)
 //percolate from el up to sz to have min heap property
 //this way of building the heap takes O(n) (not nlogn)
 inline void siftDown(std::vector<int> &arr, int el, int sz)
@@ -71,6 +72,7 @@ void heapify(std::vector<int> &arr)
 }
 
 
+//sift element up the heap towards the top (front of array)
 //assume we want a MIN heap 
 void siftUp(std::vector<int> &arr, int nodeOffset)
 {
@@ -81,6 +83,36 @@ void siftUp(std::vector<int> &arr, int nodeOffset)
         swap(arr[p], arr[nodeOffset]);
         nodeOffset = p;
     }
+}
+
+
+//decrease sz, get the min element at the end of the arrayy
+//and sift Down the heap to preserve heap property of remainder
+int extractMin(std::vector<int> &arr, int & sz)
+{
+    //exchange last with first
+    sz--;
+    swap(arr[sz], arr[0]);
+    siftDown(arr, 0, sz);
+    return arr[sz]; //min
+}
+
+//this is a bit tricky
+//to decreasse the key of an element we need to be able to 
+//point to it, but any pointer will be invalid once we 
+//sift Up or Down, decrease a key, or extract min.
+//However a find is not easy to implement
+//
+//Idea:
+// 1 3 2 5 0 --orig array, maintains pointers to heap
+// 4 0 2 1 3 --heap, pointers to orig array
+// when swaping elements of heap, change pointers of orig array too.
+// maintain and use offset to orig array to change the key
+//
+void decreaseKey(std::vector<int> &arr, int el, int newkey, sz)
+{
+    arr[el] = newkey;
+    siftUp(arr, el, sz);
 }
 
 //insert new element into the heap
@@ -157,5 +189,10 @@ int main (void)
     //forl(i, 0, SZ) { printf("%d %d\n",i, arr2[i]); }
     heap_verify(arr2);
 
+    int sz = arr2.size();
+    while(sz >0) {
+        extractMin(arr2, sz);
+    }
+    //forl(i, 0, SZ) { printf("%d %d\n",i, arr2[i]); }
     return 0;
 }

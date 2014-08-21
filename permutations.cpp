@@ -9,6 +9,7 @@
 #include <iomanip>
 #include <string.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <math.h>
 
 #define forl(i,init, max) for(int i = init; i < max; i++) 
@@ -27,7 +28,12 @@
 #define out
 #endif
 
-
+void print_bits(uint32_t a, int n)
+{
+    for(char i = n; i > 0; --i) 
+        printf("%s%u",(i%4? "" : " "),(a >> (i-1)) & 0x1);
+        //printf("%d",((a >> (i-1)) & 0x1));
+}
 
 void print(std::vector<int> &v)
 {
@@ -103,6 +109,21 @@ void multcombinations(int S, int k, std::vector<int> &v, int mult)
     }
 }
 
+void iterative_comb(int S, std::vector<int> &v, int mult)
+{
+    int k = 0;
+    while(k < S) {
+        if(v[k]++ >= mult) {
+            v[k]=0;
+            k++;
+        }
+        else {
+            print(v);
+            k=0;
+        }
+    }
+}
+
 
 //combinations of N numbers, there are 2^N combinations
 //each number i can be taken or not
@@ -132,18 +153,52 @@ void printsubsets(std::vector<int> &v)
     printf("}\n");
 }
 
-
-//get combinations, a 1 at position v[k] means we take the element
-void subsets(int N, int k, std::vector<int> &v)
+//get all n! subsets of N items
+void all_subsets(int N, int k, std::vector<int> &v)
 {
     if(k >= N) { printsubsets(v); return; }
 
     v[k] = 0;
-    subsets(N, k+1, v);
+    all_subsets(N, k+1, v);
     v[k] = 1;
-    subsets(N, k+1, v);
+    all_subsets(N, k+1, v);
 }
 
+
+//get subsets of exactly N items out of total T 
+void n_subsets(int N, int T, int k, std::vector<int> &v)
+{
+    if(k >= T) { printsubsets(v); return; }
+
+    if(N > 0) {
+        v[k] = 1;
+        n_subsets(N-1, T, k+1, v);
+        v[k] = 0;
+    }
+    if(T - k > N) {
+        v[k] = 0;
+        n_subsets(N, T, k+1, v);
+    }
+    
+}
+
+//get subsets of exactly N items out of total T 
+//k is the bit we are working on
+void n_subsets_with_mask(int N, int T, int k, uint32_t & mask)
+{
+    if(k >= T) { print_bits(mask, T); printf("\n");return; }
+
+    if(N > 0) {
+        mask |= (1 << k);  //set bit to 1
+        n_subsets_with_mask(N-1, T, k+1, mask);
+        mask &= ~(1 << k); //set bit to 0
+    }
+    if(T - k > N) {
+        mask &= ~(1 << k); //set bit to 0
+        n_subsets_with_mask(N, T, k+1, mask);
+    }
+    
+}
 
 void gray_combinations(int N, int k, std::vector<int> &v)
 {
@@ -176,8 +231,16 @@ int main(int argc, char **argv)
         printf("\nCombinations n-ary \n");
         int S = 2; //slots
         int C = 3; //choices per slot
-        std::vector<int> v(C);
+        std::vector<int> v(S);
         multcombinations(S, 0, v, C);
+    }
+
+    {
+        printf("\nCombinations iterative \n");
+        int S = 2; //slots
+        int C = 3; //choices per slot
+        std::vector<int> v(S);
+        iterative_comb(S, v, C);
     }
     
     {
@@ -200,9 +263,23 @@ int main(int argc, char **argv)
 
     {
         int N = 5;
-        printf("\nAll subsets of %d items\n", N);
+        printf("\nAll subsets of less than and including %d items\n", N);
         std::vector<int> v(N);
-        subsets(N, 0,  v);
+        all_subsets(N, 0,  v);
+    }
+
+    {
+        int N = 5;
+        printf("\nAll subsets of exactly %d items out of %d\n", N, 2*N);
+        std::vector<int> v(2*N);
+        n_subsets(N, 2*N, 0,  v);
+    }
+    
+    {
+        int N = 5;
+        printf("\nAll mask subsets of exactly %d items out of %d\n", N, 2*N);
+        uint32_t mask = 0;
+        n_subsets_with_mask(N, 2*N, 0, mask);
     }
 
     {

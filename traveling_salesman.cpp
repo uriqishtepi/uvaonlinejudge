@@ -137,7 +137,11 @@ struct matrix {
     }
     size_t getRows() {return m_rows;}
     size_t getCols() {return m_cols;}
-    inline float & operator()(int a, int b) { return m_vec[a*m_cols + b]; }
+    inline float & operator()(int a, int b) { 
+        assert(a >= 0 && a < m_rows); 
+        assert(b >= 0 && b < m_cols); 
+        return m_vec[a*m_cols + b]; 
+    }
     size_t m_rows;
     size_t m_cols;
     std::vector<float>m_vec;
@@ -167,24 +171,38 @@ void printM(vd & M)
 }
 
 
-void checkSubset(matrix &A, matrix &D, int n, int thisn, uint32_t prevmask)
+void checkSubset(matrix &A, matrix &D, int n, int thisn, int prevmask)
 {
     uint32_t thisnshifted = (1 << thisn);
     if(prevmask & thisnshifted) return;
 
-    uint32_t newmask = prevmask ^ thisnshifted;
+    int newmask = prevmask ^ thisnshifted;
     //for all nodes (except the 0th one), check path 
-    for(int k = 1; k < n; k++) { // k is intermediate node
-        out("thisn = %d, working with k=%d\n", thisn, k);
-        if(k == thisn) continue; //cant have same node repeat
-        float newdist = A(k, prevmask) + D(k, thisn);
-        out("A(%d,%d) = %f, newdist = %f : A(%d, %d) %f + %f\n", thisn, newmask, A(thisn, newmask), newdist, k, prevmask, A(k, prevmask), D(k, thisn));
+    for(int k = 0; k < n; k++) { // k is intermediate node
+        out("thisn = %d, working with k=%d prevmask=%d\n", thisn, k, prevmask);
+        if(k == thisn || ((1 << k) & prevmask) == 0) continue; //cant have same node repeat
+        float a;
+        out("-prevmask = %d, prevmask & -prevmask = %d\n", -prevmask, prevmask & -prevmask);
+        if((prevmask & (-prevmask)) == prevmask) {
+            a = D(0, k+1);
+            out("a(D(0,k+1))=%f ",a);
+        }
+        else {
+            a = A(k, prevmask); 
+            out("a(A(k,prevmask))=%f ",a);
+        }
+
+        float d = D(k+1, thisn+1);
+        float newdist = a + d;
+        out("A(%d,%d) = %f, newdist = %f : A(%d, %d) or a %f + %f\n", thisn, newmask, A(thisn, newmask), newdist, k, prevmask, a, d);
         //this masks dist is prev dist plus lastnodo to this node
         if(A(thisn, newmask) > newdist) //ISSUE: d[thisn][newmask] is expensive to find
             A(thisn, newmask) = newdist;
     }
     out("\n");
-    //printMatrix(A);
+#ifdef DEBUG
+    printMatrix(A);
+#endif
 }
 
 
@@ -230,20 +248,20 @@ float travelingSalesman(matrix & A, matrix &D, size_t n)
     //for every possibility of the this node and last node
     //we need to produce all the subsets possible
     //keep track of what is selected in bitmask
-    int mask = 1; //start with one node (node zero) selected
     forl(sz, 2, n) {
+        printf("sz=%d\n",sz);
         for(size_t i = 1; i < n; i++) { //i is this node
             //generate and check all subsets for this size, and for this node i
-            check_all_subsets(A, D, n, sz, 0, i, mask);
+            check_all_subsets(A, D, n-1, sz-1, 0, i-1, 0);
         }
     }
     //for i in 1 n
     //if(mindist < A[i][111111])
     //    mindist = A[i][111111])
     float mindist = INFINITY;
-    mask = (1 << n) -1;
-    forl(i,1,n) {
-        float fullpath = A(i, mask) + D(0, i);
+    int mask = (1 << (n-1)) -1;
+    forl(i,0,n-1) {
+        float fullpath = A(i, mask) + D(0, i+1);
         if(mindist > fullpath)
             mindist = fullpath;
     }
@@ -263,10 +281,6 @@ int main(void)
     out("n %d\n",n);
     size_t counter = 0;
     float i, j;
-    matrix D(n, n);
-    printf("allocating %d floats\n", n * (1 << n));
-    matrix A(n, (1 << n) ); //to be accessed by mask
-    forl(i, 0, n) { D(i,i) = 0.0; A(i, (1 << (i-1)) ) = 0.0; }
     vd x;
     vd y;
 
@@ -279,22 +293,24 @@ int main(void)
     }
     assert(x.size() == n && "should have n items");
 
-    //compute distance matrix for each pair
+    matrix D(n, n);
+    printf("allocating %d floats\n", n * (1 << (n-1)));
+    matrix A = matrix(n-1, (1 << (n-1)) ); //to be accessed by mask
+
+    //compute distance matrix for each pair, dont include node 0
     for(size_t k = 0; k < n; k++) {
-        int mk = 1 << k;
         for(size_t l = k+1; l < n; l++) {
             //distance squared really
             float dx = (x[k]-x[l]);
             float dy = (y[k]-y[l]);
             D(k,l) = sqrt(dx*dx + dy*dy);
             D(l,k) = D(k,l);
-            int maskkl = mk | (1 << l);
-            A(k, maskkl) = D(k,l);
-            A(l, maskkl) = D(k,l);
         }
     }
-    //printMatrix(D);
-    //printMatrix(A);
+#ifdef DEBUG
+    printMatrix(D);
+    printMatrix(A);
+#endif
 
     float dist = travelingSalesman(A, D, n);
     printf("dist = %f\n", dist);

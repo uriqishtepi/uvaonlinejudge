@@ -1,5 +1,6 @@
 #include <pthread.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #define FORL(ii,s,e) for(int ii = s; ii < e; ii++)
 #define THREADNUM 10

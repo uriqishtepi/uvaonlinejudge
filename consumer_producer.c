@@ -14,7 +14,9 @@ struct thrd_param {
 
 typedef struct thrd_param thrd_param;
 
-/* this function tries to get the lock to a shared resource 
+/* get acces to critical section via try lock
+ * it's a bit faster than the trylock which spins for a while
+ * this function tries to get the lock to a shared resource 
  * telling the producers what work there is to be done
  */
 void * try_work(void *arg)
@@ -22,7 +24,7 @@ void * try_work(void *arg)
     thrd_param *p = (thrd_param *) arg;
     int a;
     while(1) {
-        if(p->a >= WORKTOBEDONE) return NULL; //it's ok, p->a doesnt decrement
+        if(p->a > WORKTOBEDONE) return NULL; //it's ok, p->a doesnt decrement
         int rc = pthread_mutex_trylock(&p->mutex);
         if(rc) {
             continue;
@@ -42,7 +44,35 @@ void * try_work(void *arg)
     return NULL;
 }
 
+/* get access to the critical section via lock
+ * this function tries to get the lock to a shared resource 
+ * telling the producers what work there is to be done
+ */
+void * lock_work(void *arg)
+{
+    thrd_param *p = (thrd_param *) arg;
+    int a;
+    while(1) {
+        if(p->a > WORKTOBEDONE) return NULL; //it's ok, p->a doesnt decrement
+        int rc = pthread_mutex_lock(&p->mutex);
+        if(rc) {
+            printf("Print error from pthread_mutex_lock rc = %d\n", rc);
+            exit(1);
+        }
 
+        a = p->a;
+        p->a = 0; //set to zero anyway
+        pthread_mutex_unlock(&p->mutex);
+
+        if(a > WORKTOBEDONE) return NULL;
+        if(a > 0) { //i have work to do
+            //do work
+            printf("Doing Work tid=%llx a=%d\n", THREADID, a);
+            usleep(1000*500);
+        }
+    }
+    return NULL;
+}
 
 
 int main()
@@ -56,18 +86,18 @@ int main()
     pthread_t thv[THREADNUM];
 
     FORL(i, 0, THREADNUM) {
-        pthread_create(&thv[i], NULL, try_work, &p);
+        pthread_create(&thv[i], NULL, lock_work, &p);
     }
     
-    int i = 0;
+    int i = 1;
     while(i < WORKTOBEDONE+1) {
         int rc = pthread_mutex_lock(&p.mutex);
         if(rc) {
             printf("Print error from pthread_mutex_lock rc = %d\n", rc);
             exit(1);
         }
-        if(p.a == 0)
-            p.a = i++; //this signals that there is work to be done
+        if(p.a == 0)   //this depends on there existing a worker thread
+            p.a = ++i; //this signals that there is work to be done
         
         rc = pthread_mutex_unlock (&p.mutex);
         if(rc) {

@@ -10,9 +10,13 @@
 struct thrd_param {
     int a;
     pthread_mutex_t mutex;
+    pthread_cond_t reader_ready;
+    pthread_cond_t writer_ready;
 };
 
 typedef struct thrd_param thrd_param;
+
+void do_some_work();
 
 /* get acces to critical section via try lock
  * it's a bit faster than the trylock which spins for a while
@@ -38,7 +42,7 @@ void * try_work(void *arg)
         if(a > 0) { //i have work to do
             //do work
             printf("Doing Work tid=%llx a=%d\n", THREADID, a);
-            usleep(1000*500);
+            do_some_work();
         }
     }
     return NULL;
@@ -68,38 +72,74 @@ void * lock_work(void *arg)
         if(a > 0) { //i have work to do
             //do work
             printf("Doing Work tid=%llx a=%d\n", THREADID, a);
-            usleep(1000*500);
+            do_some_work();
         }
     }
     return NULL;
 }
 
 
-int main()
+void * cond_work(void *arg)
 {
-    //call 10 threads to increase variable passed in
-
-
-    thrd_param p;
-    p.a = 1;
-    pthread_mutex_init(&p.mutex, NULL);
-    pthread_t thv[THREADNUM];
-
-    FORL(i, 0, THREADNUM) {
-        pthread_create(&thv[i], NULL, lock_work, &p);
-    }
-    
-    int i = 1;
-    while(i < WORKTOBEDONE+1) {
-        int rc = pthread_mutex_lock(&p.mutex);
+    thrd_param *p = (thrd_param *) arg;
+    int a;
+    while(1) {
+        pthread_mutex_lock(&p->mutex);
+        pthread_cond_signal(&p->reader_ready);
+        int rc = pthread_cond_wait(&p->writer_ready, &p->mutex);
         if(rc) {
             printf("Print error from pthread_mutex_lock rc = %d\n", rc);
             exit(1);
         }
-        if(p.a == 0)   //this depends on there existing a worker thread
-            p.a = ++i; //this signals that there is work to be done
+
+        a = p->a;
+        rc = pthread_mutex_unlock(&p->mutex);
+        if(rc) {
+            printf("Print error from pthread_mutex_unlock rc = %d\n", rc);
+            exit(1);
+        }
+
+        if(a > WORKTOBEDONE) return NULL;
+        if(a > 0) { //i have work to do
+            //do work
+            printf("Doing Work tid=%llx a=%d\n", THREADID, a);
+            do_some_work();
+        }
+    }
+    return NULL;
+}
+
+int main()
+{
+    //call 10 threads to do some work 
+    pthread_t thv[THREADNUM];
+    thrd_param p;
+    pthread_mutex_init(&p.mutex, NULL);
+    pthread_cond_init(&p.reader_ready, NULL);
+    pthread_cond_init(&p.writer_ready, NULL);
+    p.a = 1;
+
+    FORL(i, 0, THREADNUM) {
+        pthread_create(&thv[i], NULL, cond_work, &p);
+    }
+    
+    int i = 1;
+    while(i < WORKTOBEDONE+1) {
+        pthread_mutex_lock(&p.mutex);
+        int rc = pthread_cond_wait(&p.reader_ready, &p.mutex);
+        if(rc) {
+            printf("Print error from pthread_mutex_lock rc = %d\n", rc);
+            exit(1);
+        }
         
-        rc = pthread_mutex_unlock (&p.mutex);
+        p.a = ++i; //this signals that there is work to be done
+        if(rc) {
+            printf("Print error from pthread_mutex_unlock rc = %d\n", rc);
+            exit(1);
+        }
+
+        rc = pthread_cond_signal(&p.writer_ready);
+        rc = pthread_mutex_unlock(&p.mutex);
         if(rc) {
             printf("Print error from pthread_mutex_unlock rc = %d\n", rc);
             exit(1);
@@ -113,3 +153,7 @@ int main()
     return 0;
 }
 
+void do_some_work()
+{
+    usleep(1000*500);
+}

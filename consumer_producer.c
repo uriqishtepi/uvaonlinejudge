@@ -9,6 +9,8 @@
 
 struct thrd_param {
     int a;
+    int free_reader;
+    int free_writer;
     pthread_mutex_t mutex;
     pthread_cond_t reader_ready;
     pthread_cond_t writer_ready;
@@ -85,14 +87,24 @@ void * cond_work(void *arg)
     int a;
     while(1) {
         pthread_mutex_lock(&p->mutex);
-        pthread_cond_signal(&p->reader_ready);
-        int rc = pthread_cond_wait(&p->writer_ready, &p->mutex);
+        p->free_reader++;
+
+        int rc = pthread_cond_signal(&p->reader_ready);
         if(rc) {
             printf("Print error from pthread_mutex_lock rc = %d\n", rc);
             exit(1);
         }
 
+        rc = 0;
+        while(p->free_writer < 1 && rc == 0) {
+            printf("Reader wait again rc = %d\n", rc);
+            rc = pthread_cond_wait(&p->writer_ready, &p->mutex);
+        }
+        
+
         a = p->a;
+        p->free_reader--;
+        p->free_writer--;
         rc = pthread_mutex_unlock(&p->mutex);
         if(rc) {
             printf("Print error from pthread_mutex_unlock rc = %d\n", rc);
@@ -118,6 +130,8 @@ int main()
     pthread_cond_init(&p.reader_ready, NULL);
     pthread_cond_init(&p.writer_ready, NULL);
     p.a = 1;
+    p.free_reader = 0;
+    p.free_writer = 0;
 
     FORL(i, 0, THREADNUM) {
         pthread_create(&thv[i], NULL, cond_work, &p);
@@ -126,10 +140,11 @@ int main()
     int i = 1;
     while(i < WORKTOBEDONE+1) {
         pthread_mutex_lock(&p.mutex);
-        int rc = pthread_cond_wait(&p.reader_ready, &p.mutex);
-        if(rc) {
-            printf("Print error from pthread_mutex_lock rc = %d\n", rc);
-            exit(1);
+        p.free_writer++;
+        int rc = 0;
+        while(p.free_reader < 1 && rc == 0) {
+            printf("Writer wait again rc = %d\n", rc);
+            rc = pthread_cond_wait(&p.reader_ready, &p.mutex);
         }
         
         p.a = ++i; //this signals that there is work to be done

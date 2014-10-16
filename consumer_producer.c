@@ -92,7 +92,7 @@ void * cond_work(void *arg)
             //printf("Reader woke up from wait tid=%llx, rc = %d\n", THREADID, rc);
         }
 
-        if(p->a > WORKTOBEDONE) { 
+        if(p->a > WORKTOBEDONE) {  //mechanism to stop processing
             pthread_mutex_unlock(&p->mutex);
             return NULL;
         }
@@ -147,10 +147,6 @@ int main()
             exit(1);
         }
     }
-
-    pthread_mutex_lock(&p.mutex);
-    pthread_cond_broadcast(&p.writer_ready);
-    pthread_mutex_unlock(&p.mutex);
 
     FORL(j, 0, THREADNUM) {
         void *val;

@@ -76,6 +76,9 @@ void * lock_work(void *arg)
 }
 
 
+/* use conditional variables and mutex to get the producer and 
+ * consumer to coordinate
+ */
 void * cond_work(void *arg)
 {
     thrd_param *p = (thrd_param *) arg;

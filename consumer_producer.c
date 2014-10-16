@@ -7,6 +7,7 @@
 #define THREADID (long long unsigned int) pthread_self()
 #define WORKTOBEDONE 100
 
+int done = 0;
 struct thrd_param {
     int a;
     int available;
@@ -85,11 +86,15 @@ void * cond_work(void *arg)
     int a;
     int rc;
 
-    while(1) {
-        pthread_mutex_lock(&p->mutex);
+    while(!done) {
+        rc = pthread_mutex_lock(&p->mutex);
+        if(rc) {
+            printf("Print error from pthread_mutex_unlock rc = %d\n", rc);
+            exit(1);
+        }
 
         rc = 0;
-        while(p->a <= WORKTOBEDONE && p->available < 1 && rc == 0) {
+        while(!done && p->available < 1 && rc == 0) {
             //printf("Reader wait again tid=%llx, rc = %d\n", THREADID, rc);
             rc = pthread_cond_wait(&p->writer_ready, &p->mutex);
             //printf("Reader woke up from wait tid=%llx, rc = %d\n", THREADID, rc);
@@ -129,12 +134,17 @@ int main()
         pthread_create(&thv[i], NULL, cond_work, &p);
     }
     
+    int rc;
     int i = 0;
-    while(i <= WORKTOBEDONE) {
-        pthread_mutex_lock(&p.mutex);
+    while(!done) {
+        rc = pthread_mutex_lock(&p.mutex);
+        if(rc) {
+            printf("Print error from pthread_mutex_unlock rc = %d\n", rc);
+            exit(1);
+        }
 
-        int rc = 0;
-        while(i <= WORKTOBEDONE && p.available >= 1 && rc == 0 ) 
+        rc = 0;
+        while(!done && p.available >= 1 && rc == 0 ) 
         {
             //printf("Writer wait again rc = %d\n", rc);
             rc = pthread_cond_wait(&p.reader_ready, &p.mutex);
@@ -143,7 +153,12 @@ int main()
 
         p.available++;
         p.a = ++i; //this signals that there is work to be done
-        pthread_cond_signal(&p.writer_ready);
+        if(i > WORKTOBEDONE) { 
+            done = 1;
+            pthread_cond_broadcast(&p.writer_ready); //wake all to exit
+        }
+        else
+            pthread_cond_signal(&p.writer_ready);
         rc = pthread_mutex_unlock(&p.mutex);
         if(rc) {
             printf("Print error from pthread_mutex_unlock rc = %d\n", rc);

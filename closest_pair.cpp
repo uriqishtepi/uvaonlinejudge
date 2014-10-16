@@ -190,7 +190,7 @@ int main (void)
     vp vx;
     /*
     */
-    static timeval now;
+    struct timeval now;
     gettimeofday(&now, 0);
     srand(now.tv_usec);
 

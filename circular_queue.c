@@ -32,6 +32,7 @@ void do_some_work(int);
 int arr[QMAX];
 int q_front = 0;
 int q_count = 0;
+pthread_mutex_t q_mutex;
 
 int done = 0;
 
@@ -39,35 +40,52 @@ int done = 0;
 int is_empty()
 {
     assert(q_count >=0 && q_count <= QMAX);
-    return(q_count == 0);
+    pthread_mutex_lock(&q_mutex);
+    int loc = q_count;
+    pthread_mutex_unlock(&q_mutex);
+
+    return(loc == 0);
 }
 
 int is_full()
 {
     assert(q_count >=0 && q_count <= QMAX);
-    return(q_count == QMAX);
+    pthread_mutex_lock(&q_mutex);
+    int loc = q_count;
+    pthread_mutex_unlock(&q_mutex);
+
+    return(loc == QMAX);
 }
+
 int enqueue(int a)
 {
-    if(q_count == QMAX)
+    pthread_mutex_lock(&q_mutex);
+    if(q_count == QMAX) {
+        pthread_mutex_unlock(&q_mutex);
         return -1;
+    }
     
     arr[(q_front + q_count ) % QMAX] = a;
     q_count++;
 
     assert(q_count >=0 && q_count <= QMAX);
+    pthread_mutex_unlock(&q_mutex);
     return 0;
 }
 
 int dequeue()
 {
-    if(q_count == 0)
+    pthread_mutex_lock(&q_mutex);
+    if(q_count == 0) {
+        pthread_mutex_unlock(&q_mutex);
         return -1;
+    }
     int oldfront = q_front;
     if(++q_front == QMAX)
         q_front = 0;
     q_count--;
     assert(q_count >=0 && q_count <= QMAX);
+    pthread_mutex_unlock(&q_mutex);
     return arr[oldfront];
 }
 
@@ -136,19 +154,14 @@ int main()
     //call 10 threads to do some work 
     //test_q();
     pthread_t thv[2*THREADNUM];
-    thrd_param p;
-    pthread_mutex_init(&p.mutex, NULL);
-    pthread_cond_init(&p.reader_ready, NULL);
-    pthread_cond_init(&p.writer_ready, NULL);
-    p.a = 1;
-    p.available = 0;
+    pthread_mutex_init(&q_mutex, NULL);
 
     FORL(i, 0, THREADNUM) {
-        pthread_create(&thv[i], NULL, produce_work, &p);
+        pthread_create(&thv[i], NULL, produce_work, NULL);
     }
     
     FORL(i, 0, THREADNUM) {
-        pthread_create(&thv[i], NULL, consume_work, &p);
+        pthread_create(&thv[i], NULL, consume_work, NULL);
     }
 
     FORL(j, 0, 2*THREADNUM) {

@@ -173,6 +173,9 @@ int main()
         void *val;
         pthread_join(thv[j], &val);
     }
+    pthread_mutex_destroy(&p.mutex);
+    pthread_cond_destroy(&p.produce_more);
+    pthread_cond_destroy(&p.consume_more);
     return 0;
 }
 

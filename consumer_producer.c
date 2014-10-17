@@ -1,3 +1,6 @@
+/* this example emulates multiple consumer one producer 
+ * which coordinate via conditional variables and a mutex
+ */
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>

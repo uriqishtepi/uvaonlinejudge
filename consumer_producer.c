@@ -12,8 +12,8 @@ struct thrd_param {
     int a;
     int available;
     pthread_mutex_t mutex;
-    pthread_cond_t reader_ready;
-    pthread_cond_t writer_ready;
+    pthread_cond_t produce_more;
+    pthread_cond_t consume_more;
 };
 
 typedef struct thrd_param thrd_param;
@@ -96,7 +96,7 @@ void * cond_work(void *arg)
         rc = 0;
         while(!done && p->available < 1 && rc == 0) {
             //printf("Reader wait again tid=%llx, rc = %d\n", THREADID, rc);
-            rc = pthread_cond_wait(&p->writer_ready, &p->mutex);
+            rc = pthread_cond_wait(&p->consume_more, &p->mutex);
             //printf("Reader woke up from wait tid=%llx, rc = %d\n", THREADID, rc);
         }
 
@@ -109,7 +109,7 @@ void * cond_work(void *arg)
         a = p->a;
         p->available--;
 
-        pthread_cond_signal(&p->reader_ready);
+        pthread_cond_signal(&p->produce_more);
         pthread_mutex_unlock(&p->mutex);
 
         if(a > 0) { //i have work to do
@@ -125,8 +125,8 @@ int main()
     pthread_t thv[THREADNUM];
     thrd_param p;
     pthread_mutex_init(&p.mutex, NULL);
-    pthread_cond_init(&p.reader_ready, NULL);
-    pthread_cond_init(&p.writer_ready, NULL);
+    pthread_cond_init(&p.produce_more, NULL);
+    pthread_cond_init(&p.consume_more, NULL);
     p.a = 1;
     p.available = 0;
 
@@ -147,7 +147,7 @@ int main()
         while(!done && p.available >= 1 && rc == 0 ) 
         {
             //printf("Writer wait again rc = %d\n", rc);
-            rc = pthread_cond_wait(&p.reader_ready, &p.mutex);
+            rc = pthread_cond_wait(&p.produce_more, &p.mutex);
             //printf("Writer woke up from wait rc = %d\n", rc);
         }
 
@@ -155,10 +155,10 @@ int main()
         p.a = ++i; //this signals that there is work to be done
         if(i > WORKTOBEDONE) { 
             done = 1;
-            pthread_cond_broadcast(&p.writer_ready); //wake all to exit
+            pthread_cond_broadcast(&p.consume_more); //wake all to exit
         }
         else
-            pthread_cond_signal(&p.writer_ready);
+            pthread_cond_signal(&p.consume_more);
         rc = pthread_mutex_unlock(&p.mutex);
         if(rc) {
             printf("Print error from pthread_mutex_unlock rc = %d\n", rc);
@@ -175,6 +175,6 @@ int main()
 
 void do_some_work(int a)
 {
-    printf("Doing Work tid=%llx a=%d\n", THREADID, a);
     usleep(1000*500);
+    printf("Doing Work tid=%llx a=%d\n", THREADID, a);
 }

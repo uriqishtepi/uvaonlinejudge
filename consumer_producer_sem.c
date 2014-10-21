@@ -1,5 +1,5 @@
 /* this example emulates multiple consumer one producer 
- * which coordinate via conditional variables and a mutex
+ * which coordinate via samaphore
  */
 #include <semaphore.h>
 #include <pthread.h>
@@ -96,6 +96,8 @@ int main()
         void *val;
         pthread_join(thv[j], &val);
     }
+    sem_destroy(&p.produce_more);
+    sem_destroy(&p.consume_more);
     return 0;
 }
 

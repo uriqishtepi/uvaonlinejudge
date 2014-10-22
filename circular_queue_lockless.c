@@ -8,6 +8,7 @@
  */
 #include <pthread.h>
 #include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
 #include <assert.h>
 #include <sys/time.h>
@@ -18,15 +19,17 @@
 #define WORKTOBEDONE 100
 #define QMAX 20
 
-struct queue {
-    int arr[QMAX];
+struct queue_param {
     int front;
     int count;
     int inserted;
     int deleted;
-    pthread_mutex_t mutex;
-    pthread_cond_t produce_more;
-    pthread_cond_t consume_more;
+};
+typedef struct queue_param queue_param;
+
+struct queue {
+    int arr[QMAX];
+    queue_param param;
 };
 
 typedef struct queue queue;
@@ -44,19 +47,12 @@ int done = 0;
 
 void queue_init(queue *q)
 {
-    pthread_mutex_init(&q->mutex, NULL);
-    pthread_cond_init(&q->produce_more, NULL);
-    pthread_cond_init(&q->consume_more, NULL);
-
-    q->front = 0;
-    q->count = 0;
-    q->inserted = 0;
-    q->deleted = 0;
+    memset(&q->param, 0, sizeof(q->param));
 }
 
 int is_empty(queue *q)
 {
-    int loc = q->count;
+    int loc = q->param.count;
     assert(loc >=0 && loc <= QMAX);
 
     return(loc == 0);
@@ -64,67 +60,88 @@ int is_empty(queue *q)
 
 int is_full(queue *q)
 {
-    assert(q->count >=0 && q->count <= QMAX);
-    int loc = q->count;
+    int loc = q->param.count;
+    assert(loc >=0 && loc <= QMAX);
 
     return(loc == QMAX);
 }
 
 int enqueue(queue *q, int a)
 {
-    long long int twocountrs;
+    long long int newval;
     long long int oldval;
-    //do 
+
+    do 
     {
         //read front/count at once in one variable
-        twocountrs = *(long long int*) (&q->count); 
-        oldval = twocountrs;
-        printf("old front =%d, count =%d\n", ((int*) (&oldval)) [0], ((int*) (&oldval)) [1]);
-        ((int*) (&twocountrs)) [1] ++; //count ++
-        printf("old front =%d, count =%d\n", ((int*) (&twocountrs)) [0], ((int*) (&twocountrs)) [1]);
+        memcpy(&oldval, &q->param, sizeof(oldval));
+        if(((int*) &oldval)[1] == QMAX) return -1;
+        newval = oldval;
+        ((int*) &newval)[1]++;  //count
 
-        printf("oldorig front =%d, count =%d\n", q->front, q->count);
-    } 
-    //while(__sync_bool_compare_and_swap(&(q->count), oldval, twocountrs));
-    __sync_bool_compare_and_swap(&(q->count), oldval, twocountrs);
-    printf("neworig front =%d, count =%d\n", q->front, q->count);
+        //printf("old front =%d, count =%d\n", ((int*) (&oldval)) [0], ((int*) (&oldval)) [1]);
+
+        //printf("oldorig front =%d, count =%d\n", q->param.front, q->param.count);
+    } while(!__sync_bool_compare_and_swap(((long long int *)&(q->param)), oldval, newval));
+    //printf("neworig front =%d, count =%d\n", q->param.front, q->param.count);
     int front = ((int*) (&oldval)) [0];
     int count = ((int*) (&oldval)) [1];
     //change the value of the memory area -- no one else is working on this 
     q->arr[(front + count ) % QMAX] = a;
 
-    int inserted;
-    int oldins;
-    do {
-        inserted = q->inserted;
-        oldins = inserted;
-        inserted++;
-        printf("oldorig inserted =%d\n", q->inserted);
-    } while(!__sync_bool_compare_and_swap((&q->inserted), oldins, inserted));
+    int inserted = __sync_add_and_fetch(&q->param.inserted, 1);
 
-    printf("neworig inserted =%d\n", q->inserted);
-    front = ((int*) (&twocountrs)) [0];
-    count = ((int*) (&twocountrs)) [1];
+    printf("inserted =%d\n", inserted);
+
+    front = ((int*) (&newval)) [0];
+    count = ((int*) (&newval)) [1];
     assert(count >=0 && count <= QMAX);
-    assert(q->count >=0 && q->count <= QMAX);
+    //this will not work: assert(q->param.count >=0 && q->param.count <= QMAX);
     return 0;
 }
 
 int dequeue(queue *q)
 {
-    int oldfront = q->front;
-    if(++q->front == QMAX)
-        q->front = 0;
-    q->count--;
-    q->deleted++;
-    assert(q->count >=0 && q->count <= QMAX);
+    long long int newval;
+    long long int oldval;
 
+    do {
+        //read front/count at once in one variable
+        memcpy(&oldval, &q->param, sizeof(oldval));
+        if(((int*) &oldval)[1] == 0) return -1;
+        newval = oldval;
+        if(++ ((int*) &newval)[0] == QMAX) //front
+            ((int*) &newval)[0] = 0;
+        ((int*) &newval)[1]--;  //count
+
+        //printf("old front =%d, count =%d\n", ((int*) (&oldval)) [0], ((int*) (&oldval)) [1]);
+
+        //printf("oldorig front =%d, count =%d\n", q->param.front, q->param.count);
+    } while(!__sync_bool_compare_and_swap(((long long int *)&(q->param)), oldval, newval));
+    //printf("neworig front =%d, count =%d\n", q->param.front, q->param.count);
+
+    int deleted = __sync_add_and_fetch(&q->param.deleted, 1);
+    printf("deleted =%d\n", deleted);
+
+    int count = ((int*) (&newval)) [1];
+    assert(count >=0 && count <= QMAX);
+    //this will not work: assert(q->param.count >=0 && q->param.count <= QMAX);
+
+    int oldfront = ((int*) (&oldval)) [0];
     return q->arr[oldfront];
 }
 
 
 void test_q(queue *q)
 {
+
+    long long int blah = 1;
+    long long int newblah = blah + 1;
+    printf("blah blah =%lld\n", blah);
+    __sync_bool_compare_and_swap(&(blah), newblah, newblah);
+    printf("blah blah =%lld\n", blah);
+
+
     assert(is_empty(q) == 1);
     enqueue(q, 1);
     assert(is_empty(q) == 0);
@@ -186,8 +203,6 @@ int main()
     pthread_t thv[2*THREADNUM];
     queue q;
     queue_init(&q);
-    test_q(&q);
-    return 0;
 
     FORL(i, 0, THREADNUM) {
         pthread_create(&thv[i], NULL, produce_work, &q);

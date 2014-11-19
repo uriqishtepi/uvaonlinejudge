@@ -26,8 +26,9 @@ inline bool isprime(int n)
 {
     if(n <= 0) return false;
     if(n < 4) return true;
+    if((n % 2) == 0) return false;
 
-    forlp(i, 2, n, 1) {
+    forlp(i, 3, n, 2) {
         //printf("considering %d\n",i);
         if((n % i) == 0) return false;
     }

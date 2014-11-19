@@ -22,27 +22,27 @@
 #define out
 #endif
 
-bool isprime(int n)
+inline bool isprime(int n)
 {
     if(n <= 0) return false;
     if(n < 4) return true;
 
-    forln(i, n-1, 1, 1) {
-        printf("considering %d\n",i);
-        if((n % i) == 0)
-            return false;
+    forlp(i, 2, n, 1) {
+        //printf("considering %d\n",i);
+        if((n % i) == 0) return false;
     }
     return true;
-
 }
 
 int main (void)
 {
     int M;
     scanf("%d\n", &M);
-    forlp(i,0,M,1) {
-        if(isprime(i))
+    forln(i,M,1,1) {
+        if(isprime(i)) {
             printf("%d\n",i);
+            break;
+        }
     }
     return 0;
 }

@@ -29,12 +29,23 @@ inline bool isprime(vui & primes, unsigned int n)
     if(n < 4) return true;
     if((n % 2) == 0) return false;
 
-    for(vui::iterator it = primes.begin(); ((*it) * (*it)) <= n; it++) {
-        out("considering %u\n",*it);
-        if((n % *it) == 0) return false;
+    for(vui::iterator it = primes.begin(); ((*it) * (*it)) <= n && it != primes.end(); ++it) {
+        out("checkin factor %u\n",*it);
+        if((n % (*it)) == 0) return false;
     }
     return true;
 }
+
+int mysqrt(unsigned int n)
+{
+    //find number s | s * s > n and (s-1)*(s-1) < n
+    unsigned int s = n / 2;
+    while (s*s > n) {
+        s /= 2;
+    }
+    return s * 2;
+}
+
 
 int main (void)
 {
@@ -43,16 +54,25 @@ int main (void)
     primes.push_back(3);
     unsigned int M;
     scanf("%u\n", &M);
+
     if( (M%2)==0) M--;
 
-    for(unsigned i = 5; i < M;i+=2) 
+    //found i, sqrt M, now get all the primes up to i
+    for(unsigned int j=5; j*j <= M; j+=2) {
+        if(isprime(primes, j)) {
+            primes.push_back(j);
+            out("adding %u\n",j);
+        }
+    }
+
+    //now find largest <= M
+    for(unsigned i = M; i > 5; i-=2) 
     {
         out("inspecting %u\n",i);
         if(isprime(primes, i)) {
-            primes.push_back(i);
-            out("adding %u\n",i);
+            printf("%u\n", i);
+            break;
         }
     }
-    printf("%u\n", primes.back());
     return 0;
 }

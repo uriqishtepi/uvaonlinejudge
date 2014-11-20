@@ -8,12 +8,12 @@
 #include <stdint.h>
 
 #include <sys/time.h>
-#define forlp(i, a, b, c) for(unsigned int i = a; i < b; i+=c) 
-#define forln(i, a, b, c) for(unsigned int i = a; i > b; i-=c) 
+#define forlp(i, a, b, c) for(unsigned long long i = a; i < b; i+=c) 
+#define forln(i, a, b, c) for(unsigned long long i = a; i > b; i-=c) 
 #define forl(i,init, max) for(int i = init; i < max; i++) 
 #define SZ 1000
 #define vp std::vector<point> 
-#define vui std::vector<unsigned int> 
+#define vui std::vector<unsigned long long> 
 
 
 //#define DEBUG true
@@ -23,20 +23,20 @@
 #define out
 #endif
 
-inline bool isprime(vui & primes, unsigned int n)
+inline bool isprime(vui & primes, unsigned long long n)
 {
     if(n <= 0) return false;
     if(n < 4) return true;
     if((n % 2) == 0) return false;
 
     for(vui::iterator it = primes.begin(); ((*it) * (*it)) <= n && it != primes.end(); ++it) {
-        out("checkin factor %u\n",*it);
+        out("checkin factor %llu\n",*it);
         if((n % (*it)) == 0) return false;
     }
     return true;
 }
 
-int mysqrt(unsigned int n)
+int mysqrt(unsigned long long n)
 {
     //find number s | s * s > n and (s-1)*(s-1) < n
     unsigned int s = n / 2;
@@ -52,25 +52,25 @@ int main (void)
     vui primes; //use this as cache to store the prime numbers seen so far
     primes.push_back(2);
     primes.push_back(3);
-    unsigned int M;
-    scanf("%u\n", &M);
+    unsigned long long M;
+    scanf("%llu\n", &M);
 
-    if( (M%2)==0) M--;
-
-    //found i, sqrt M, now get all the primes up to i
-    for(unsigned int j=5; j*j <= M; j+=2) {
+    //get all the primes up to sqrt M
+    for(unsigned long long j=5; j*j <= M; j+=2) {
         if(isprime(primes, j)) {
             primes.push_back(j);
-            out("adding %u\n",j);
+            out("adding %llu\n",j);
         }
     }
 
+    if( (M%2)==0) M--;
+
     //now find largest <= M
-    for(unsigned i = M; i > 5; i-=2) 
+    for(unsigned long long i = M; i > 5; i-=2) 
     {
-        out("inspecting %u\n",i);
+        out("inspecting %llu\n",i);
         if(isprime(primes, i)) {
-            printf("%u\n", i);
+            printf("%llu\n", i);
             break;
         }
     }

@@ -20,14 +20,14 @@
 #define ss std::set<std::string>
 #define vsi std::vector< std::set <int> > 
 
-#define mis std::map<int, std::string>
+#define mis std::map<long long int, std::string>
 #define vmis std::vector< mis > 
 
 #define mmi std::multimap<int, int>
 #define msi std::map<std::string, int>
 #define INF 1<<30;
 
-#define DEBUG true
+//#define DEBUG true
 #ifdef DEBUG
 #define out printf
 #else
@@ -58,30 +58,27 @@ void addVal(mis & s, int val, std::string str)
     s = ns;
 }
 
-mis process_no_paren(std::string str)
+void process_no_paren(mis & ret, std::string str)
 {
     out("%s('%s')\n", __func__, str.c_str());
-    mis ret;
-    if(str.empty()) return ret;
+    if(str.empty()) return;
 
     char * pstr = (char*) str.c_str();
     char *tok = strtok(pstr, " \n");
 
-    if(tok == NULL) return ret;
+    if(tok == NULL) return;
 
     {
         int val = atoi(tok);
         out("normal addition %d\n", val);
 
-        ret.insert(std::make_pair(val, tok));
+        addVal(ret, val, tok);
     }
 
     while((tok = strtok(NULL, " \n") ) ) {
         int val = atoi(tok);
         addVal(ret, val, tok);
     }
-
-    return ret;
 }
 
 mis combine(mis & first, mis & second, bool haspar)
@@ -120,7 +117,7 @@ mis combine(mis & first, mis & second, bool haspar)
 //process a string like 7 3
 //or 1 (3 4) 3
 //or ((1 2))
-mis process(std::string str)
+void process(mis & ret, std::string str)
 {
     out("%s('%s')\n", __func__, str.c_str());
     //process chars one at a time, until we reach a ( 
@@ -130,16 +127,15 @@ mis process(std::string str)
 
     if(br == str.end()) { 
         out("no paren was found");
-        return process_no_paren(str);
+        process_no_paren(ret, str);
+        return;
     }
     assert(*br == '(');
 
-    mis pre; 
     if(br != str.begin() && br - 1 != str.begin()) {
-        pre = process_no_paren(std::string(str.begin(), br));
-        out("pre size %d\n", pre.size());
+        process_no_paren(ret, std::string(str.begin(), br));
+        out("ret size %d\n", ret.size());
     }
-
 
     //process part with paren
     std::string::iterator ebr = br;
@@ -153,20 +149,17 @@ mis process(std::string str)
     }
     assert(ebr != str.end() && "must find closing paren");
     assert(*ebr == ')');
-    mis mid = process(std::string(br+1, ebr));
+    mis mid;
+    process(mid, std::string(br+1, ebr));
     out("mid size %d\n", mid.size());
 
-    mis ret;
-    ret = combine(pre, mid, true);
+    ret = combine(ret, mid, true);
     out("ret size %d\n", mid.size());
 
     //process post
     if(ebr+1 != str.end()) {
-        mis post = process(std::string(ebr+1, str.end()));
-        ret = combine(ret, post, false);
+        process(ret, std::string(ebr+1, str.end()));
     }
-    return ret;
-
 }
 
 
@@ -195,69 +188,18 @@ int main(int argc, char **argv)
         std::string str = std::string(buf);
         std::string::iterator eqb = std::find(str.begin(),str.end(),'=');
         assert(eqb != str.end());
-        mis zz = process(std::string(eqb+1, str.end()));
-
-        /*
-        while((str = strtok(NULL, "= \n") ) )
-        {
-            out("str %s\n",str);
-            out("cur lvl %d\n",zz.size());
-            if(str && str[0] == '(') {
-                out("starts new subset\n");
-                mis s;
-                zz.push_back(s);
-
-                int val = atoi(str+1);
-                addVal(zz.back(), val, str+1);
-            }
-            else if(str && str[strlen(str) - 1] == ')') { 
-
-                char cpy[80] = {0};
-                strncpy(cpy, str, strlen(str) - 1);
-
-                int val = atoi(cpy);
-                out("closing parenth -- handle combinations %d\n", val);
-                addVal(zz.back(), val, cpy);
-
-                mis s = zz.back();
-                zz.pop_back();
-                if(zz.back().empty() ) {
-                    for(mis::iterator it = s.begin(); it != s.end(); it++) {
-                        zz.back().insert(make_pair(it->first, "("+it->second+")"));
-                    }
-                }
-                else {
-                    mis old = zz.back();
-                    for(mis::iterator it = s.begin(); it != s.end(); it++) {
-                        mis turn = old;
-                        addVal(turn, it->first, "("+it->second+")");
-                        for(mis::iterator jt = turn.begin(); jt != turn.end(); jt++) {
-                            zz.back().insert(make_pair(jt->first,jt->second));
-                        }
-                    }
-                }
-            }
-            else {
-                int val = atoi(str);
-                out("normal addition %d\n", val);
-                addVal(zz.back(), val, str);
-            }
-        }
-        */
+        mis zz;
+        process(zz, std::string(eqb+1, str.end()));
 
         if(item > 1) printf("\n");
         printf("Equation #%d:\n",item);
-        bool found = false;
-        for(mis::iterator it = zz.begin(); it != zz.end(); it++) {
-            out("considering %d %s\n", it->first, it->second.c_str());
-            if(it->first == eq) {
-                printf("%d=%s\n", eq, it->second.c_str());
-                found = true;
-                break;
-            }
+        
+        mis::iterator it = zz.find(eq); 
+        if(it != zz.end()) {
+            out("found %d %s\n", it->first, it->second.c_str());
+            printf("%d=%s\n", eq, it->second.c_str());
         }
-        if(!found)
-            printf("no solution\n");
+        else printf("Impossible.\n");
 
         //printf("\n");
         free(buf);

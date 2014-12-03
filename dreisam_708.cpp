@@ -58,13 +58,122 @@ void addVal(mis & s, int val, std::string str)
     s = ns;
 }
 
+mis process_no_paren(std::string str)
+{
+    out("%s('%s')\n", __func__, str.c_str());
+    mis ret;
+    if(str.empty()) return ret;
+
+    char * pstr = (char*) str.c_str();
+    char *tok = strtok(pstr, " \n");
+
+    if(tok == NULL) return ret;
+
+    {
+        int val = atoi(tok);
+        out("normal addition %d\n", val);
+
+        ret.insert(std::make_pair(val, tok));
+    }
+
+    while((tok = strtok(NULL, " \n") ) ) {
+        int val = atoi(tok);
+        addVal(ret, val, tok);
+    }
+
+    return ret;
+}
+
+mis combine(mis & first, mis & second, bool haspar)
+{
+    out("%s()\n", __func__);
+    mis ret;
+    if(first.size() > 0 && second.size() > 0) {
+        for(mis::iterator it = second.begin(); it != second.end(); it++) {
+            out("%s : %d:%s\n", __func__, it->first, it->second.c_str());
+            mis turn = first;
+            if(haspar)
+                addVal(turn, it->first, "("+it->second+")");
+            else
+                addVal(turn, it->first, it->second);
+            //append to ret
+            for(mis::iterator jt = turn.begin(); jt != turn.end(); jt++) {
+                ret.insert(make_pair(jt->first,jt->second));
+            }
+        }
+    }
+    else if(first.size() > 0)
+        ret = first;
+    else if (second.size() > 0 && haspar) {
+        for(mis::iterator jt = second.begin(); jt != second.end(); jt++) {
+            ret.insert(make_pair(jt->first, "("+jt->second+")"));
+        }
+    }
+    else if(second.size() > 0)
+        ret = second;
+    else abort();
+
+    return ret;
+}
+
+
+//process a string like 7 3
+//or 1 (3 4) 3
+//or ((1 2))
+mis process(std::string str)
+{
+    out("%s('%s')\n", __func__, str.c_str());
+    //process chars one at a time, until we reach a ( 
+    //in which case that's begin, look for closing ) that's end
+
+    std::string::iterator br = std::find(str.begin(), str.end(), '(');
+
+    if(br == str.end()) { 
+        out("no paren was found");
+        return process_no_paren(str);
+    }
+    assert(*br == '(');
+
+    mis pre; 
+    if(br != str.begin() && br - 1 != str.begin()) {
+        pre = process_no_paren(std::string(str.begin(), br));
+        out("pre size %d\n", pre.size());
+    }
+
+
+    //process part with paren
+    std::string::iterator ebr = br;
+    int bcount = 1;
+    while((++ebr) != str.end()) {
+        if(*ebr == ')') bcount --;   
+        else if(*ebr == '(') bcount ++;   
+        assert(bcount >= 0);
+        if(bcount == 0)
+            break;
+    }
+    assert(ebr != str.end() && "must find closing paren");
+    assert(*ebr == ')');
+    mis mid = process(std::string(br+1, ebr));
+    out("mid size %d\n", mid.size());
+
+    mis ret;
+    ret = combine(pre, mid, true);
+    out("ret size %d\n", mid.size());
+
+    //process post
+    if(ebr+1 != str.end()) {
+        mis post = process(std::string(ebr+1, str.end()));
+        ret = combine(ret, post, false);
+    }
+    return ret;
+
+}
 
 
 int main(int argc, char **argv)
 {
     out("Starting...\n");
 
-    int s, rn; //s size, n number
     int item = 0;
     while(1) 
     {
@@ -77,16 +186,18 @@ int main(int argc, char **argv)
             return 0;
 
         out("line: %s\n", buf);
-        char *str = strtok(buf, "= ()\n");
-        out("str %s\n",str);
 
-        int eq = atoi(str);
+        int eq = 0;
+        sscanf(buf, "%d", &eq);
+
         assert(eq >= 0);
         out("eq %d\n",eq);
-        mis s;
-        vmis zz;
-        zz.push_back(s);
+        std::string str = std::string(buf);
+        std::string::iterator eqb = std::find(str.begin(),str.end(),'=');
+        assert(eqb != str.end());
+        mis zz = process(std::string(eqb+1, str.end()));
 
+        /*
         while((str = strtok(NULL, "= \n") ) )
         {
             out("str %s\n",str);
@@ -132,13 +243,12 @@ int main(int argc, char **argv)
                 addVal(zz.back(), val, str);
             }
         }
-
-        s = zz.back();
+        */
 
         if(item > 1) printf("\n");
         printf("Equation #%d:\n",item);
         bool found = false;
-        for(mis::iterator it = s.begin(); it != s.end(); it++) {
+        for(mis::iterator it = zz.begin(); it != zz.end(); it++) {
             out("considering %d %s\n", it->first, it->second.c_str());
             if(it->first == eq) {
                 printf("%d=%s\n", eq, it->second.c_str());

@@ -43,6 +43,19 @@ char M [10][6] = {
    "hbhrh", /* 9 */
 };
 
+char N [10][3][6] = {
+    /* L       M         R */
+   {" | | ", "-   -", " | | "}, /* 0 */
+   {"     ", "     ", " | | "}, /* 1 */
+   {"   | ", "- - -", " |   "}, /* 2 */
+   {"     ", "- - -", " | | "}, /* 3 */
+   {" |   ", "  -  ", " | | "}, /* 4 */
+   {" |   ", "- - -", "   | "}, /* 5 */
+   {" | | ", "  - -", "   | "}, /* 6 */
+   {"     ", "-    ", " | | "}, /* 7 */
+   {" | | ", "- - -", " | | "}, /* 8 */
+   {" |   ", "- - -", " | | "}, /* 9 */
+};
 
 //print portion of a number specified by level
 //number is n, size of number is s
@@ -51,17 +64,12 @@ void printNum(int lvl, int s, int n, bool hasMore)
 {
     assert(n < 10 && n >= 0);
     assert(lvl < 5 && lvl >= 0);
-    forl(i, 0, s+2) {
-        if(M[n][lvl] == 'h' && i !=0 && i != s+1) {
-            printf("-");
-        }
-        else if( (M[n][lvl] == 'l' || M[n][lvl] == 'b')  && i == 0)
-            printf("|");
-        else if( (M[n][lvl] == 'r' || M[n][lvl] == 'b')  && i == s+1)
-            printf("|");
-        else
-            printf(" ");
+    printf("%c", N[n][0][lvl]); //L 
+
+    forl(i, 1, s+1) {
+        printf("%c", N[n][1][lvl]); //M 
     }  
+    printf("%c", N[n][2][lvl]); //R 
     if(hasMore) printf(" ");
 }
 
@@ -74,12 +82,13 @@ int main(int argc, char **argv)
     while(1) {
         scanf("%d %d\n", &s, &rn);
         out("%d %d\n",s, rn);
+
+        if(s == 0 && rn == 0)
+            return 0;
+
         assert(s > 0 && s < 11);
         assert(rn >= 0 && s < 100000000);
         vi digits;
-
-        if(s == 0)
-            return 0;
 
         if(rn == 0)
             digits.push_back(rn);

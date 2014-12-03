@@ -43,6 +43,10 @@ char M [10][6] = {
    "hbhrh", /* 9 */
 };
 
+
+//print portion of a number specified by level
+//number is n, size of number is s
+//hasMore determines whether a blank should follow
 void printNum(int lvl, int s, int n, bool hasMore)
 {
     assert(n < 10 && n >= 0);
@@ -71,6 +75,7 @@ int main(int argc, char **argv)
         scanf("%d %d\n", &s, &rn);
         out("%d %d\n",s, rn);
         assert(s > 0 && s < 11);
+        assert(rn >= 0 && s < 100000000);
         vi digits;
 
         if(s == 0)

@@ -191,7 +191,6 @@ int main(int argc, char **argv)
         mis zz;
         process(zz, std::string(eqb+1, str.end()));
 
-        if(item > 1) printf("\n");
         printf("Equation #%d:\n",item);
         
         mis::iterator it = zz.find(eq); 
@@ -201,7 +200,7 @@ int main(int argc, char **argv)
         }
         else printf("Impossible.\n");
 
-        //printf("\n");
+        printf("\n");
         free(buf);
     }
 }

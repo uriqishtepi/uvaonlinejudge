@@ -109,20 +109,21 @@ int mypow(int x, int y)
     return res;
 }
 
-struct quatr {
+struct quint {
     int val;
     int i;
     int k;
     int j;
+    int c; //number of words
 };
 
-std::ostream & operator << (std::ostream &os, const quatr &p) { 
+std::ostream & operator << (std::ostream &os, const quint &p) { 
     os << p.val <<","<< p.i <<","<< p.k <<","<< p.j ;
     return os;
 }
 
 
-void getMinPars(matrix< quatr > &O, std::vector<int> &res, int i, int j)
+void getMinPars(matrix< quint > &O, std::vector<int> &res, int i, int j)
 {
     //how things were picked
     //start from E(0,n) and find which was the min
@@ -133,7 +134,7 @@ std::cout << "one line " << i << j << std::endl;
         return;
     }
 
-    quatr el = O(i, j);
+    quint el = O(i, j);
     assert((el.k == -1 && el.i <= el.j) || 
            (el.i <= el.k && el.k <= el.j));
 
@@ -150,6 +151,25 @@ std::cout << "one line [" << i <<","<< j <<"]"<< std::endl;
     }
 }
 
+
+
+//compute error given the length of the words, and the number of words
+//this can be computed with formula, no need to iterate
+int compute_err(int spaceLen, int nSpaces)
+{
+    //distribute evenly the count - 1 spaces
+    //spaces will fill from the last to the first: 
+    //   1 1 1, then 1 1 2, then 1 2 2, then 2 2 2
+    //that's really spaceLen = M - L, spaces[i] = spaceLen / nSpaces,
+    //then from nSpaces + 1 to spaceLen % nSpaces, populate spaces[i] + 1
+    //then error_sum = sum(pow(spaces[i],2))
+    int minspace = spaceLen / nSpaces;
+    int maxspace = minspace+1;
+    int maxspaceCnt = minspace+(spaceLen % nSpaces);
+    int minspaceCnt = nSpaces - maxspaceCnt;
+
+    return mypow(minspace-1,2)*minspaceCnt + mypow(maxspace-1,2)*maxspaceCnt;
+}
 
 
 /*
@@ -172,22 +192,24 @@ std::vector<int> min_paragraph_error(const std::vector<int> & l, int M)
     int N = l.size(); //number of words
 
     uppertriang<int> L(l.size()); //sum of word lengths
+    uppertriang<int> C(l.size()); //count of words partakking -- to compute E
     //matrix<int> L(l.size(), l.size()); //sum of word lengths
     //assert (L.rows() == l.size());
     assert (L.cols() == l.size());
     matrix<int> E(l.size(), l.size()); //error measures
-    matrix< quatr > O(l.size(), l.size()); //val AND from where was such opt chosen
+    matrix< quint > O(l.size(), l.size()); //val AND from where was such opt chosen
 
     //initialize the matrices
     for(int i = 0; i < N; i++) {
         L(i,i) = l[i];
-        E(i,i) = mypow((M - l[i]), 3);
-        quatr el = {E(i,i),i,-1,i};
+        C(i,i) = 1;
+        E(i,i) = mypow((M - l[i] - 1), 2);
+        quint el = {E(i,i),i,-1,i};
         O(i,i) = el;
     }
     //initial value for the last element is 0
     E(N-1,N-1) = 0;
-    quatr el = {0, N-1, -1, N-1}; //k = -1 denotes it fits
+    quint el = {0, N-1, -1, N-1}; //k = -1 denotes it fits
     O(N-1,N-1) = el;
 
     //fill from diagonal to upper right corner of L,E and O; d-distance in loop
@@ -204,18 +226,18 @@ std::vector<int> min_paragraph_error(const std::vector<int> & l, int M)
             if(j >= N) break;
 
             //compute sum of lengths from w_i to w_j
-            L(i,j) = L(i,j-1) + l[j] + 1;
+            L(i,j) = L(i,j-1) + l[j]; //length of the words
+            C(i,j) = C(i,j-1) + 1; //how many words --  needed for E
 
             //if that sum fits in paragraph, thats the Opt(i,j)
-            if(L(i,j) <= M) {
-                /*
-                if(j == N - 1)
-                    E(i,j) = 0; //the last line has weight of 0, always.
+            if(L(i,j) + C(i,j) <= M) {
+                if(N - 1 == j)
+                    //E(i,j) = 0; //the last line has weight of 0, always.
+                    E(i,j) = 500; //the last line has weight of 500
                 else
-                */
-                    E(i,j) = mypow(M - L(i,j), 3); //cube of leftovers
+                    E(i,j) = compute_err(M-L(i,j), C(i,j)-1); //cube of leftovers
 
-                quatr el = { E(i,j), i, -1, j}; //k = -1 denotes it fits
+                quint el = { E(i,j), i, -1, j}; //k = -1 denotes it fits
                 O(i,j) = el;
                 continue;
             }
@@ -223,6 +245,14 @@ std::vector<int> min_paragraph_error(const std::vector<int> & l, int M)
             int minE = std::numeric_limits<int>::max();
             int minK;
 
+            //in matrix, set location * from best of locations # and $
+            //         j
+            //   . . . .
+            // i . # $ *
+            //   . . . #
+            //   . . . $
+            //
+            //1,3 = min( (1,1) + (2,1), (1,2)+(3,3)
             for(int k = i; k < j; ++k) {
                 int sum = E(i,k) + E(k+1,j);
                 if(minE > sum) {
@@ -237,7 +267,7 @@ std::vector<int> min_paragraph_error(const std::vector<int> & l, int M)
                 //minE = std::min(minE, E(i,k) + E(k+1,j));
 
             E(i,j) = minE;
-            quatr el = { E(i,j), i, minK, j};
+            quint el = { E(i,j), i, minK, j, C(i,j)};
             O(i,j) = el;
         }
     }

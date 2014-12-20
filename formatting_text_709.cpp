@@ -24,7 +24,7 @@
 #define msi std::map<std::string, int>
 #define INF 1<<30;
 
-#define DEBUG true
+//#define DEBUG true
 #ifdef DEBUG
 #define out printf
 #else
@@ -37,9 +37,12 @@
 template <typename T>
 struct uppertriang {
     uppertriang (unsigned int i) : _rows(i), _cols(i) { _m.resize(i + (i*(i-1))/2);}
-    T & operator()(unsigned int i, unsigned int j) { assert(i<_rows);assert(j<_cols);
+    T & operator()(unsigned int i, unsigned int j) { 
+        //out("(%d,%d)\n", i,j);
+        assert(i<_rows);assert(j<_cols);
         if(i > j) return _res;
-        else return _m[ i * _cols + j - ((i+1)*i)/2]; }
+        else return _m[ i * _cols + j - ((i+1)*i)/2]; 
+    }
     void print() 
     {
         unsigned int i = 0;
@@ -109,39 +112,38 @@ int mypow(int x, int y)
     return res;
 }
 
-struct quint {
+struct quatr {
     int val;
     int i;
     int k;
     int j;
-    int c; //number of words
 };
 
-std::ostream & operator << (std::ostream &os, const quint &p) { 
+std::ostream & operator << (std::ostream &os, const quatr &p) { 
     os << p.val <<","<< p.i <<","<< p.k <<","<< p.j ;
     return os;
 }
 
 
-void getMinPars(matrix< quint > &O, std::vector<int> &res, int i, int j)
+void getMinPars(matrix< quatr > &O, std::vector<int> &res, int i, int j)
 {
     //how things were picked
     //start from E(0,n) and find which was the min
 
     if(i==j) {
-std::cout << "one line " << i << j << std::endl;
+        out ( "one line [%d, %d]\n", i, j);
         res.push_back(j);
         return;
     }
 
-    quint el = O(i, j);
+    quatr el = O(i, j);
     assert((el.k == -1 && el.i <= el.j) || 
            (el.i <= el.k && el.k <= el.j));
 
 
     //left side, then print curr, then right side
     if(el.k == -1) { //from i to j fit in one line
-std::cout << "one line [" << i <<","<< j <<"]"<< std::endl;
+        out ( "one line2 [%d, %d]\n", i, j);
         res.push_back(j);
     }
     else {
@@ -157,6 +159,8 @@ std::cout << "one line [" << i <<","<< j <<"]"<< std::endl;
 //this can be computed with formula, no need to iterate
 int compute_err(int spaceLen, int nSpaces)
 {
+    assert(spaceLen >= 0);
+    assert(nSpaces < spaceLen);
     //distribute evenly the count - 1 spaces
     //spaces will fill from the last to the first: 
     //   1 1 1, then 1 1 2, then 1 2 2, then 2 2 2
@@ -165,10 +169,12 @@ int compute_err(int spaceLen, int nSpaces)
     //then error_sum = sum(pow(spaces[i],2))
     int minspace = spaceLen / nSpaces;
     int maxspace = minspace+1;
-    int maxspaceCnt = minspace+(spaceLen % nSpaces);
+    int maxspaceCnt = spaceLen % nSpaces;
     int minspaceCnt = nSpaces - maxspaceCnt;
 
-    return mypow(minspace-1,2)*minspaceCnt + mypow(maxspace-1,2)*maxspaceCnt;
+    int err = mypow(minspace-1,2)*minspaceCnt + mypow(maxspace-1,2)*maxspaceCnt;
+    out("compute_err(%d, %d) : %d\n", spaceLen, nSpaces, err);
+    return err;
 }
 
 
@@ -186,30 +192,29 @@ int compute_err(int spaceLen, int nSpaces)
  *                else min (k=i:j) [Opt(i,k) + Opt(k+1,j)]
  *                and Opt(i, n) = 0
  */
-std::vector<int> min_paragraph_error(const std::vector<int> & l, int M)
+std::vector<int> min_paragraph_error(const std::vector<int> & l, int M, uppertriang<int> & L)
 {
-    std::cout << "min_paragraph_error() " << std::endl;
+    out ( "min_paragraph_error()\n");
     int N = l.size(); //number of words
 
-    uppertriang<int> L(l.size()); //sum of word lengths
     uppertriang<int> C(l.size()); //count of words partakking -- to compute E
     //matrix<int> L(l.size(), l.size()); //sum of word lengths
     //assert (L.rows() == l.size());
     assert (L.cols() == l.size());
     matrix<int> E(l.size(), l.size()); //error measures
-    matrix< quint > O(l.size(), l.size()); //val AND from where was such opt chosen
+    matrix< quatr > O(l.size(), l.size()); //val AND from where was such opt chosen
 
     //initialize the matrices
     for(int i = 0; i < N; i++) {
         L(i,i) = l[i];
         C(i,i) = 1;
-        E(i,i) = mypow((M - l[i] - 1), 2);
-        quint el = {E(i,i),i,-1,i};
+        E(i,i) = 500;
+        quatr el = {E(i,i),i,-1,i};
         O(i,i) = el;
     }
     //initial value for the last element is 0
     E(N-1,N-1) = 0;
-    quint el = {0, N-1, -1, N-1}; //k = -1 denotes it fits
+    quatr el = {0, N-1, -1, N-1}; //k = -1 denotes it fits
     O(N-1,N-1) = el;
 
     //fill from diagonal to upper right corner of L,E and O; d-distance in loop
@@ -231,13 +236,16 @@ std::vector<int> min_paragraph_error(const std::vector<int> & l, int M)
 
             //if that sum fits in paragraph, thats the Opt(i,j)
             if(L(i,j) + C(i,j) <= M) {
-                if(N - 1 == j)
+                if(i == j) {
+                    printf("Dont think it should get here\n");
                     //E(i,j) = 0; //the last line has weight of 0, always.
-                    E(i,j) = 500; //the last line has weight of 500
+                    //out("error (%d,%d) is 500\n", i,j);
+                    E(i,j) = 500; //the last line with one word has weight of 500
+                }
                 else
                     E(i,j) = compute_err(M-L(i,j), C(i,j)-1); //cube of leftovers
 
-                quint el = { E(i,j), i, -1, j}; //k = -1 denotes it fits
+                quatr el = { E(i,j), i, -1, j}; //k = -1 denotes it fits
                 O(i,j) = el;
                 continue;
             }
@@ -255,7 +263,7 @@ std::vector<int> min_paragraph_error(const std::vector<int> & l, int M)
             //1,3 = min( (1,1) + (2,1), (1,2)+(3,3)
             for(int k = i; k < j; ++k) {
                 int sum = E(i,k) + E(k+1,j);
-                if(minE > sum) {
+                if(minE >= sum) {
                     minE = sum;
                     minK = k;
                 }
@@ -267,7 +275,7 @@ std::vector<int> min_paragraph_error(const std::vector<int> & l, int M)
                 //minE = std::min(minE, E(i,k) + E(k+1,j));
 
             E(i,j) = minE;
-            quint el = { E(i,j), i, minK, j, C(i,j)};
+            quatr el = { E(i,j), i, minK, j};
             O(i,j) = el;
         }
     }
@@ -312,26 +320,55 @@ void print_paragraph_str(std::string & paragraph, const std::vector<int> & endin
 }
 */
 
+void getNSpaces(int spaceLen, int nSpaces, int & minspace, int & minspaceCnt)
+{
+    assert(nSpaces >= 0);
+    assert(nSpaces <= spaceLen);
+    if (nSpaces < 1) return;
+    minspace = spaceLen / nSpaces;
+    int maxspaceCnt = spaceLen % nSpaces;
+    minspaceCnt = nSpaces - maxspaceCnt;
+    out("getNSpaces(%d,%d,..) minspace=%d, minspaceCnt=%d\n", spaceLen, nSpaces, minspace, minspaceCnt);
+}
 
 // build a paragraph with the words as strings put in a vector
 // and the divisions (endings) passed as vector of ints
 // could be improved to detect the i-th space and put a endl at that point
-std::string build_paragraph(const std::vector<std::string> & paragraph,
-        const std::vector<int> & endings)
+std::string build_paragraph(int M, const std::vector<std::string> & paragraph,
+        const std::vector<int> & endings, uppertriang<int> & L)
 {
+    out("build_paragraph(%d, ...)\n", M);
+    std::string spaces(' ', 100);
     std::string build;
     int line = 0;
-    int lastend = 0;
+    int start = 0;
     while(line < (int) endings.size())
     {
-        for(int word = lastend; word < endings[line]; word++) {
+        int minspace = 0;
+        int minspaceCnt = 0;
+
+        int spaceLen = M - L(start, endings[line]);
+        getNSpaces(spaceLen, endings[line] - start, minspace, minspaceCnt);
+
+        int word = start;
+        int lineWordCounter = 0;
+        std::string sstr = std::string(minspace,' ');
+        for(; lineWordCounter < minspaceCnt && word < endings[line]; word++, lineWordCounter++) {
             assert(word < (int) paragraph.size());
-            build += paragraph[word] + " ";
+            out("lineWordCounter=%d, word=%d, minspace=%d, sstr='%s', minspaceCnt=%d\n", lineWordCounter, word, minspace, sstr.c_str(), minspaceCnt);
+            build += paragraph[word] + sstr;
+            //std::cout << paragraph[word] << " ";
+        }
+        sstr += ' ';
+        for(; word < endings[line]; word++) {
+            assert(word < (int) paragraph.size());
+            out("word=%d, minspace=%d, sstr='%s', minspaceCnt=%d\n", word, minspace, sstr.c_str(), minspaceCnt);
+            build += paragraph[word] + sstr;
             //std::cout << paragraph[word] << " ";
         }
         build += paragraph[endings[line]] + "\n";
         //std::cout << paragraph[endings[line]] << std::endl; 
-        lastend = endings[line]+1;
+        start = endings[line]+1;
         line++;
     }
     return build;
@@ -345,7 +382,7 @@ int main(int argc, char **argv)
     while(1) {
         int M = 0;
         scanf("%d\n", &M);
-        out("M=%d\n",M);
+        printf("M=%d\n",M);
 
         if(0 == M) return 0;
         assert(M > 0 && M <= 80);
@@ -374,12 +411,12 @@ int main(int argc, char **argv)
             paragraph_lengths.push_back(paragraph[i].length());
         }
 
-        std::vector<int> endings = min_paragraph_error(paragraph_lengths, M);
-        std::cout << build_paragraph(paragraph, endings);
+        uppertriang<int> L(paragraph_lengths.size()); //sum of word lengths
+        std::vector<int> endings = min_paragraph_error(paragraph_lengths, M, L);
+        std::cout << build_paragraph(M, paragraph, endings, L);
         //std::string str = flatten_vector_of_strings(paragraph);
         //print_paragraph_str(str, endings);
 
         printf("\n");
     }
 }
-

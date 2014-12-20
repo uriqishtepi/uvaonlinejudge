@@ -160,7 +160,8 @@ void getMinPars(matrix< quatr > &O, std::vector<int> &res, int i, int j)
 int compute_err(int spaceLen, int nSpaces)
 {
     assert(spaceLen >= 0);
-    assert(nSpaces < spaceLen);
+    assert(nSpaces <= spaceLen);
+    if(nSpaces == spaceLen) return 0;
     //distribute evenly the count - 1 spaces
     //spaces will fill from the last to the first: 
     //   1 1 1, then 1 1 2, then 1 2 2, then 2 2 2
@@ -208,12 +209,10 @@ std::vector<int> min_paragraph_error(const std::vector<int> & l, int M, uppertri
     for(int i = 0; i < N; i++) {
         L(i,i) = l[i];
         C(i,i) = 1;
-        E(i,i) = 500;
+        E(i,i) = (l[i] == N ? 0 : 500); //all lines with one word get this badness, unless it fits
         quatr el = {E(i,i),i,-1,i};
         O(i,i) = el;
     }
-    //initial value for the last element is 0
-    E(N-1,N-1) = 0;
     quatr el = {0, N-1, -1, N-1}; //k = -1 denotes it fits
     O(N-1,N-1) = el;
 
@@ -234,21 +233,19 @@ std::vector<int> min_paragraph_error(const std::vector<int> & l, int M, uppertri
             L(i,j) = L(i,j-1) + l[j]; //length of the words
             C(i,j) = C(i,j-1) + 1; //how many words --  needed for E
 
+            int linelen = L(i,j) + C(i,j) - 1;
+out("linelen %d <= %d\n", linelen, M);
             //if that sum fits in paragraph, thats the Opt(i,j)
-            if(L(i,j) + C(i,j) <= M) {
-                if(i == j) {
-                    printf("Dont think it should get here\n");
-                    //E(i,j) = 0; //the last line has weight of 0, always.
-                    //out("error (%d,%d) is 500\n", i,j);
-                    E(i,j) = 500; //the last line with one word has weight of 500
-                }
-                else
-                    E(i,j) = compute_err(M-L(i,j), C(i,j)-1); //cube of leftovers
+            if(linelen <= M) {
+                assert(i != j);
+                E(i,j) = compute_err(M-L(i,j), C(i,j)-1);
 
                 quatr el = { E(i,j), i, -1, j}; //k = -1 denotes it fits
                 O(i,j) = el;
                 continue;
             }
+
+            //Else words don't fit in a line, need to aggregate more lines
 
             int minE = std::numeric_limits<int>::max();
             int minK;
@@ -382,7 +379,7 @@ int main(int argc, char **argv)
     while(1) {
         int M = 0;
         scanf("%d\n", &M);
-        printf("M=%d\n",M);
+        out("M=%d\n",M);
 
         if(0 == M) return 0;
         assert(M > 0 && M <= 80);

@@ -15,6 +15,7 @@
 
 #define forl(i,init, max) for(int i = init; i < max; i++) 
 #define vi std::vector<int>
+#define vll std::vector<long long int>
 #define vd std::vector<double>
 #define mtsi std::multiset<int, std::greater<int> >
 #define si std::set<int>
@@ -104,16 +105,16 @@ struct matrix {
 };
 
 
-int mypow(int x, int y)
+long long int mypow(int x, int y)
 {
-    int res = 1;
+    long long int res = 1;
     for(int i = 0; i < y; i++)
         res *= x;
     return res;
 }
 
 struct quatr {
-    int val;
+    long long int val; //error measure
     int i;
     int k;
     int j;
@@ -157,7 +158,7 @@ void getMinPars(matrix< quatr > &O, std::vector<int> &res, int i, int j)
 
 //compute error given the length of the words, and the number of words
 //this can be computed with formula, no need to iterate
-int compute_err(int spaceLen, int nSpaces)
+long long int compute_err(int spaceLen, int nSpaces)
 {
     assert(spaceLen >= 0);
     assert(nSpaces <= spaceLen);
@@ -173,7 +174,7 @@ int compute_err(int spaceLen, int nSpaces)
     int maxspaceCnt = spaceLen % nSpaces;
     int minspaceCnt = nSpaces - maxspaceCnt;
 
-    int err = mypow(minspace-1,2)*minspaceCnt + mypow(maxspace-1,2)*maxspaceCnt;
+    long long int err = mypow(minspace-1,2)*minspaceCnt + mypow(maxspace-1,2)*maxspaceCnt;
     out("compute_err(%d, %d) : %d\n", spaceLen, nSpaces, err);
     return err;
 }
@@ -202,7 +203,7 @@ std::vector<int> min_paragraph_error(const std::vector<int> & l, int M, uppertri
     //matrix<int> L(l.size(), l.size()); //sum of word lengths
     //assert (L.rows() == l.size());
     assert (L.cols() == l.size());
-    matrix<int> E(l.size(), l.size()); //error measures
+    matrix<long long int> E(l.size(), l.size()); //error measures
     matrix< quatr > O(l.size(), l.size()); //val AND from where was such opt chosen
 
     //initialize the matrices
@@ -247,7 +248,7 @@ out("linelen %d <= %d\n", linelen, M);
 
             //Else words don't fit in a line, need to aggregate more lines
 
-            int minE = std::numeric_limits<int>::max();
+            long long int minE = std::numeric_limits<long long int>::max();
             int minK;
 
             //in matrix, set location * from best of locations # and $
@@ -259,7 +260,7 @@ out("linelen %d <= %d\n", linelen, M);
             //
             //1,3 = min( (1,1) + (2,1), (1,2)+(3,3)
             for(int k = i; k < j; ++k) {
-                int sum = E(i,k) + E(k+1,j);
+                long long int sum = E(i,k) + E(k+1,j);
                 if(minE >= sum) {
                     minE = sum;
                     minK = k;

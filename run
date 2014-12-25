@@ -8,7 +8,7 @@ fi
 task=$(echo ${1} | sed 's/.cpp$// ; s/.c$//')
 echo "task is $task "
 
-CPPFLAGS='-Wall -g' 
+CPPFLAGS='-Wall -g -lm -lcrypt -O2 -pipe -ansi -DONLINE_JUDGE' 
 
 #check if -o is passed
 if [ x${2}x == "x-ox" ]; then

@@ -1,6 +1,5 @@
 #include<stdio.h>
 #include <string.h>
-
 #define MAXL 100
 
 int charstrAdd(char a[MAXL], char b[MAXL])
@@ -42,7 +41,7 @@ void process(char * str)
     char str1[MAXL];
     char str2[MAXL];
     strncpy(str2, str, MAXL);
-    while(++count < 1000) {
+    do {
         reverse(str2, str1); /* result in second parameter */
         if(strncmp(str1, str2, MAXL) == 0) {
             printf("%d %s\n", count, str1);
@@ -50,7 +49,8 @@ void process(char * str)
         }
         int rc = charstrAdd(str1, str2); /* result in second parameter */
         if(rc) break;
-    }
+    } while(++count < 1000);
+    printf("No solution for %s\n", str);
 }
 
 int main()

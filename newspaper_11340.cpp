@@ -46,8 +46,7 @@ int main(int argc, char **argv)
     int m;
     scanf("%d\n", &m); //number of tests
     while(count++ < m) {
-        int valhash[256] = {0};
-        mli revmap;
+        unsigned long long int valhash[1256] = {0};
         int K;
         scanf("%d\n", &K); //number of tests
         int numc =0;
@@ -56,7 +55,7 @@ int main(int argc, char **argv)
             unsigned char c;
             scanf("%c %lld\n", &c, &d);
             out("%c %lld\n", c, d);
-            revmap[c] = (unsigned long long int) d;
+            valhash[c] = d;
         }
 
         int lines;
@@ -67,19 +66,16 @@ int main(int argc, char **argv)
         while(lines-- > 0) {
             getline(&buff, &n, stdin);
             forl(i,0,strlen(buff)) {
-                unsigned long long int val = 0;
-                mli::iterator it = revmap.find((unsigned char) buff[i]);
-                if(it != revmap.end())
-                    val = it->second;
-
+                unsigned char c = buff[i];
+                unsigned long long int val = valhash[c];
                 //accumulate into sum, val can be zero
-                out("pre sum=%lld val=%lld\n",sum, val);
+                out("pre sum=%lld c=%d val=%lld\n",sum, c, val);
                 sum = sum + val;
-                out("post sum=%lld val=%lld\n",sum, val);
+                out("post sum=%lld c=%d val=%lld\n",sum, c, val);
             }
         }
 
-        printf("%.2f$\n",(double)sum/100.0);
+        printf("%.2lf$\n",(double)sum/100.0);
     }
 
     return 0;

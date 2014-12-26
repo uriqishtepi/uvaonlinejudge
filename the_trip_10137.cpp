@@ -39,43 +39,38 @@ int main(int argc, char **argv)
     while(1) {
         scanf("%d\n", &n);
         out("%d\n",n);
-        if(n == 0)
-            return 0;
-
+        if(n == 0) return 0;
         assert(n > 0 && n <= 1000);
-        vd l;
+        vi l;
         int counter = 0;
-        float f=0;
-        double s=0;
-        while(counter < n && scanf("%f\n",&f) != EOF) {
-            out("%d %f\n",counter, f);
-            assert(f >= 0 && f <=10000);
-            l.push_back(f);
-            s += f;
+        int d=0;
+        int c=0;
+        long long int s=0;
+        while(counter < n && scanf("%d.%d\n",&d, &c) != EOF) {
+            int cents = 100*d + c;
+            assert(cents >= 0 && cents <=1000000);
+            l.push_back( cents );
+            out("%d %d.%.2d %d\n",counter, d,c, l.back());
+            s += l.back();
+            d = 0; 
+            c = 0;
             counter++;
         }
-        out("counter %d s %lf\n", counter, s);
-        double avg = s / counter;
-        /*
-        long long unsigned int u = avg*100;
-        avg = u;
-        avg = avg / 100;
-        */
-        out("%lf/%d = %lf\n",s, counter, avg);
+        out("counter %d s %lld\n", counter, s);
+        int avg = s / n;
+        int needRound = (s % n) > 0;
 
-        double overpaid = 0;
-        double underpaid = 0;
+        out("%lld/%d = %d\n", s, n, avg);
+
+        int overpaid = 0;
+        int underpaid = 0;
         for(counter = 0; counter < n; counter++ ) {
-            double diff = ((int) ((avg - l[counter])*100) ) / 100.0;
-            //double diff = avg - l[counter];
-            out("%d %f %f\n",counter, l[counter], diff);
-            if(diff < 0) overpaid -= diff;
-            else underpaid += diff;
+            if(avg < l[counter] )
+                overpaid += l[counter] - (avg + needRound);
+            else
+                underpaid += avg - l[counter];
         }
-
-        //if(item++ > 0) printf("\n");
-        //printf("$%.2lf\n", exch);
-        printf("$%.2lf\n", std::max(underpaid, overpaid));
+        printf("$%.2f\n", std::max(underpaid, overpaid) / 100.0);
     }
 }
 

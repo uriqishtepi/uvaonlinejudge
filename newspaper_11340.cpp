@@ -34,7 +34,6 @@
 int main(int argc, char **argv)
 {
     out("Starting...\n");
-    mli revmap;
 
     out("sizeof int %d\n", sizeof(int));
     out("sizeof long int %d\n", sizeof(long int));
@@ -47,6 +46,8 @@ int main(int argc, char **argv)
     int m;
     scanf("%d\n", &m); //number of tests
     while(count++ < m) {
+        int valhash[256] = {0};
+        mli revmap;
         int K;
         scanf("%d\n", &K); //number of tests
         int numc =0;

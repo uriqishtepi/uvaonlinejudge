@@ -43,17 +43,13 @@ int main(int argc, char **argv)
         assert(n > 0 && n <= 1000);
         vi l;
         int counter = 0;
-        int d=0;
-        int c=0;
+        double d=0;
         long long int s=0;
-        while(counter < n && scanf("%d.%d\n",&d, &c) != EOF) {
-            int cents = 100*d + c;
-            assert(cents >= 0 && cents <=1000000);
-            l.push_back( cents );
-            out("%d %d.%.2d %d\n",counter, d,c, l.back());
+        while(counter < n && scanf("%lf\n",&d) != EOF) {
+            assert(d >= 0 && d <=10000);
+            l.push_back( 100*d + 0.0000000001);
+            out("%d %lf %d\n",counter, d, l.back());
             s += l.back();
-            d = 0; 
-            c = 0;
             counter++;
         }
         out("counter %d s %lld\n", counter, s);

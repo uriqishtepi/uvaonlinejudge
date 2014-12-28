@@ -9,12 +9,9 @@
 //#define out printf
 #define out 
 
-
-void fillCell(int newi, int newj, int m, int n, char image[250][250], qpi & q, char origC, char newC) 
-{
+void fillCell(int newi, int newj, int m, int n, char image[250][250], qpi & q, char origC, char newC) {
     if(newj >= 1 && newi >= 1 && newj <= n && newi <= m 
-            && image[newj-1][newi - 1] == origC)
-    {
+            && image[newj-1][newi - 1] == origC) {
         image[newj-1][newi-1] = newC;
         q.push(std::make_pair(newi,newj));
     }
@@ -98,26 +95,24 @@ int main()
           case 'F': 
             {
                 int x, y;
-                char c;
-                scanf("%d %d %c", &x, &y, &c);
+                char newC;
+                scanf("%d %d %c", &x, &y, &newC);
                 int origC = image[y-1][x-1];
-                if(origC == c) { 
-                    printf("%d %d %c same as toFill\n", x, y, c);
+                if(origC == newC) { 
                     break; //no need to do anything
                 }
 
                 qpi q;
-                q.push(std::make_pair(y,x));
-                image[y-1][x-1] = c;
+                fillCell(x, y, m, n, image, q, origC, newC);
                 while(!q.empty()){
                     pi p = q.front();
                     q.pop();
                     int i = p.first;
                     int j = p.second;
-                    fillCell(i-1, j, m, n, image, q, origC, c);
-                    fillCell(i, j-1, m, n, image, q, origC, c);
-                    fillCell(i+1, j, m, n, image, q, origC, c);
-                    fillCell(i, j+1, m, n, image, q, origC, c);
+                    fillCell(i-1, j, m, n, image, q, origC, newC);
+                    fillCell(i, j-1, m, n, image, q, origC, newC);
+                    fillCell(i+1, j, m, n, image, q, origC, newC);
+                    fillCell(i, j+1, m, n, image, q, origC, newC);
                 }
             }
             break;

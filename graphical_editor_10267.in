@@ -1,0 +1,30 @@
+I 5 10
+V 2 7 8 L
+S a
+C
+H 1 4 8 G
+S b
+C
+K 2 3 4 5 W
+S c
+F 2 3 W
+S d
+F 2 3 E
+S e
+G 2 3 J
+S oeuoeu
+F 3 3 J
+S oeuoeu
+V 2 3 4 W
+H 3 4 2 Z
+S two.bmp
+X
+I 5 6
+L 2 3 A
+S one.bmp
+G 2 3 J
+F 3 3 J
+V 2 3 4 W
+H 3 4 2 Z
+S two.bmp
+X

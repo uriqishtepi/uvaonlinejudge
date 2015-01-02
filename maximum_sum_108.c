@@ -1,21 +1,18 @@
 #include<stdio.h>
 #include<sys/param.h>
 
-int rectangleSum(int arr[100][100], int n, int x, int y, int w, int z)
+int rectangleSum(int arr[100][100][100], int n, int x, int y, int w, int z)
 {
     int sum = 0;
     int i;
-    int j;
     for(i = 0; i <= w; i++) {
-        for(j = 0; j <= z; j++) {
-            sum += arr[x+i][y+j];
-        }
+        sum += arr[z][x+i][y];
     }
     /* printf("rs %d %d %d %d  %d\n", x,y,w,z, sum); */
     return sum;
 }
 
-int getMax(int arr[100][100], int n, int x, int y)
+int getMax(int arr[100][100][100], int n, int x, int y)
 {
     int maxEl = -100000000;
     int i;
@@ -36,19 +33,29 @@ int main()
     {
         int i;
         int j;
-        int arr[100][100] = {0}; 
+        int k;
+        int arr[100][100][100] = {0}; 
         int maxEl = -10000000;
         for(i = 0; i < n; i++) {
             for(j = 0; j < n; j++) {
-                scanf("%d", &arr[i][j]);
-                maxEl = MAX(maxEl, arr[i][j]);
+                int el;
+                scanf("%d", & el);
+                maxEl = MAX(maxEl, el);
+                arr[0][i][j] = el;
+                /* if j < 1, will not get in next loop */
+                for(k = 1; k <= j; k++) {
+                    arr[k][i][j-k] = arr[k-1][i][j-k] + el;
+                }
             }
         }
 
         /*
-        for(i = 0; i < n; i++) {
-            for(j = 0; j < n; j++) {
-                printf("%2d ", arr[i][j]);
+        for(k = 0; k < n; k++) {
+            for(i = 0; i < n; i++) {
+                for(j = 0; j < n; j++) {
+                    printf("%2d ", arr[k][i][j]);
+                }
+                printf("\n");
             }
             printf("\n");
         }

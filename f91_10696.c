@@ -8,8 +8,10 @@ int f91(int N)
 
 int main()
 {
-    for(i = 0; i < 2000000; i++)
-        printf( "%d %d\n", i, f91(i));
+    int i;
+    while(scanf("%d\n", &i) != EOF && i != 0) {
+        printf( "f91(%d) = %d\n", i, f91(i));
+    }
     return 0;
 }
 

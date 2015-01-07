@@ -12,14 +12,21 @@ int rectangleSum(int arr[100][100][100], int n, int x, int y, int w, int z)
     return sum;
 }
 
+/* will get the max from point x,y 
+ * if a rectangleSum is negative we should not continue 
+ * the search from this x,y 
+ */
 int getMax(int arr[100][100][100], int n, int x, int y)
 {
+    /* printf("getMax(...,%d,%d,%d\n",n,x,y); */
     int maxEl = -100000000;
     int i;
     int j;
     for(i = 0; i < n-x; i++) {
         for(j = 0; j < n-y; j++) {
             int sum = rectangleSum(arr, n, x, y, i, j);
+            if(sum <= 0)
+                break; 
             maxEl = MAX(maxEl, sum);
         }
     }
@@ -34,7 +41,7 @@ int main()
         int i;
         int j;
         int k;
-        int arr[100][100][100] = {0}; 
+        int arr[100][100][100]; /* = {0}; */
         int maxEl = -10000000;
         for(i = 0; i < n; i++) {
             for(j = 0; j < n; j++) {

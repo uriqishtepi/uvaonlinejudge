@@ -4,13 +4,9 @@
 int main()
 {
     int n;
-    while(scanf("%u\n", &n) != EOF && n >= 0) {
-        int i;
-        long long unsigned int slices = 1;
-        for(i = 1; i <= n; i++) {
-            slices += i;
-/* printf("%d %d\n", i, slices);             */
-        }
+    while(scanf("%d\n", &n) != EOF && n >= 0) {
+        long long unsigned int ln = n;
+        long long unsigned int slices = (((1+ln)*ln)/2 + 1);
         printf("%llu\n", slices);            
     }
 

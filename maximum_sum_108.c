@@ -22,13 +22,12 @@ int getMax(int arr[100][100][100], int n, int x, int y)
     int maxEl = -100000000;
     int i;
     int j;
-    int sofar[100] = {0};
-    for(i = 0; i < n-x; i++) {
-        for(j = 0; j < n-y; j++) {
-            int sum = sofar[j]; 
+    for(j = 0; j < n-y; j++) {
+        int sum = 0;
+        for(i = 0; i < n-x; i++) {
             /*printf("rs %d %d %d %d  %d+%d->%d\n", x,y,i,j, sum, arr[j][x+i][y], sum+arr[j][x+i][y]);*/
             sum += arr[j][x+i][y];
-            sofar[j] = sum;
+            if(sum <= 0) continue;
             maxEl = MAX(maxEl, sum);
         }
     }

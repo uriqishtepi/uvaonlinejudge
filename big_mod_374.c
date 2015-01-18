@@ -4,13 +4,17 @@ int main()
 {
     int b, p, m;
     while(scanf("%d\n%d\n%d\n", &b, &p, &m) != EOF) {
-        int res = b % m;
-        while(--p > 0) {
-            long long int mult = res;
-            mult = mult * b;
-            res = mult % m;
+        int res = 1; 
+        int ap = b % m;
+        int power = 1;
+        while(power <= p && power > 0) {
+            if(power & p) {
+                res = (res * ap) % m;
+            }
+            ap = (ap * ap) % m;
+            power <<= 1;
         }
-        printf("res = %d\n", res);
+        printf("%d\n", res);
     }
 
     return 0;

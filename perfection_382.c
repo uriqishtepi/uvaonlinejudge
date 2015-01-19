@@ -5,15 +5,19 @@ int main()
     int n;
     printf("PERFECTION OUTPUT\n");
     while(scanf("%d",&n) != EOF && n != 0) {
+        printf("%5d  ", n);
+        if(n == 1) {
+            printf("DEFICIENT\n");
+            continue;
+        }
         int i;
         int sum = 1;
-        for(i=2;i<=n/2 + 1;i++) {
+        for(i=2;i <= n/2; i++) {
             if(n % i == 0) {
-                /* printf("%d divides %d\n", i, n); */
+                /* printf("%d divides %d, sum = %d\n", i, n, sum); */
                 sum += i;
             }
         }
-        printf("%5d ", n);
         if(sum > n)
             printf("ABUNDANT\n");
         else if(sum < n)

@@ -13,7 +13,7 @@ void find_primes_upto( int n)
     for(i = lastint+2; i <= n; i+= 2) { 
         //printf("find_primes_upto ...%d\n", i);
         int prime = 1;
-        for(vi::iterator it = primes.begin(); it != primes.end(); ++it) {
+        for(vi::iterator it = primes.begin(); it != primes.end() && (*it) *(*it) < n; ++it) {
             if((i % *it) == 0) {
                 prime = 0;
                 //printf("find_primes_upto ...%d is NOT prime, div by %d\n", i, *it);

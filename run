@@ -47,7 +47,8 @@ fi
 
 
 echo "running ${task} < $IN"
-./${task} < $IN > $OUT && diff -w -q ${task}.out $OUT || echo run " vimdiff $OUT ${task}.out" to see diff
+#./${task} < $IN > $OUT && diff -w -q ${task}.out $OUT || echo run " vimdiff $OUT ${task}.out" to see diff
+./${task} < $IN > $OUT && diff -q ${task}.out $OUT || echo run " vimdiff $OUT ${task}.out" to see diff
 
 #could just use more $OUT, but more does not clear the visual when it returns
 if [ `wc -l $OUT | awk '{print $1}' ` -gt $((LINES-5)) ] ; then

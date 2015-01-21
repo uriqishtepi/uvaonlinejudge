@@ -24,9 +24,8 @@ int main()
     char str[256];
     char copy[256];
     while(scanf("%s%n\n", str, &n) != EOF && str[0] != '#') {
-        printf("n %d str %s\n", n, str);
+        printf("n %d str %s ", n, str);
         if(strcmp(copy, str) == 0) {
-            printf("last in sequence.\n");
             continue;
         }
         /* needd to produce combinations, sort them and find the next 
@@ -42,18 +41,25 @@ int main()
         then sort from that point to the end
         */
         int i;
-        for(i = n-1; i >0; i--) {
-            if(str[i-1] < str[i])
-                break;
-                /* sort from i+i to n */
+        int j;
+        int found = 0;
+        for(i = n - 2; i >= 0 && found == 0; i--) {
+            for(j = i + 1; j < n && found == 0; j++) {
+                if(str[i] < str[j]) 
+                    found = 1;
+            }
         }
-        if(i > 0) {
-            /*find actual min */
-            swap(str,i-1,i);
+        if(found) {
+            /* find actual min 
+            int j;
+            for(j = i+1; j < n; j++) if(str[min] > str[j]) min = j;*/
+            swap(str, i, j);
             if(n - i > 1)
-                qsort(str+i, n-i, sizeof(char), cmpchars);
+                qsort(str + i, n - i, sizeof(char), cmpchars);
+            printf("--> n %d str %s\n", n, str);
         }
-        printf("n %d str %s\n", n, str);
+        else
+            printf("last in sequence.\n");
     }
 
     return 0;

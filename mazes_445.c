@@ -2,17 +2,6 @@
 #include<stdlib.h>
 #include <string.h>
 
-int multdigits(int num)
-{
-    int ret = 0;
-    while(num > 0) {
-        ret += num % 10;
-        num = num /10;
-    }
-    return ret;
-}
-
-
 int main()
 {
     char * buff = NULL;
@@ -28,15 +17,19 @@ int main()
         while(tok != NULL && strlen(tok) > 0) {
             /* printf("tok '%s'\n", tok); */
             int read = 0;
-            int num;
+            int num = 0;
             char letter;
-            while(sscanf((tok+=read),"%d%c%n", &num, &letter, &read) != EOF)
+            while(sscanf((tok+=read),"%c%n", &letter, &read) != EOF)
             {
                 int i;
-                num = multdigits(num);
+                if(letter >= '0' && letter <= '9') {
+                    num += letter - '0';
+                    continue;
+                }
                 if(letter == 'b') letter = ' ';
                 /* something about asterisc */
                 for(i=0;i<num;i++) printf("%c", letter);
+                num = 0;
             }
             printf("\n");
             tok = strtok(NULL, "\n!");   

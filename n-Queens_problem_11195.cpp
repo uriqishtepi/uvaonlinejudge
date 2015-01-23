@@ -86,9 +86,9 @@ int main(int argc, char **argv)
     out("Starting...\n");
 
     int n;
-    char board[15][15];
     while(scanf("%d\n",&n) && n > 0) {
-        assert(n > 3 && n < 15);
+        char board[15][15] = {0};
+        assert(3 < n && n < 15);
         g_nsol = 0;
         g_case++;       
         char *buff = NULL;

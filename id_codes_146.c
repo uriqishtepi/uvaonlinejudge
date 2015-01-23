@@ -59,7 +59,7 @@ int main()
             printf("%s\n", str);
         }
         else
-            printf("last in sequence.\n");
+            printf("No Successor\n");
     }
 
     return 0;

@@ -37,7 +37,7 @@ int main()
                 val++;
             }
             if(count >= N-1 && val == 13) {
-                printf("%d %d\n", N, i);
+                printf("%d\n", i);
                 int j;
                 for(j = 0; j < N; j++) out("%d ", arr[j]); out("\n");
                 break;

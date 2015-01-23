@@ -9,7 +9,7 @@ int main()
     while(scanf("%d %d\n", &A, &L) != EOF && !(A < 0 && L < 0)) {
         casecount++;
         int terms = 0;
-        int val = A;
+        long long int val = A;
         while(val != 1 && val <= L) {
             terms++;
             if(val & 0x1) 

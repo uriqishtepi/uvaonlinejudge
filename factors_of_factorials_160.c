@@ -4,7 +4,6 @@
 int main()
 {
     int n;
-    //find_first_fact()
     int fact[100];
     int fptr = 0;
     fact[fptr++] = 2;
@@ -46,6 +45,8 @@ int main()
         }
         printf("%3d! =", n);
         for(j = 0; j < fptr && fact[j] <= n; j++) {
+            if(j > 0 && (j % 15) == 0)
+                printf("\n      ");
             printf("%3d", arr[j]);
         }
         printf("\n");

@@ -1,23 +1,31 @@
 #include<stdio.h>
 
-#define MAXI 7489
+#define MAXI 27
+
+int getCount(int n)
+{
+    int i,j,k,l;
+    int count = 0;
+    for(i=0; i <= (n/50); i++) {
+        for(j=0; j <= (n-i*50) / 25; j++) {
+            for(k=0; k <= (n-i*50 - j * 25) / 10; k++) {
+                for(l=0; l <= (n-i*50 - j * 25 - k * 10) / 5; l++) {
+                    count++;
+                    //if (n-i*50 - j * 25 - k * 10 - l * 5 > 0) count++;
+                }
+            }
+        }
+        
+    }
+    return count;
+}
 
 int main()
 {
-    int i;
     int D[MAXI+1] = {0};
+    int i = 0;
+printf("%d %d\n", i, getCount(7890));
     for (i = 0; i < MAXI+1; i++) {
-        D[i] += 1;
-        if(i >= 5) 
-            D[i] += D[i - 5];
-        if(i >= 10)
-            D[i] += D[i - 10];
-        if(i >= 25)
-            D[i] += D[i - 25];
-        if(i >= 50)
-            D[i] += D[i - 50];
-
-printf("%d %d\n", i, D[i]);
     }
 
     return 0;

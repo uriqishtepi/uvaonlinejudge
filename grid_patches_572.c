@@ -32,17 +32,23 @@ int main()
             out("\n");
         }
 
-
-        for(i=0;i<m;i++) {
-            for(j=0;j<n;j++){
+        int d;
+        int x, y;
+        for(d = 0; d < m + n; d++) {
+            for(x = 0; x < d; x++) {
+                y = d - x;
+                i = (x < m) ? x : m;
+                j = (y < n) ? y : n;
                 if(!isSet(grid, i, j, m, n)) continue;
                 else if(isSet(grid, i-1, j-1, m, n)) id[i][j] = id[i-1][j-1];
                 else if(isSet(grid, i-1, j, m, n)) id[i][j] = id[i-1][j];
                 else if(isSet(grid, i-1, j+1, m, n)) id[i][j] = id[i-1][j+1];
                 else if(isSet(grid, i, j-1, m, n)) id[i][j] = id[i][j-1];
+                else if(isSet(grid, i-1, j-1, m, n)) id[i][j] = id[i-1][j-1];
                 else id[i][j] = ++idCounter;
             }
         }
+
         printf("%d\n", idCounter);
     }
 

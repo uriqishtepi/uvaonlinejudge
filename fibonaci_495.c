@@ -3,39 +3,40 @@
 #include<string.h>
 #include<sys/param.h>
 
+inline unsigned char addDigit(char c1, char c2, char * c3, unsigned char carry)
+{
+    *c3 = c1 + c2 - '0' + carry;
+
+    if(*c3 > '9') { 
+        *c3 -= 10;
+        return 1;
+    } 
+    return 0;
+}
+
 char * sumNumbers(char * num1, char * num2)
 {
     int l1 = strlen(num1);
     int l2 = strlen(num2);
+    char * res = calloc(MAX(l1,l2)+2, sizeof(char));
+
     char * p1 = num1;
     char * p2 = num2;
-
-    char * res = calloc(MAX(l1,l2)+2, sizeof(char));
     char * p3 = res;
     unsigned char carry = 0;
-    while(*p1 || *p2) {
-        if(*p1 && *p2) {
-            *p3 = *p1 + *p2 - '0';
-            p1++;
-            p2++;
-        }
-        else if(*p1) {
-            *p3 = *p1;
-            p1++;
-        }
-        else if(*p2) {
-            *p3 = *p2;
-            p2++;
-        }
-        *p3 += carry;
-        if(*p3 > '9') { 
-            *p3 -= 10;
-            carry = 1;
-        }
-        else carry = 0;
-        p3++;
-    }
-    if(carry) *p3 = '1';
+
+    while(*p1 && *p2) 
+        carry = addDigit(*p1++, *p2++, p3++, carry);
+
+    while(*p1) 
+        carry = addDigit(*p1++, '0', p3++, carry);
+
+    while(*p2) 
+        carry = addDigit(*p2++, '0', p3++, carry);
+
+    if(carry) 
+        *p3 = '1';
+
     return res;
 }
 

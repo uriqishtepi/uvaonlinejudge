@@ -14,12 +14,8 @@ inline unsigned char addDigit(char c1, char c2, char * c3, unsigned char carry)
     return 0;
 }
 
-char * sumNumbers(char * num1, char * num2)
+void sumNumbers(char * res, char * num1, char * num2)
 {
-    int l1 = strlen(num1);
-    int l2 = strlen(num2);
-    char * res = calloc(MAX(l1,l2)+2, sizeof(char));
-
     char * p1 = num1;
     char * p2 = num2;
     char * p3 = res;
@@ -36,20 +32,15 @@ char * sumNumbers(char * num1, char * num2)
 
     if(carry) 
         *p3 = '1';
-
-    return res;
 }
 
 int main()
 {
-    char * F[5001] = {0};
+    char F[5001][1047] = {{"0"}, {"1"}, {"1"}, {0}};
     int i;
-    F[0] = strdup("0");
-    F[1] = strdup("1");
-    F[2] = strdup("1");
     
     for(i=3;i<=5000;i++) {
-        F[i] = sumNumbers(F[i-1],F[i-2]);
+        sumNumbers(F[i], F[i-1],F[i-2]);
     }
     int n;
     while(scanf("%d\n", &n) != EOF) {

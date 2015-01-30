@@ -36,8 +36,7 @@ void mulDigit(char * res, char * str1, int l1, char c2, int skip)
     char * p1 = str1 + l1 - 1;
     char * p3 = res;
     while(skip-- > 0) {
-        *p3 = '0';
-        *(++p3) = '\0';
+        *p3++ = '0';
     }
 
     char carry = 0;
@@ -87,15 +86,14 @@ void sumNumbers(char * res, char * num1, char * num2)
 
 int main() 
 {
-
     char str1[512];
     char str2[512];
-
-    int n;
     char res[1024] = {0};
     char tmp1[1024] = {0};
     char tmp2[1024] = {0};
-    while(scanf("%s\n%s\n", str1, str2) != EOF) {
+
+    while(scanf("%s\n%s\n", str1, str2) != EOF) 
+    {
         if(str1[0] == '0' || str2[0] == '0') {
             printf("0\n");
             continue;
@@ -127,10 +125,12 @@ int main()
         }
 
         char * p = res + mx - 1;
-        while(*p) p++;
-        p--;
-        while(p >= res) { printf("%c", *p); *p-- = '\0'; }
-        *p-- = '\0';
+        while(*p) p++;        /* seek to the end of the string */
+        while(--p >= res) {   /* backwards walk to print string backwards */
+            printf("%c", *p); 
+            *p = '\0'; 
+        }
+        *p = '\0';
         printf("\n");
     }
 

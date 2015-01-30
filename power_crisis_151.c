@@ -1,7 +1,6 @@
 #include<stdio.h>
 
-#define out
-//#define out printf 
+#define out 
 
 int main()
 {

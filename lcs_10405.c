@@ -1,20 +1,33 @@
 #include<stdio.h>
 #include<string.h>
 #include<sys/param.h>
+#include<assert.h>
 
 #define out 
+#define MAXS 1000
 
 /* longest common substring */
 
 int main()
 {
-    char stra[1001];
-    char strb[1001];
-    while(scanf("%s\n%s\n", stra, strb) != EOF) {
+    char * stra = NULL;
+    char * strb = NULL;
+    int n1, n2;
+    while( getline(&stra, &n1, stdin) >= 0 && getline(&strb, &n2, stdin) >= 0) 
+    {
         out("%s\n%s\n", stra,strb);
-        int C[1002][1002] = {{0}};
-        int m = strlen(stra);
-        int n = strlen(strb);
+        int C[MAXS+2][MAXS+2] = {{0}};
+
+        int m = strnlen(stra, MAXS+1);
+        if(stra[m-1] == '\n') m--;
+        if(m > MAXS) m = MAXS;
+        assert(m >= 0 && m <= MAXS);
+
+        int n = strnlen(strb, MAXS);
+        if(strb[n-1] == '\n') n--;
+        if(n > MAXS) n = MAXS;
+        assert(n >= 0 && n <= MAXS);
+
         int i;
         int j;
         for(i = 1; i <= m; i++) {

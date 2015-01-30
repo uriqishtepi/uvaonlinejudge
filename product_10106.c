@@ -90,29 +90,44 @@ int main()
 
     int n;
     while(scanf("%s\n%s\n", str1, str2) != EOF) {
-        char res[512][512] = {{0}};
+        if(str1[0] == '0' || str2[0] == '0') {
+            printf("0\n");
+            continue;
+        }
+        char res[1024] = {0};
 
         int l1 = strlen(str1);
         int l2 = strlen(str2);
+        int mx, mn;
+        char *pmx, *pmn;
+        if(l1 > l2) {
+            mx = l1;
+            mn = l2;
+            pmx = str1;
+            pmn = str2;
+        }
+        else {
+            mx = l2;
+            mn = l1;
+            pmx = str2;
+            pmn = str1;
+        }
+
         int i;
-        for(i = 0; i < l2; i++) {
-            char tmp[512] = {0};
-            mulDigit(res[i], str1, l1, str2[i], l2 - i - 1);
-            sumNumbers(tmp, res[l2], res[i]);
-            memcpy(res[l2], tmp, sizeof(tmp));
+        for(i = 0; i < mn; i++) {
+            char tmp1[1024] = {0};
+            char tmp2[1024] = {0};
+            mulDigit(tmp1, pmx, mx, pmn[i], mn - i - 1);
+            sumNumbers(tmp2, res, tmp1);
+            memcpy(res, tmp2, sizeof(tmp2));
             /* printf("%s %s\n", res[i], res[l2]); */
         }
 
-        char * p = res[l2];
-        int l = 0;
-        int izero = 1;
-        while(*p) { if(*p != '0') izero=0; p++; l++; }
-        if(izero) printf("0\n");
-        else {
-            p--;
-            while(p >= res[l2]) printf("%c", *p--);
-            printf("\n");
-        }
+        char * p = res + mx - 1;
+        while(*p) p++;
+        p--;
+        while(p >= res) printf("%c", *p--);
+        printf("\n");
     }
 
     return 0;

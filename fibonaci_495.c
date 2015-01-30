@@ -5,7 +5,7 @@
 
 inline unsigned char addDigit(char c1, char c2, char * c3, unsigned char carry)
 {
-    *c3 = c1 + c2 - '0' + carry;
+    *c3 = c1 + c2 + carry;
 
     if(*c3 > '9') { 
         *c3 -= 10;
@@ -22,13 +22,13 @@ void sumNumbers(char * res, char * num1, char * num2)
     unsigned char carry = 0;
 
     while(*p1 && *p2) 
-        carry = addDigit(*p1++, *p2++, p3++, carry);
+        carry = addDigit(*p1++, (*p2++) - '0', p3++, carry);
 
     while(*p1) 
-        carry = addDigit(*p1++, '0', p3++, carry);
+        carry = addDigit(*p1++, 0, p3++, carry);
 
     while(*p2) 
-        carry = addDigit(*p2++, '0', p3++, carry);
+        carry = addDigit(*p2++, 0, p3++, carry);
 
     if(carry) 
         *p3 = '1';

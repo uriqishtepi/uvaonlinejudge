@@ -3,25 +3,29 @@
 #include<sys/param.h>
 #include<assert.h>
 
-#define out 
-#define MAXS 1000
+#define out printf
+#define MAXS 2001
 
 /* longest common substring */
 
 int main()
 {
-    char * stra = NULL;
-    char * strb = NULL;
-    int n1, n2;
-    int m, n;
-    while( (m = getline(&stra, &n1, stdin) ) >= 0 && 
-           (n = getline(&strb, &n2, stdin) ) >= 0 ) 
+    char stra[MAXS+10] = {0};
+    char strb[MAXS+10] = {0};
+    while( fgets(stra, MAXS, stdin) != NULL)
     {
+        char* rc = fgets(strb, MAXS, stdin);
+        assert(rc != NULL);
         out("'%s'\n'%s'\n", stra,strb);
+        int m = strnlen(stra, MAXS);
+        int n = strnlen(strb, MAXS);
+        if(m == 0 || n == 0) {
+            printf("0\n");
+            continue;
+        }
+
         int C[MAXS+200][MAXS+200] = {{0}};
-
         if(m > 0 && stra[m-1] == '\n') m--;
-
         if(n > 0 && strb[n-1] == '\n') n--;
 
         int i;
@@ -37,10 +41,6 @@ out("%d ", C[i][j]);
 out("\n");
         }
         printf("%d\n", C[m][n]);
-        free(stra);
-        free(strb);
-        stra = NULL;
-        strb = NULL;
     }
 
     return 0;

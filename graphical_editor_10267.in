@@ -1,8 +1,12 @@
 I 5 10
-V 2 7 8 L
+V 2 8 7 L
+S a
+F 2 8 P
 S a
 C
-H 1 4 8 G
+H 4 1 8 G
+S b
+F 4 8 P
 S b
 C
 K 2 3 4 5 W
@@ -24,7 +28,7 @@ L 2 3 A
 S one.bmp
 G 2 3 J
 F 3 3 J
-V 2 3 4 W
+V  2 3 4 W
 H 3 4 2 Z
 S two.bmp
 X

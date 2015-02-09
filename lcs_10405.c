@@ -3,8 +3,8 @@
 #include<sys/param.h>
 #include<assert.h>
 
-#define out printf
-#define MAXS 2001
+#define out 
+#define MAXS 1021
 
 /* longest common substring */
 

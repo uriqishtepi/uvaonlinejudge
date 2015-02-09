@@ -9,18 +9,20 @@
 //#define out printf
 #define out 
 
-void fillCell(int newi, int newj, int m, int n, char image[250][250], qpi & q, char origC, char newC) {
-    if(newj >= 1 && newi >= 1 && newj <= n && newi <= m 
-            && image[newj-1][newi - 1] == origC) {
-        image[newj-1][newi-1] = newC;
-        q.push(std::make_pair(newi,newj));
+void fillCell(int newi, int newj, int n, int m, char image[251][251], 
+              qpi & q, char origC, char newC) 
+{
+    if(newj >= 1 && newi >= 1 && newj <= m && newi <= n 
+            && image[newi-1][newj - 1] == origC) {
+        image[newi-1][newj-1] = newC;
+        q.push(std::make_pair(newj, newi));
     }
 }
 
 int main()
 {
-    char buff[1024];
-    char image[250][250];
+    char buff[2024];
+    char image[251][251] = {{0}};
     char cmd;
     int m = 0;
     int n = 0;
@@ -61,7 +63,15 @@ int main()
                 scanf("%d %d %d %c", &x, &y1,&y2,&c);
                 out("%d %d %d %c", x, y1, y2, c);
                 int i;
-                for(i = y1; i <= y2; i++) 
+                int min_y, max_y;
+                if(y1 < y2) { 
+                    min_y = y1;
+                    max_y = y2;
+                } else {
+                    min_y = y2;
+                    max_y = y1;
+                }
+                for(i = min_y; i <= max_y; i++) 
                     image[i-1][x-1] = c;
             }
             break;
@@ -72,7 +82,15 @@ int main()
                 scanf("%d %d %d %c", &x1, &x2, &y,&c);
                 out("%d %d %d %c", x1, x2, y, c);
                 int j;
-                for(j = x1; j <= x2; j++) 
+                int min_x, max_x;
+                if(x1 < x2) { 
+                    min_x = x1;
+                    max_x = x2;
+                } else {
+                    min_x = x2;
+                    max_x = x1;
+                }
+                for(j = min_x; j <= max_x; j++) 
                     image[y-1][j-1] = c;
             }break;
           case 'K': 
@@ -81,11 +99,25 @@ int main()
                 char c;
                 scanf("%d %d %d %d %c", &x1, &y1, &x2,&y2,&c);
                 out("%d %d %d %d %c", x1, y1, x2,y2, c);
-                assert(x1 <= x2);
-                assert(y1 <= y2);
+                int min_x, max_x;
+                if(x1 < x2) { 
+                    min_x = x1;
+                    max_x = x2;
+                } else {
+                    min_x = x2;
+                    max_x = x1;
+                }
+                int min_y, max_y;
+                if(y1 < y2) { 
+                    min_y = y1;
+                    max_y = y2;
+                } else {
+                    min_y = y2;
+                    max_y = y1;
+                }
                 int i, j;
-                for(i = y1; i <= y2; i++) {
-                    for(j = x1; j <= x2; j++) {
+                for(i = min_y; i <= max_y; i++) {
+                    for(j = min_x; j <= max_x; j++) {
                         image[i-1][j-1] = c;
                     }
                     out("\n");
@@ -103,16 +135,16 @@ int main()
                 }
 
                 qpi q;
-                fillCell(x, y, m, n, image, q, origC, newC);
+                fillCell(y, x, n, m, image, q, origC, newC);
                 while(!q.empty()){
                     pi p = q.front();
                     q.pop();
-                    int i = p.first;
-                    int j = p.second;
-                    fillCell(i-1, j, m, n, image, q, origC, newC);
-                    fillCell(i, j-1, m, n, image, q, origC, newC);
-                    fillCell(i+1, j, m, n, image, q, origC, newC);
-                    fillCell(i, j+1, m, n, image, q, origC, newC);
+                    int i = p.second;
+                    int j = p.first;
+                    fillCell(i-1, j, n, m, image, q, origC, newC);
+                    fillCell(i+1, j, n, m, image, q, origC, newC);
+                    fillCell(i, j-1, n, m, image, q, origC, newC);
+                    fillCell(i, j+1, n, m, image, q, origC, newC);
                 }
             }
             break;
@@ -120,12 +152,9 @@ int main()
             {
                 gets(buff); //chew rest of line
                 printf("%s\n", buff);
-                int i, j;
+                int i;
                 for(i = 0; i < n; i++) {
-                    for(j = 0; j < m; j++) {
-                        printf("%c", image[i][j]);
-                    }
-                    printf("\n");
+                    printf("%s\n", image[i]);
                 }
             }
             break;

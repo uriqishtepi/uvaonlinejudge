@@ -20,7 +20,8 @@ int getPairs(vi & primes, int n)
     //printf("lower bound find %d is %d\n", n, *jt);
     for(vi::iterator it = primes.begin(); (*it) <= n && it != jt; it++)
     {
-        if(std::find(it, jt, n - (*it)) != jt) {
+        int d = n - (*it);
+        if(std::binary_search(it, jt, d)) {
             count++;
             //printf("%d + %d = %d\n", *it, n - (*it), n);
         }
@@ -31,6 +32,7 @@ int getPairs(vi & primes, int n)
 int main()
 {
     vi primes;
+    primes.push_back(2);
     primes.push_back(3);
     primes.push_back(5);
 
@@ -42,6 +44,7 @@ int main()
     }
     //for(vi::iterator it = primes.begin(); it != primes.end(); it++) printf("%d ", *it); printf("\n");
 
+    //primes.insert(primes.begin(), 1);
     int num;
     while(scanf("%d\n", &num) != EOF && num != 0){
         int p = getPairs(primes, num);

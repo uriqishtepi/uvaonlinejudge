@@ -9,6 +9,8 @@
 #include <stdlib.h>
 #include<string.h>
 
+#define out 
+
 /*  567
  * x  3
  * ----
@@ -117,7 +119,7 @@ int multiplyNumbers(char * res, char * str1, int l1, char * str2, int l2)
         mulDigit(tmp1, pmx, mx, pmn[i], mn - i - 1);
         sumNumbers(tmp2, res, tmp1);
         memcpy(res, tmp2, sizeof(tmp2));
-        /* printf("%s %s\n", res[i], res[l2]); */
+        out("tmpprd %s tmpres %s\n", tmp1, res); 
     }
 
     char * p2 = res + mx - 1;
@@ -148,7 +150,6 @@ void intdivbyeleven(char * str)
 int main() 
 {
     char str1[1001];
-    char str2[1011];
 
     while(scanf("%s\n", str1) != EOF) 
     {
@@ -162,8 +163,10 @@ int main()
             continue;
         }
 
+        char str2[1011] = {0};
         int i = 0;
-        while(i <= (l1+1)/2) {
+        int max = (l1 + 1) / 2;
+        while(i <= l1) {
             str2[i++] = '9';
             str2[i++] = '0';
         }
@@ -173,15 +176,15 @@ int main()
 
         char res[2024] = {0};
         int resl = multiplyNumbers(res, str1, l1, str2, l2);
-        /* printf("long res %s  resl %d\n", res, resl); */
+        out("long res %s  resl %d\n", res, resl);
         int shortlen = resl - (l2 + 1);
         res[shortlen]='\0'; /* divide by 10^l2 */
-        /*printf("short res %s  shortlen %d\n", res, shortlen); */
+        out("short res %s  shortlen %d\n", res, shortlen);
         
         char mulres[2024] = {0};
         char eleven[] = "11";
         multiplyNumbers(mulres, res, shortlen, eleven, 2);
-        /*printf("mulres %s vs orig %s\n", mulres, str1); */
+        out("mulres %s vs orig %s\n", mulres, str1);
         if(strcmp(mulres, str1) == 0) {
             printf("%s is a multiple of 11.\n", str1);
         }

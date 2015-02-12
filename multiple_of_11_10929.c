@@ -1,4 +1,12 @@
+/* find if a number is divisible by 11
+ * since it is hard to do division of long numbers, 
+ * and since i had multiplication, i can multiply by 1/11
+ * which is 0.9090909090, and find the quotient
+ * then multiply back with 11 to check if we have a match.
+ */
+
 #include<stdio.h>
+#include <stdlib.h>
 #include<string.h>
 
 /*  567
@@ -84,60 +92,78 @@ void sumNumbers(char * res, char * num1, char * num2)
     *p3 = '\0';
 }
 
-void multiplyNumbers(char * res, char * str1, int l1, char * str2, int l2)
+int multiplyNumbers(char * res, char * str1, int l1, char * str2, int l2)
 {
-        int mx, mn;
-        char *pmx, *pmn;
-        if(l1 > l2) {
-            mx = l1;
-            mn = l2;
-            pmx = str1;
-            pmn = str2;
-        }
-        else {
-            mx = l2;
-            mn = l1;
-            pmx = str2;
-            pmn = str1;
-        }
+    int mx, mn;
+    char *pmx, *pmn;
+    if(l1 > l2) {
+        mx = l1;
+        mn = l2;
+        pmx = str1;
+        pmn = str2;
+    }
+    else {
+        mx = l2;
+        mn = l1;
+        pmx = str2;
+        pmn = str1;
+    }
 
-        char tmp1[2024] = {0};
-        char tmp2[2024] = {0};
+    char tmp1[2024] = {0};
+    char tmp2[2024] = {0};
 
-        int i;
-        for(i = 0; i < mn; i++) {
-            mulDigit(tmp1, pmx, mx, pmn[i], mn - i - 1);
-            sumNumbers(tmp2, res, tmp1);
-            memcpy(res, tmp2, sizeof(tmp2));
-            /* printf("%s %s\n", res[i], res[l2]); */
-        }
+    int i;
+    for(i = 0; i < mn; i++) {
+        mulDigit(tmp1, pmx, mx, pmn[i], mn - i - 1);
+        sumNumbers(tmp2, res, tmp1);
+        memcpy(res, tmp2, sizeof(tmp2));
+        /* printf("%s %s\n", res[i], res[l2]); */
+    }
 
-        char * p = res + mx - 1;
-        while(*p) p++;        /* seek to the end of the string */
-        while(--p >= res) {   /* backwards walk to print string backwards */
-            printf("%c", *p); 
-            *p = '\0'; 
-        }
-        *p = '\0';
-        printf("\n");
+    char * p2 = res + mx - 1;
+    char * p1 = res;
+    while(*p2) p2++;      /* seek to the end of the string */
+    size_t len = p2 - res;
+    while(--p2 > p1) {  /* backwards walk to print string backwards */
+        char tmp = *p1;
+        *p1 = *p2;
+        *p2 = tmp;
+        p1++;
+    }
+    return len;
 }
 
+void intdivbyeleven(char * str)
+{
+    int a = atoi(str);
+    int quotient = a /11;
+    if(quotient * 11 == a) {
+            printf("%s is a multiple of 11.\n", str);
+    }
+    else {
+            printf("%s is not a multiple of 11.\n", str);
+    }
+}
 
 int main() 
 {
     char str1[1001];
     char str2[1011];
-    char res[2024] = {0};
 
     while(scanf("%s\n", str1) != EOF) 
     {
-        if(str1[0] == '0') {
+        int l1 = strlen(str1);
+        if(str1[0] == '0' && l1 == 1) {
             break;
         }
 
-        int l1 = strlen(str1);
+        if(l1 < 8) {
+            intdivbyeleven(str1);
+            continue;
+        }
+
         int i = 0;
-        while(i < l1/2) {
+        while(i <= (l1+1)/2) {
             str2[i++] = '9';
             str2[i++] = '0';
         }
@@ -145,9 +171,23 @@ int main()
         str2[i++] = '1';
         int l2 = i;
 
-        multiplyNumbers(res, str1, l1, str2, l2);
-        printf("%s", res);
-
+        char res[2024] = {0};
+        int resl = multiplyNumbers(res, str1, l1, str2, l2);
+        /* printf("long res %s  resl %d\n", res, resl); */
+        int shortlen = resl - (l2 + 1);
+        res[shortlen]='\0'; /* divide by 10^l2 */
+        /*printf("short res %s  shortlen %d\n", res, shortlen); */
+        
+        char mulres[2024] = {0};
+        char eleven[] = "11";
+        multiplyNumbers(mulres, res, shortlen, eleven, 2);
+        /*printf("mulres %s vs orig %s\n", mulres, str1); */
+        if(strcmp(mulres, str1) == 0) {
+            printf("%s is a multiple of 11.\n", str1);
+        }
+        else {
+            printf("%s is not a multiple of 11.\n", str1);
+        }
     }
 
     return 0;

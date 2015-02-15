@@ -1,43 +1,22 @@
 /*
  * dynamyc programming approach, 
+ * C(0,N) = L (0,N) + min k=0,N-1 { C(0,k) + C(k+1, N) }
+ *
  * 4 6 8 are the cuts, soo 4 2 2 2 are the lengths in that order, so
  * every consecutive sum
- * 4 2 2 2
- * 6 4 4
- * 8 6
- * 10
  *
+ * L: 
  *
- * 4  2  2  2
- * 6  4  4
- * @ = 8 + min(6, 4) = 8 + 4
- *    @ = 6 + min(4,4)   
- *12  10 
- * @ = 10 + min(12,10) = 20
- * 20
+ * 4 6 8 10
+ *   2 4  6
+ *     2  4
+ *        2
  *
- *
- * next example, cuts 2 4 7, lengths 2 2 3 3
- * 0    2  2  3  3
- * 1    4  5  6
- * 2    7  8 
- * 3   10
- *
- * 0   0  0  0  0
- * 1   4  5  6  
- *     @ = 7 + min(4,5) = 7 + 4
- *        @ = 8 + min(5,6) = 8 + 5
- * 2  11 13
- *     @ = 10 + min(11,13,4+6)  = 10 + 10
- * 3  20
- * (NOT 10 + min(11,13) => 21)
- *
- * C[1,0] = 4 + min(C[0,0],C[0,1])
- * C[2,0] = 7 + min(C[1,0],C[1,1]
- * C[3,0] = 10 + min(C[2,0],C[2,1],C[1,0]+C[1,2])
- *
- * 
- * C[4,0] = D[4,0] + min(C[3,0],C[3,1],C[3,2],C[
+ * C:
+ * 0 6 12 20
+ *   0  4 10 
+ *      0  4
+ *         0
  *
  * for(d = 3; d < N; d++)
  *   //find min for this level
@@ -45,33 +24,8 @@
  *     min = MIN(min, C[d-1][i] + ?)
  *   C[d][i] = D[d][i] + min;
  *
- *
- *
- *  3  7  2  8  4 1 
- * 10  9 10 12  5 
- * 12 17 14 13 
- * 20 21 15 
- * 24 22 
- * 25 
  * 
- *
- * previous:
- *
-greedy:
-pick the one that breaks the range closer to half, if you have an ambiguous 
-choice, choose side that has more cuts and items in it (is this correct?).
-
-0......10
-  4 6 8 
-cutting at 4 leaves size 6 cut at 6 or 8, so 10 + 6 + 4
-cutting at 6 however leaves sizes 6 and 4 with, 10 + 6 + 4
-hmm, this looks like dynamic programming, where you join together 
-pieces two at a time:
-
-0....4..6..8...10
-
-*/
-
+ */
 
 
 #include<stdio.h>
@@ -83,12 +37,12 @@ int main()
 {
     int l;
     while(scanf("%d\n", &l) != EOF && l != 0) {
-        assert(l > 0 && l <= 1000);
+        assert(l > 0 && l < 1000);
 
         int n;
         int arr[MAXSZ+3] = {0};  /* array with cuts */
         scanf("%d\n", &n);
-        assert(n > 0 && n <= MAXSZ);
+        assert(n < MAXSZ);
 
         int i = 0;
         int last = 0;
@@ -170,7 +124,7 @@ int main()
         printf("\n"); 
         */
 
-        printf("%d\n", C[0][n]); 
+        printf("The minimum cutting is %d.\n", C[0][n]); 
     }
 
 

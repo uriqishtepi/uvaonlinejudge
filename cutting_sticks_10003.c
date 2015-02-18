@@ -2,7 +2,7 @@
  * dynamyc programming approach, 
  * C(0,N) = L (0,N) + min k=0,N-1 { C(0,k) + C(k+1, N) }
  *
- * 4 6 8 are the cuts, soo 4 2 2 2 are the lengths in that order, so
+ * 4 6 8 are the cuts, so 4 2 2 2 are the lengths in that order, so
  * every consecutive sum
  *
  * L: 
@@ -25,6 +25,26 @@
  *   C[d][i] = D[d][i] + min;
  *
  * 
+ */
+
+
+/* was thinking of having this solved with a greedy approach, by 
+ * cutting piece to location closest to the middle, but 
+ * it won't work because it fails te choose the right path 
+ * when there are two equal alternatives, and you don't know which is 
+ * optimal between the two.
+ *
+ * cuts   = [ 4 6 8 ]
+ * pieces = [ 0 4 6 8 10 ]
+ * dist   = [ 4 2 2 2 ]
+int find_cost(int pieces[], int start, int end)
+{
+    int len = pieces[end] - pieces[start];
+
+    //find pt  closest to midpt, if eq?
+
+    return len;
+}
  */
 
 

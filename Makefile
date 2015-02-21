@@ -1,4 +1,4 @@
-CFLAGS+=-Wall -g
+CFLAGS+=-Wall -g -lm -lcrypt -O2 -pipe -ansi
 
 threaded_example: threaded_example.c
 	$(CC) $< -pthread -std=c99 $(CFLAGS) -o $@

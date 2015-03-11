@@ -33,7 +33,7 @@ int itpowermod(int a, int n)
  *
  * 2^2 % 9 =  4 % 9 = 4
  * 2^4 % 9 = 16 % 9 = 7
- * 2^8 % 9 = 32 % 9 = 5 
+ * 2^8 % 9 =256 % 9 = 4 
  * 7 * 7   = 49 % 9 = 4
  *
  * a=2 n=9 bn=9 sq=2 prod=2
@@ -45,7 +45,6 @@ int itpowermod(int a, int n)
  */
 int powermod(int a, int n)
 {
-    int i;
     int bn = n;
     int prod = 1;
     int sq = a;
@@ -59,25 +58,6 @@ int powermod(int a, int n)
 
     return prod;
 }
-
-/* from other problem */
-int powermodg(int a, int n)
-{
-    int m = n;
-    int p = n;
-    int res = 1; 
-    int ap = a;
-    int power = 1;
-    while(power <= p && power > 0) {
-        if(power & p) {
-            res = (res * ap) % m;
-        }
-        ap = (ap * ap) % m;
-        power <<= 1;
-    }
-    return res;
-}
-
 
 /* fermat's test, if number n satisfies:
  *    a ^ n mod n = a 
@@ -94,9 +74,9 @@ int isCharM(int pa[], int n)
     return 1;
 }
 
-#define MX 2000
+#define MX 8000
 
-int main()
+int find_charms()
 {
     int pa[MX] = {0}; /* primes array */
     int pc = 0; /* primes counter */
@@ -109,7 +89,7 @@ int main()
 
     /* find all primes */
     int i;
-    for(i = 7; i < 6000 && pc < MX; i+=2) {
+    for(i = 7; i < 70000 && pc < MX; i+=2) {
         if(isPrime(pa, i)) 
             pa[pc++] = i;
         else if(isCharM(pa, i)) 
@@ -126,5 +106,21 @@ int main()
     printf("\n");
 
 
+    return 0;
+}
+
+int main() 
+{
+    int Charms[] = {561,1105,1729,2465,2821,6601,8911,10585,15841,29341,41041};
+    int n;
+    while(scanf("%d", &n) != EOF && n != 0) {
+        int i;
+        int found = 0;
+        for(i = 0; i < sizeof(Charms) / sizeof(int); i++) {
+            if(Charms[i] == n) {found = 1; break;}
+        }
+        if(found) printf("The number %d is a Carmichael number.\n",n);
+        else printf("%d is normal.\n",n);
+    }
     return 0;
 }

@@ -51,16 +51,31 @@ int powermod(int a, int n)
     int sq = a;
     do {
         if(bn & 0x1) {
-            prod = (prod * a) % n;
+            prod = (prod * sq) % n;
         }
-        printf("a=%d n=%d bn=%d sq=%d prod=%d\n", a, n, bn, sq, prod);
         sq = (sq * sq) % n;
         bn >>= 1;
     } while(bn > 0);
 
-    printf("a=%d n=%d bn=%d sq=%d prod=%d itpw=%d\n", a, n, bn, sq, prod, itpowermod(a, n));
-    
     return prod;
+}
+
+/* from other problem */
+int powermodg(int a, int n)
+{
+    int m = n;
+    int p = n;
+    int res = 1; 
+    int ap = a;
+    int power = 1;
+    while(power <= p && power > 0) {
+        if(power & p) {
+            res = (res * ap) % m;
+        }
+        ap = (ap * ap) % m;
+        power <<= 1;
+    }
+    return res;
 }
 
 

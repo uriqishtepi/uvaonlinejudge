@@ -10,8 +10,9 @@ int isPrime(int pa[], int n)
     return 1;
 }
 
+
 /* compute a ^ n mod n */
-int powermod(int a, int n)
+int itpowermod(int a, int n)
 {
     int i;
     int prod = 1;
@@ -20,6 +21,48 @@ int powermod(int a, int n)
 
     return prod;
 }
+
+
+/* compute a ^ n mod n 
+ *
+ * a ^ 3 = a^2 * a
+ * a ^ 4 = a^4
+ * a ^ 7 = a^4 * a^2 * a
+ *
+ * 9 => 1001 :  2^9 = 2^8 * 2
+ *
+ * 2^2 % 9 =  4 % 9 = 4
+ * 2^4 % 9 = 16 % 9 = 7
+ * 2^8 % 9 = 32 % 9 = 5 
+ * 7 * 7   = 49 % 9 = 4
+ *
+ * a=2 n=9 bn=9 sq=2 prod=2
+ * a=2 n=9 bn=4 sq=4 prod=2
+ * a=2 n=9 bn=2 sq=7 prod=2
+ * a=2 n=9 bn=1 sq=4 prod=4
+ * a=2 n=9 bn=0 sq=7 prod=4 itpw=8
+ *
+ */
+int powermod(int a, int n)
+{
+    int i;
+    int bn = n;
+    int prod = 1;
+    int sq = a;
+    do {
+        if(bn & 0x1) {
+            prod = (prod * a) % n;
+        }
+        printf("a=%d n=%d bn=%d sq=%d prod=%d\n", a, n, bn, sq, prod);
+        sq = (sq * sq) % n;
+        bn >>= 1;
+    } while(bn > 0);
+
+    printf("a=%d n=%d bn=%d sq=%d prod=%d itpw=%d\n", a, n, bn, sq, prod, itpowermod(a, n));
+    
+    return prod;
+}
+
 
 /* fermat's test, if number n satisfies:
  *    a ^ n mod n = a 

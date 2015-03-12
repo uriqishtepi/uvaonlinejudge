@@ -27,7 +27,7 @@ int main()
     printf("test gcd 3,3 = %d\n", gcd(3,3));
     printf("test gcd 6,3 = %d\n", gcd(6,3)); */
     int m=0, n=0;
-    while(scanf("%d %d\n", &n, &m) != EOF && !(n ==0 && m == 0)) {
+    while(scanf("%d %d", &n, &m) != EOF && !(n ==0 && m == 0)) {
         unsigned long long int res = 1;
         int ni = n;
         int mi = m;

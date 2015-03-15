@@ -15,11 +15,13 @@ int isPrime(int pa[], int n)
 int itpowermod(int a, int n)
 {
     int i;
-    int prod = 1;
-    for(i = 0; i < n; i++)
-        prod = (prod * a) % n;
+    long long int prod = 1;
+    for(i = 0; i < n; i++) {
+        prod = prod * a;
+        prod = prod % n;
+    }
 
-    return prod;
+    return (int) prod;
 }
 
 
@@ -46,8 +48,8 @@ int itpowermod(int a, int n)
 int powermod(int a, int n)
 {
     int bn = n;
-    int prod = 1;
-    int sq = a;
+    long long int prod = 1;
+    long long int sq = a;
     do {
         if(bn & 0x1) {
             prod = (prod * sq) % n;
@@ -56,7 +58,7 @@ int powermod(int a, int n)
         bn >>= 1;
     } while(bn > 0);
 
-    return prod;
+    return (int) prod;
 }
 
 /* fermat's test, if number n satisfies:
@@ -111,7 +113,8 @@ int find_charms()
 
 int main() 
 {
-    int Charms[] = {561,1105,1729,2465,2821,6601,8911,10585,15841,29341,41041};
+    int Charms[] = {
+        561,1105,1729,2465,2821,6601,8911,10585,15841,29341,41041,46657,52633,62745,63973};
     int n;
     while(scanf("%d", &n) != EOF && n != 0) {
         int i;

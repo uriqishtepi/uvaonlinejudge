@@ -2,20 +2,19 @@
 #include<assert.h>
 
 
-int gcd(int a, int b)
+long long int gcd(long long int a, long long int b)
 {
     if(a == 0) return b;
     if(b == 0) return a;
     if(a == 1 || b == 1) return 1;
 
-    int mi = a, ma = b;
+    long long int mi = a, ma = b;
     if(a > b) {
         mi = b;
         ma = a;
     }
 
-    int frac = ma / mi;
-    return gcd (ma - mi*frac, mi);
+    return gcd (ma % mi, mi);
 }
 
 
@@ -33,12 +32,15 @@ int gcd(int a, int b)
  */
 int main()
 {
-    int a, b;
-    while(scanf("%d %d", &a, &b) != EOF && a != 0 && b != 0) {
+    long long int a, b;
+    while(scanf("%lld %lld", &a, &b) != EOF && !(a == 0 && b == 0)) {
         int arr[200] = {1};
+        assert(a >= b);
+        long long int up[2000] = {0};
+        long long int down[2000] = {0};
 
-        int d = (a - b);
-        int mx, mn;
+        long long int d = (a - b);
+        long long int mx, mn;
         if(d > b) {
             mx = d;
             mn = b;
@@ -49,27 +51,28 @@ int main()
         }
         
         int cu = 0;
+        int cd = 0;
         int i;
         for(i = a; i > mx; i--) {
-            arr[i] = i;
+            up[cu++] = i;
         }
         for(i = mn; i > 1; i--) {
-            arr[i] = i;
+            down[cd++] = i;
         }
 
         int j;
-        for(i = mn; i > 1; i--) {
-            int val = arr[i];
-            for (j = a; j > mx && val > 1; j--) {
-                int g = gcd(arr[j], val);
-                val /= g;
-                arr[j] /= g;
+        for(i = 0; i < cd; i++) {
+            long long int dval = down[i];
+            for (j = 0; j < cu && dval > 1; j++) {
+                long long int g = gcd(up[j], dval);
+                dval /= g;
+                up[j] /= g;
             }
-            assert(val == 1);
+            assert(dval == 1);
         }
         unsigned long long tot = 1;
-        for (j = a; j > mx; j--) {
-            tot *= arr[j];
+        for (j = 0; j < cu; j++) {
+            tot *= up[j];
         }
         printf("%lld\n", tot);
     }

@@ -1,20 +1,6 @@
-#include<set>
 #include<stdio.h>
 
 #define MAXP 35000
-#define si std::set<long long int> 
-
-void addAllMults(si & s, int val)
-{
-    si toAdd;
-    toAdd.insert(val);
-    for(si::iterator it = s.begin(); it != s.end(); it++) {
-        toAdd.insert((*it) * val);
-    }
-
-    s.insert(toAdd.begin(), toAdd.end());
-
-}
 
 int main()
 {
@@ -50,27 +36,27 @@ int main()
         int maxcount = 0;
         long long int maxval = 0;
         for(v = u; v <= l; v++) {
-            int count = 1;
-            si s;
+            int currcount = 1;
             long long int val = v;
             for(j = 0; j < fptr; j++) {
+               int pcount = 1;
                int p = primes[j];
                while(val > 1 && (val % p) == 0) {
-                   count++;
+                   pcount++;
                    val /= p;
-                   addAllMults(s, p);
                }
+               currcount *= pcount;
             }
             /* printf("v %lld -> s.sz %d\n", v, s.size()); */
-            if(maxcount < s.size()) {
-                maxcount = s.size();
+            if(maxcount < currcount) {
+                maxcount = currcount;
                 maxval = v;
             }
         }
 
         if(u == 1 && l == 1) { maxval = 1; }
 
-        printf("Between %lld and %lld, %lld has a maximum of %d divisors.\n"            , u, l, maxval, maxcount+1);
+        printf("Between %lld and %lld, %lld has a maximum of %d divisors.\n"            , u, l, maxval, maxcount);
     }
 
     return 0;

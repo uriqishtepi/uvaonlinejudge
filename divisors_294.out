@@ -1,3 +1,9 @@
 Between 1 and 10, 6 has a maximum of 4 divisors.
 Between 1000 and 1000, 1000 has a maximum of 16 divisors.
 Between 999999900 and 1000000000, 999999924 has a maximum of 192 divisors.
+Between 1 and 1, 1 has a maximum of 1 divisors.
+Between 1 and 2, 2 has a maximum of 2 divisors.
+Between 2 and 2, 2 has a maximum of 2 divisors.
+Between 1 and 10000, 7560 has a maximum of 64 divisors.
+Between 1 and 105, 60 has a maximum of 12 divisors.
+Between 103 and 105, 104 has a maximum of 8 divisors.

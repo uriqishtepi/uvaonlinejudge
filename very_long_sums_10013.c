@@ -55,8 +55,6 @@ int main()
     int num = 0;
     scanf("%d", &num);
     while(--num >= 0) {
-        memset(N, 0, sizeof(N));
-
         int digits = 0;
         scanf("%d", &digits);
         int offset = sizeof(N) - 2;
@@ -65,6 +63,7 @@ int main()
             scanf("%d %d", &a, &b);
             /* printf("%d: %d %d\n", digits, a, b); */
             N[offset] = a+'0';
+            N[offset-1] = '\0';
             char addend[2] = {0};
             addend[0] = b+'0';
             /*printf("a "); printBackwards(&N[offset]);printf("\n");*/

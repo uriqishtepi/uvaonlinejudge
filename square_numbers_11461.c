@@ -26,9 +26,11 @@ int main()
     int a, b;
     while( scanf("%d %d", &a, &b) != EOF && !(a == 0 && b == 0)) {
 
+        int add = 0;
         int l1 = binsrch(sq, 0, sc, a);
         int l2 = binsrch(sq, 0, sc, b);
-        printf("%d\n", l2-l1 +1);
+        if(a == 1) add = 1;
+        printf("%d\n", l2-l1 + add);
 
     }
 

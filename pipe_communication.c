@@ -1,4 +1,3 @@
-#include <pthread.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,7 +22,7 @@ int parent_child()
 
     pid_t pid = fork();
     if(-1 == pid) {
-        perror("Opening pipe\n");
+        perror("fork");
         exit(1);
     }
 

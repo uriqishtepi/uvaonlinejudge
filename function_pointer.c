@@ -8,6 +8,10 @@ int blah(int a)
 
 int main()
 {
+    /* can call printf indirectly:  
+     * void (*outFunc)(const char *fmt, ...) = printf;
+     * outFunc("blah\n");
+     */
     int (*fptr)(int) = NULL;
 
     if(fptr == NULL)

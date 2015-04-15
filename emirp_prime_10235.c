@@ -1,6 +1,6 @@
 #include<stdio.h>
 #include<stdlib.h>
-#define MAX 1000
+#define MAX 200
 
 unsigned int arr[MAX+1] = {0};
 int isPrime(int a)
@@ -39,13 +39,13 @@ int lgetRev(int a)
 void printEmirp(int n) 
 {
     if(n == 1) {
-        printf("%d is emirp.\n", n);
+        printf("%d is prime.\n", n);
     }
     else if(!isPrime(n)) 
         printf("%d is not prime.\n", n);
     else {
         int rev = getRev(n);
-        if(isPrime(rev))
+        if(rev != n && isPrime(rev))
             printf("%d is emirp.\n", n);
         else
             printf("%d is prime.\n", n);
@@ -63,13 +63,12 @@ int main()
     int i;
     for (i = 7; pc < MAX; i+=2) {
         if(isPrime(i))  {
-            /*printf("last pc %d arr %d\n", pc, i);*/
+            /* printf("last pc %d arr %d\n", pc, i); */
             arr[pc++] = i;
         }
     }
 
-    for(i = 0; i < MAX*MAX; i++)
-        printEmirp(i);
+    /* for(i = 0; i < 1000000; i++) printEmirp(i);  */
 
     int n;
     while(scanf("%d", &n)!=EOF) {

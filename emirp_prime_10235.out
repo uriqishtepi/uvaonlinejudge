@@ -3,14 +3,38 @@
 19 is prime.
 179 is emirp.
 199 is emirp.
-1 is emirp.
-2 is emirp.
-3 is emirp.
+1 is prime.
+2 is prime.
+3 is prime.
 4 is not prime.
-5 is emirp.
+5 is prime.
 6 is not prime.
-7 is emirp.
+7 is prime.
 8 is not prime.
 9 is not prime.
 10 is not prime.
-11 is emirp.
+11 is prime.
+12 is not prime.
+13 is emirp.
+14 is not prime.
+15 is not prime.
+16 is not prime.
+17 is emirp.
+18 is not prime.
+71 is emirp.
+971 is emirp.
+991 is emirp.
+999999 is not prime.
+999998 is not prime.
+999997 is not prime.
+999996 is not prime.
+999995 is not prime.
+999994 is not prime.
+999993 is not prime.
+999992 is not prime.
+999991 is not prime.
+999990 is not prime.
+999989 is not prime.
+999988 is not prime.
+999987 is not prime.
+1000000 is not prime.

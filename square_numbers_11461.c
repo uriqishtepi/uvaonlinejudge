@@ -20,6 +20,7 @@ int main()
     int sc = 0;
     int i;
     for(i = 0; i*i <= MX; i++) {
+        /* printf("%d: %d\n", i, i*i); */
         sq[sc++] = i*i;
     }
 

@@ -14,7 +14,7 @@ int binsrch(int sq[], int low, int hi, int a)
     if(sq[mid] > a) return binsrch(sq, low, mid, a);
 }
 
-int main()
+int badmain()
 {
     int sq[333] = {0};
     int sc = 0;
@@ -33,6 +33,34 @@ int main()
         if(a == 1) add = 1;
         printf("%d\n", l2-l1 + add);
 
+    }
+
+    return 0;
+}
+
+
+
+int main()
+{
+    int ARR[MX+1] = {0};
+    int sc = 0;
+    int prev = 0;
+    int i = 1;
+    int sq = 1;
+    int j;
+
+    do {
+        for(j = prev; j < sq && j <= MX; j++) {
+            ARR[j] = i-1;           
+        }
+        prev = sq;
+        i++;
+        sq = i*i;     
+    } while (j <= MX);
+
+    int a, b;
+    while( scanf("%d %d", &a, &b) != EOF && !(a == 0 && b == 0)) {
+        printf("%d\n", ARR[b]-ARR[a-1]);
     }
 
     return 0;

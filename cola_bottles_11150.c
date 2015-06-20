@@ -24,12 +24,10 @@ int main()
     for(i=2;i<=200;i++) {
         int rem = i % 2;
         a[i] = a[i-1] + 1 + (!rem);
-        printf("%d %d\n", i, a[i]);
+        /* printf("%d %d\n", i, a[i]); */
     }
-    /*
     int N;
-    while(scanf("%d", &N) != EOF) { printf("%d\n", a[i]); }
-    */
+    while(scanf("%d", &N) != EOF) { printf("%d\n", a[N]); }
 
     return 0;
 }

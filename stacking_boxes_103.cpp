@@ -24,8 +24,9 @@
 bool fits(const vi & a, const vi & b) 
 {
     for(int i = 0; i < (int) a.size(); i++) {
-        if(a[i] > b[i])
+        if(a[i] >= b[i])
             return false;
+        printf("compared %d is less than %d\n", a[i], b[i]);
     }
     return true;
 }
@@ -55,7 +56,7 @@ void printMat(int m[30][30], int lines)
 {   
     for(int i = 0; i < lines; i++) {
         for(int j = 0; j < lines; j++)
-            printf(" %d ", m[j][i]);
+            printf(" %d ", m[i][j]);
         printf(" \n ");
     }
 }
@@ -81,7 +82,7 @@ int main()
                 scanf("%d", &v);
                 slines[i].push_back(v);
             }
-            assert(slines[i].size() == dims);
+            assert((int)slines[i].size() == dims);
             std::sort(slines[i].begin(), slines[i].end(), std::less<int>());
             printVec(slines[i]);
         }
@@ -101,9 +102,10 @@ int main()
         int M[30][30] = {{0}};
         for(int i = 0; i < lines-1; i++) {
             for(int j = i + 1; j < lines; j++) {
-                F[i][j] = fits(slines[j], slines[j]);
+                F[i][j] = fits(slines[i], slines[j]);
             }
         }
+        printf("F: \n"); printMat(F, lines); printf("\n");
             
         for(int i = 0; i < lines; i++) {
             //in seq a b c.. length of fit a b, etc. is one or zero
@@ -130,28 +132,35 @@ int main()
                  0
                  */
 
-        for(int d = 1; d <= lines; d++) { //join d-length subsequences
-            for(int s = 0; s < lines-d; s++) { //start of the subseq
-                int os = s + d;                //start of other subseq
-                int l1 = L[s][d-1];            
-                int l2 = L[os][d-1];
-                if( F[M[s][d-1]][os] ) {
-                    L[s][d] = l1 + l2;
-                    M[s][d] = M[os][d-1];
-                }
-                else if(l1 >= l2) {
-                    L[s][d] = l1;
-                    M[s][d] = M[s][d-1];
-                } else {
-                    L[s][d] = l2;
-                    M[s][d] = M[os][d-1];
-                }
+        for(int d = 2; d <= lines; d++) { //join subseq of length d
+            for(int s = 0; s <= lines-d; s++) { //start of the subseq
+                for(int k = 1; k < d; k++) { //start of the sec subseq
+                    int fl = k-1;             //first supseq length
+                    int ss = s + k;           //start of second subseq
+                    int sl = d - k - 1;       //second supseq length
+                    int l1 = L[s][fl];            
+                    int l2 = L[ss][sl];
 
-                printMat(L, lines); printf("\n");
+printf("d=%d, s=%d, k = %d, fl=%d, ss=%d, sl=%d, l1=%d,l2=%d, F[M[s][fl]][ss] = %d\n", 
+        d,s, k, fl, ss, sl, l1, l2, F[M[s][fl]][ss]);
+                    if( F[M[s][fl]][ss] &&  L[s][d-1] < l1 + l2) {
+                        L[s][d-1] = l1 + l2;
+                        M[s][d-1] = M[ss][sl];
+                    } else if(l1 >= l2 &&  L[s][d-1] < l1) {
+                        L[s][d-1] = l1;
+                        M[s][d-1] = M[s][fl];
+                    } else if ( L[s][d-1] < l2) {
+                        L[s][d-1] = l2;
+                        M[s][d-1] = M[ss][sl];
+                    }
+
+                    printMat(L, lines); printf("\n");
+                    printMat(M, lines); printf("\n");
+                }
             }
         }
 
-        printf("longest %d\n", L[0][lines]);
+        printf("longest %d\n", L[0][lines-1]);
         /* long version:
          a b c -- take a now max el is a          - take b maxel is b
                                                   \ don't take b maxel is a

@@ -15,6 +15,8 @@
 #include <vector>
 #include <algorithm>
 #include <functional>
+#include <iostream>
+#include <iterator>
 #include <stdio.h>
 #include <assert.h>
 
@@ -62,6 +64,21 @@ struct myltcl {
     int _lines;
 };
 
+
+bool mycmprsn(const vi & a, const vi & b)
+{
+    for(int i = 0; i < (int) a.size(); i++) {
+        if(a[i] < b[i])
+            return true;
+        else if(a[i] > b[i]) 
+            return false;
+        //else is equal so next i
+    }
+    return false; //when all are equal
+}
+
+
+
 void printMat(int m[30][30], int lines)
 {   
     for(int i = 0; i < lines; i++) {
@@ -83,6 +100,7 @@ int main()
 {
     int lines, dims;
     while(scanf("%d %d", &lines, &dims) != EOF) {
+        printf("\nNEW:\n");
         assert(lines < 30);
         assert(dims < 10);
         int order[30] = {0}; //use this to order the slines rows
@@ -103,10 +121,13 @@ int main()
         struct myltcl mylt(lines);
         //sort array of sets based on partial ordering
         std::sort(order, order+lines, mylt);
+        //std::sort(slines, slines+lines, mycmprsn);
 
         printf("After sorting:\n");
+        int antiOrder[30] = {0}; //use this to order the slines rows
         for(int i=0; i<lines;i++) {
             printVec(slines[order[i]]);
+            antiOrder[order[i]] = i;
         }
         printf("\n");
 
@@ -114,6 +135,7 @@ int main()
         //fill the fitings
         int L[30][30] = {{0}};
         int M[30][30] = {{0}};
+        vi O[30][30];
         for(int i = 0; i < lines-1; i++) {
             for(int j = i + 1; j < lines; j++) {
                 F[i][j] = fits(slines[order[i]], slines[order[j]]);
@@ -125,6 +147,7 @@ int main()
             //in seq a b c.. length of fit a b, etc. is one or zero
             L[i][0] = 1; //lenigth of a substring of size 1, is 1
             M[i][0] = i; //last (max) in subsecuonce
+            O[i][0].push_back(i);
         }
 
         //L[0][lines] is the answer
@@ -160,12 +183,17 @@ printf("d=%d, s=%d, k = %d, fl=%d, ss=%d, sl=%d, l1=%d,l2=%d, F[M[s][fl]][ss] = 
                     if( F[M[s][fl]][ss] &&  L[s][d-1] < l1 + l2) {
                         L[s][d-1] = l1 + l2;
                         M[s][d-1] = M[ss][sl];
+                        O[s][d-1] = O[s][fl];
+                        std::copy(O[ss][sl].begin(), O[ss][sl].end(), 
+                               back_inserter( O[s][d-1] ));
                     } else if(l1 >= l2 &&  L[s][d-1] < l1) {
                         L[s][d-1] = l1;
                         M[s][d-1] = M[s][fl];
+                        O[s][d-1] = O[s][fl];
                     } else if ( L[s][d-1] < l2) {
                         L[s][d-1] = l2;
                         M[s][d-1] = M[ss][sl];
+                        O[s][d-1] = O[ss][sl];
                     }
 
                     printMat(L, lines); printf("\n");
@@ -175,6 +203,14 @@ printf("d=%d, s=%d, k = %d, fl=%d, ss=%d, sl=%d, l1=%d,l2=%d, F[M[s][fl]][ss] = 
         }
 
         printf("longest %d\n", L[0][lines-1]);
+        printf("order ");
+        for(vi::iterator it = O[0][lines-1].begin(); 
+                it!= O[0][lines-1].end(); ++it ) 
+        { 
+                printf("%d ", antiOrder[ *it ] );
+        }
+        printf("\n");
+        //unwind M
         /* long version:
          a b c -- take a now max el is a          - take b maxel is b
                                                   \ don't take b maxel is a

@@ -31,26 +31,36 @@ bool fits(const vi & a, const vi & b)
     return true;
 }
 
+vi slines[30]; //array of 30 sorted vectors
 
-/* use this for partial ordering:
- *
- * do this for every dimennsion i
- * returns  true if a < b 
- * returns false if a > b
- * in case a == b, investigate next i 
- *
- * */
-bool mylt(const vi & a, const vi & b)
-{
-    for(int i = 0; i < (int) a.size(); i++) {
-        if(a[i] < b[i])
-            return true;
-        else if(a[i] > b[i]) 
-            return false;
-        //else is equal so next i
+struct myltcl {
+    /* use this for partial ordering:
+     *
+     * do this for every dimennsion i
+     * returns  true if a < b 
+     * returns false if a > b
+     * in case a == b, investigate next i 
+     *
+     * */
+
+    bool operator() (int a, int b)
+    {
+        const vi & va = slines[a];
+        const vi & vb = slines[b];
+        for(int i = 0; i < (int) va.size(); i++) {
+            if(va[i] < vb[i])
+                return true;
+            else if(va[i] > vb[i]) 
+                return false;
+            //else is equal so next i
+        }
+        return false; //when all are equal
     }
-    return false; //when all are equal
-}
+
+    myltcl(int lines) : _lines(lines)
+    { }
+    int _lines;
+};
 
 void printMat(int m[30][30], int lines)
 {   
@@ -75,8 +85,9 @@ int main()
     while(scanf("%d %d", &lines, &dims) != EOF) {
         assert(lines < 30);
         assert(dims < 10);
-        vi slines[30]; //array of 30 sorted vectors
+        int order[30] = {0}; //use this to order the slines rows
         for(int i=0; i<lines;i++) {
+            slines[i].clear();
             for(int j = 0; j<dims; j++){
                 int v;
                 scanf("%d", &v);
@@ -85,14 +96,17 @@ int main()
             assert((int)slines[i].size() == dims);
             std::sort(slines[i].begin(), slines[i].end(), std::less<int>());
             printVec(slines[i]);
+
+            order[i] = i;
         }
 
+        struct myltcl mylt(lines);
         //sort array of sets based on partial ordering
-        std::sort(slines, slines+lines, mylt);
+        std::sort(order, order+lines, mylt);
 
         printf("After sorting:\n");
         for(int i=0; i<lines;i++) {
-            printVec(slines[i]);
+            printVec(slines[order[i]]);
         }
         printf("\n");
 
@@ -102,7 +116,7 @@ int main()
         int M[30][30] = {{0}};
         for(int i = 0; i < lines-1; i++) {
             for(int j = i + 1; j < lines; j++) {
-                F[i][j] = fits(slines[i], slines[j]);
+                F[i][j] = fits(slines[order[i]], slines[order[j]]);
             }
         }
         printf("F: \n"); printMat(F, lines); printf("\n");

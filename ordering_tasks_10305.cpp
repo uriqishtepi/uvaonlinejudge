@@ -21,7 +21,6 @@
 #define INSTACK 1
 #define DONE 2
 
-links afters[MAXNODES+1];
 links befores[MAXNODES+1];
 bool firstinline;
 
@@ -36,48 +35,26 @@ void DFS(int node, int visited[])
 
     while(!st.empty()) {
         int curr = st.top();
-        st.pop();
         if(visited[curr] == DONE) continue;
         assert(visited[curr] == INSTACK);
 
-        if(befores[curr].empty()) { //nothing before this node
+        int count = 0;
+        for(links::iterator it = befores[curr].begin(); it != befores[curr].end(); ++it) {
+            //printf("Looking at %d which is before of %d\n", *it, curr);
+            if(visited[*it]) continue;
+            count++;
+            visited[*it] = INSTACK;
+            st.push(*it);
+            //printf("Pusshing %d which is before of %d\n", *it, curr);
+        }
+
+        if(count == 0) {
             printf("%s%d", (firstinline ? "" : " "), curr);
             firstinline = false;
             visited[curr] = DONE;
-        }
-        else {
-            int count = 0;
-            for(links::iterator it = befores[curr].begin(); it != befores[curr].end(); ++it) 
-                if(!visited[*it]) count++;
-
-            if(count > 0) { 
-                st.push(curr); //put it back to process later
-            }
-            else {
-                printf("%s%d", (firstinline ? "" : " "), curr);
-                firstinline = false;
-                visited[curr] = DONE;
-            }
-
-            for(links::iterator it = befores[curr].begin(); it != befores[curr].end(); ++it) {
-                //printf("Looking at %d which is before of %d\n", *it, curr);
-                if(visited[*it]) continue;
-                count++;
-                visited[*it] = INSTACK;
-                st.push(*it);
-                //printf("Pusshing %d which is before of %d\n", *it, curr);
-            }
-
+            st.pop();
         }
     }
-
-    /*
-    for(links::iterator jt = afters[curr].begin(); jt != afters[curr].end(); ++jt) {
-        int prv  = *jt;
-        visited[prv] = INSTACK;
-        sk.push(prv);
-    }
-    */
 }
 
 
@@ -89,13 +66,11 @@ int main()
         int i;
         for(i=0;i<n;i++) {
             befores[i].resize(0);
-            afters[i].resize(0);
         }
         for(i=0;i<m;i++) {
             int one, two;
-            scanf("%d %d", &one, &two); //two must be after one: from one to two
+            scanf("%d %d", &one, &two); //two is be after one: from one to two
             befores[two].push_back(one);//before two is one
-            afters[one].push_back(two); //after one is two
         }
 
         int visited[100] = {0};

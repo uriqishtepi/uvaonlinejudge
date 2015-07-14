@@ -74,27 +74,42 @@ int enqueue(queue *q, int a)
     do 
     {
         //read front/count at once in one variable
-        memcpy(&oldval, &q->param, sizeof(oldval));
-        if(((int*) &oldval)[1] == QMAX) return -1;
-        newval = oldval;
+        //can i rely on memcpy to read in one shot? no, it reads
+        //one byte at atime and that might not be fine at all.
+
+        //memcpy(&oldval, &q->param, sizeof(oldval));
+        //need atomic fetch here:
+        oldval = __atomic_load_n( (long long int *) &(q->param), __ATOMIC_SEQ_CST);
+
+        int front = ((int*) (&oldval)) [0];
+        int count = ((int*) (&oldval)) [1];
+
+        if(count == QMAX) 
+            return -1;
+
+        q->arr[(front + count ) % QMAX] = a;
+        newval = oldval; //make copy, modify the count part
         ((int*) &newval)[1]++;  //count
 
         //printf("old front =%d, count =%d\n", ((int*) (&oldval)) [0], ((int*) (&oldval)) [1]);
 
         //printf("oldorig front =%d, count =%d\n", q->param.front, q->param.count);
-    } while(!__sync_bool_compare_and_swap(((long long int *)&(q->param)), oldval, newval));
+    } while(!__atomic_compare_exchange(((long long int *)&(q->param)), &oldval, &newval, 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST));
     //printf("neworig front =%d, count =%d\n", q->param.front, q->param.count);
-    int front = ((int*) (&oldval)) [0];
-    int count = ((int*) (&oldval)) [1];
-    //change the value of the memory area -- no one else is working on this 
+    /*change the value of the memory area -- no one else is working on this 
+    //this is wrong, what if just after our CAS succeeded, another thread goes in and 
+    //dequeues this element (say there was only one in the queue, 
+    //but we have not assigned the content yet. the assignment has to be 
+    //in the CAS, otherwise there is no guranantee
     q->arr[(front + count ) % QMAX] = a;
+    */
 
-    int inserted = __sync_add_and_fetch(&q->param.inserted, 1);
+    //keep statistics of how many were inserted
+    int inserted = __atomic_add_fetch(&q->param.inserted, 1, __ATOMIC_SEQ_CST);
 
     printf("inserted =%d\n", inserted);
 
-    front = ((int*) (&newval)) [0];
-    count = ((int*) (&newval)) [1];
+    int count = ((int*) (&newval)) [1];
     assert(count >=0 && count <= QMAX);
     //this will not work: assert(q->param.count >=0 && q->param.count <= QMAX);
     return 0;
@@ -104,16 +119,19 @@ int dequeue(queue *q)
 {
     long long int newval;
     long long int oldval;
+    int saved_back;
 
     do {
         //read front/count at once in one variable
-        memcpy(&oldval, &q->param, sizeof(oldval));
+        oldval = __atomic_load_n( (long long int *) &(q->param), __ATOMIC_SEQ_CST);
         if(((int*) &oldval)[1] == 0) return -1;
         newval = oldval;
         if(++ ((int*) &newval)[0] == QMAX) //front
             ((int*) &newval)[0] = 0;
         ((int*) &newval)[1]--;  //count
 
+        int oldfront = ((int*) (&oldval)) [0]; //save value
+        saved_back = q->arr[oldfront];
         //printf("old front =%d, count =%d\n", ((int*) (&oldval)) [0], ((int*) (&oldval)) [1]);
 
         //printf("oldorig front =%d, count =%d\n", q->param.front, q->param.count);
@@ -126,9 +144,7 @@ int dequeue(queue *q)
     int count = ((int*) (&newval)) [1];
     assert(count >=0 && count <= QMAX);
     //this will not work: assert(q->param.count >=0 && q->param.count <= QMAX);
-
-    int oldfront = ((int*) (&oldval)) [0];
-    return q->arr[oldfront];
+    return saved_back; //need saved val, otherwise there's no guarantee
 }
 
 

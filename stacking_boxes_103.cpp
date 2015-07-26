@@ -92,7 +92,7 @@ void printMat(int m[30][30], int lines)
 void printVec(const vi & v)
 {   
     for(vi::const_iterator it = v.begin(); it != v.end(); ++it)
-        printf(" %d ", *it);
+        printf("%d ", *it);
     printf(" \n ");
 }
 
@@ -100,7 +100,6 @@ int main()
 {
     int lines, dims;
     while(scanf("%d %d", &lines, &dims) != EOF) {
-        printf("\nNEW:\n");
         assert(lines < 30);
         assert(dims < 10);
         int order[30] = {0}; //use this to order the slines rows
@@ -118,16 +117,21 @@ int main()
             order[i] = i;
         }
 
+        printf("Before sorting:\n");
+        for(int i=0; i<lines;i++) {
+            printVec(slines[order[i]]);
+        }
+        printf("\n");
+
+
         struct myltcl mylt(lines);
         //sort array of sets based on partial ordering
         std::sort(order, order+lines, mylt);
         //std::sort(slines, slines+lines, mycmprsn);
 
         printf("After sorting:\n");
-        int antiOrder[30] = {0}; //use this to order the slines rows
         for(int i=0; i<lines;i++) {
             printVec(slines[order[i]]);
-            antiOrder[order[i]] = i;
         }
         printf("\n");
 
@@ -147,7 +151,7 @@ int main()
             //in seq a b c.. length of fit a b, etc. is one or zero
             L[i][0] = 1; //lenigth of a substring of size 1, is 1
             M[i][0] = i; //last (max) in subsecuonce
-            O[i][0].push_back(i);
+            O[i][0].push_back(order[i]+1);
         }
 
         //L[0][lines] is the answer
@@ -178,14 +182,26 @@ int main()
                     int l1 = L[s][fl];            
                     int l2 = L[ss][sl];
 
-printf("d=%d, s=%d, k = %d, fl=%d, ss=%d, sl=%d, l1=%d,l2=%d, F[M[s][fl]][ss] = %d\n", 
-        d,s, k, fl, ss, sl, l1, l2, F[M[s][fl]][ss]);
+printf("d=%d, s=%d, k = %d, fl=%d, ss=%d, sl=%d, l1=%d,l2=%d, "
+        "M[s][fl]=%d, F[M[s][fl]][ss] = %d\n", 
+        d,s, k, fl, ss, sl, l1, l2, M[s][fl], F[M[s][fl]][ss]);
+
+printf("part ord1: ");
+std::copy(O[s][fl].begin(), O[s][fl].end(), 
+        std::ostream_iterator<int>(std::cout, " "));
+printf("\n");
+printf("part ord2: ");
+std::copy(O[ss][sl].begin(), O[ss][sl].end(), 
+        std::ostream_iterator<int>(std::cout, " "));
+printf("\n");
+
                     if( F[M[s][fl]][ss] &&  L[s][d-1] < l1 + l2) {
                         L[s][d-1] = l1 + l2;
                         M[s][d-1] = M[ss][sl];
                         O[s][d-1] = O[s][fl];
                         std::copy(O[ss][sl].begin(), O[ss][sl].end(), 
                                back_inserter( O[s][d-1] ));
+
                     } else if(l1 >= l2 &&  L[s][d-1] < l1) {
                         L[s][d-1] = l1;
                         M[s][d-1] = M[s][fl];
@@ -204,11 +220,8 @@ printf("d=%d, s=%d, k = %d, fl=%d, ss=%d, sl=%d, l1=%d,l2=%d, F[M[s][fl]][ss] = 
 
         printf("longest %d\n", L[0][lines-1]);
         printf("order ");
-        for(vi::iterator it = O[0][lines-1].begin(); 
-                it!= O[0][lines-1].end(); ++it ) 
-        { 
-                printf("%d ", antiOrder[ *it ] );
-        }
+        std::copy(O[0][lines-1].begin(), O[0][lines-1].end(), 
+                std::ostream_iterator<int>(std::cout, " "));
         printf("\n");
         //unwind M
         /* long version:

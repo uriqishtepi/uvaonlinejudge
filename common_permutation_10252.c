@@ -16,7 +16,7 @@ void pop_arr(int * arr, char * str) {
 
 int main()
 {
-    char a[256] = {0};
+    char a[1001] = {0};
     char b[1001] = {0};
 
     while( scanf("%s %s", a, b) != EOF) {

@@ -18,7 +18,7 @@
 #define FORL(ii,s,e) for(int ii = s; ii < e; ii++)
 #define THREADNUM 10
 #define THREADID (long long unsigned int) pthread_self()
-#define QMAX 100
+#define QMAX 10
 
 #define MAX_ITEMS 1000
 #define MAX_ROUNDS 2
@@ -40,6 +40,7 @@ struct queue {
     int enqueue_redo;
     int dequeue_redo;
 #endif
+    char locked;
 };
 
 typedef struct queue queue;
@@ -101,25 +102,30 @@ int enqueue(queue *q, long long int el)
 
     //read front/count at once -- queue_param has same size as int
     //long long int tmp = __atomic_load_n( (long long int *) &(q->param), __ATOMIC_SEQ_CST);
-    int tmp;
-    while((tmp = __atomic_exchange_n((int*)&q->param, -1, __ATOMIC_SEQ_CST)) == -1) 
-    {
+    int lastpos;
+
+    do {
+        /* do as much work outside the critical section */
+        oldval = q->param;
+        assert(oldval.count <= QMAX);
+        if(oldval.count == QMAX) {
+            q->param = oldval;
+            return -1;
+        }
+
+        lastpos = (oldval.front + oldval.count ) % QMAX;
+        oldval.count++;
+
 #ifdef DEBUG
         redo++;
 #endif
-    }
 
-    oldval = *((queue_param*) &tmp);
-    assert(oldval.count <= QMAX);
-    if(oldval.count == QMAX) {
-        q->param = oldval;
-        return -1;
-    }
+    } while( __atomic_exchange_n(&q->locked, 1, __ATOMIC_SEQ_CST) == 0) ;
 
-    int lastpos = (oldval.front + oldval.count ) % QMAX;
+    /* the following two lines are the critical section */
     q->arr[lastpos] = el;
-    oldval.count++;
     q->param = oldval;
+    q->locked = 0; //allow other threads to go in
 
     printf("enqueue: tid=%llx, val=%lld, to=%d\n", THREADID, el, lastpos);
     //keep statistics of how many were inserted, add 1 to count
@@ -136,27 +142,27 @@ long long int dequeue(queue *q)
     long long int saved_back;
     int redo = 0;
 
-    int tmp;
-    while((tmp = __atomic_exchange_n((int*)&q->param, -1, __ATOMIC_SEQ_CST)) == -1) 
-    {
+    do {
+        oldval = q->param;
+
+        if(oldval.count == 0) {
+            q->param = oldval;
+            return -1; //queue empy
+        }
+
+        oldval.front++;
+        if( oldval.front == QMAX) 
+            oldval.front = 0;
+        oldval.count--;
 #ifdef DEBUG
         redo++;
 #endif
-    }
+    } while(__atomic_exchange_n(&q->locked, 1, __ATOMIC_SEQ_CST) == 0);
 
-    oldval = *((queue_param*) &tmp);
-    if(oldval.count == 0) {
-        q->param = oldval;
-        return -1; //queue empy
-    }
-
+    /* next two lines are the critical section */
     saved_back = q->arr[oldval.front];
-
-    oldval.front++;
-    if( oldval.front == QMAX) 
-        oldval.front = 0;
-    oldval.count--;
     q->param = oldval;
+    q->locked = 0;
 
     printf("dequeue: tid=%llx, val=%lld, from=%d\n", THREADID, saved_back, oldval.front);
     __atomic_add_fetch(&q->deletes, 1, __ATOMIC_SEQ_CST);

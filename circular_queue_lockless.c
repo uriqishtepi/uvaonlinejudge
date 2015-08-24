@@ -59,6 +59,7 @@ int done = 0;
 void queue_init(queue *q)
 {
     memset(&q->param, 0, sizeof(q->param));
+    q->locked = 0;
     q->inserts = 0;
     q->deletes = 0;
 
@@ -97,34 +98,32 @@ int is_full(queue *q)
 
 int enqueue(queue *q, long long int el)
 {
-    queue_param oldval;
+    queue_param val;
     int redo = 0;
 
     //read front/count at once -- queue_param has same size as int
     //long long int tmp = __atomic_load_n( (long long int *) &(q->param), __ATOMIC_SEQ_CST);
     int lastpos;
 
-    do {
-        /* do as much work outside the critical section */
-        oldval = q->param;
-        assert(oldval.count <= QMAX);
-        if(oldval.count == QMAX) {
-            q->param = oldval;
+    while( __atomic_exchange_n((volatile char*) &q->locked, 1, __ATOMIC_SEQ_CST) == 1) { }
+
+    /* if data has changed, need to redo that work */
+    //if( *(int*) &val != *(int*) &q->param) 
+    {
+        val = q->param;
+        assert(val.count <= QMAX);
+        if(val.count == QMAX) {
+            q->locked = 0; //allow other threads to go in
             return -1;
         }
 
-        lastpos = (oldval.front + oldval.count ) % QMAX;
-        oldval.count++;
-
-#ifdef DEBUG
-        redo++;
-#endif
-
-    } while( __atomic_exchange_n(&q->locked, 1, __ATOMIC_SEQ_CST) == 0) ;
+        lastpos = (val.front + val.count ) % QMAX;
+        val.count++;
+    }
 
     /* the following two lines are the critical section */
     q->arr[lastpos] = el;
-    q->param = oldval;
+    q->param = val;
     q->locked = 0; //allow other threads to go in
 
     printf("enqueue: tid=%llx, val=%lld, to=%d\n", THREADID, el, lastpos);
@@ -138,33 +137,34 @@ int enqueue(queue *q, long long int el)
 
 long long int dequeue(queue *q)
 {
-    queue_param oldval;
+    queue_param val;
     long long int saved_back;
     int redo = 0;
 
-    do {
-        oldval = q->param;
+    while( __atomic_exchange_n((volatile char*) &q->locked, 1, __ATOMIC_SEQ_CST) == 1) { }
 
-        if(oldval.count == 0) {
-            q->param = oldval;
+    /* if data has changed, need to redo that work */
+    //if( *(int*) &val != *(int*) &q->param) 
+    {
+        val = q->param;
+
+        if(val.count == 0) {
+            q->locked = 0; //allow other threads to go in
             return -1; //queue empy
         }
 
-        oldval.front++;
-        if( oldval.front == QMAX) 
-            oldval.front = 0;
-        oldval.count--;
-#ifdef DEBUG
-        redo++;
-#endif
-    } while(__atomic_exchange_n(&q->locked, 1, __ATOMIC_SEQ_CST) == 0);
+        val.front++;
+        if( val.front == QMAX) 
+            val.front = 0;
+        val.count--;
+    }
 
     /* next two lines are the critical section */
-    saved_back = q->arr[oldval.front];
-    q->param = oldval;
+    saved_back = q->arr[q->param.front];
+    q->param = val;
     q->locked = 0;
 
-    printf("dequeue: tid=%llx, val=%lld, from=%d\n", THREADID, saved_back, oldval.front);
+    printf("dequeue: tid=%llx, val=%lld, from=%d\n", THREADID, saved_back, val.front);
     __atomic_add_fetch(&q->deletes, 1, __ATOMIC_SEQ_CST);
 #ifdef DEBUG
     __atomic_add_fetch(&q->dequeue_redo, redo, __ATOMIC_SEQ_CST);
@@ -181,7 +181,7 @@ void * produce_work(void * arg)
     static int round = 0;
     while(!done) {
         int i = __atomic_add_fetch(&counter, 1, __ATOMIC_SEQ_CST);
-        if(i < MAX_ITEMS) {
+        if(i <= MAX_ITEMS) {
             printf("produce_work: tid=%llx, val=%d\n", THREADID, i);
             long long int val = __atomic_exchange_n(&bigarr[i], 1, __ATOMIC_SEQ_CST);
             if(0 != val) printf("Should be 0 but is %lld, i=%d\n", val, i);
@@ -213,7 +213,7 @@ void * consume_work(void * arg)
 
         printf("consume_work: tid=%llx, val=%lld\n", THREADID, val);
         do_some_work(val);
-        if(done) usleep(10);
+        //if(done) usleep(10);
 
         //usleep(1);
     }

@@ -13,19 +13,21 @@
 #include <assert.h>
 #include <sys/time.h>
 #include <time.h>
+#include <unistd.h>
 
 #define FORL(ii,s,e) for(int ii = s; ii < e; ii++)
 #define THREADNUM 10
 #define THREADID (long long unsigned int) pthread_self()
 #define WORKTOBEDONE 100
-#define QMAX 20
+#define QMAX 10
 
 #define MAX_ITEMS 10000000
-#define MAX_ROUNDS 10
+#define MAX_ROUNDS 2
 
 unsigned char * bigarr;
 
 struct queue_param {
+    int version;
     short int front;
     short int count;
 };
@@ -44,7 +46,7 @@ struct queue {
 
 typedef struct queue queue;
 
-void do_some_work(int);
+void do_some_work(long long int);
 
 
 /* circular queue is an array and a front and end pointer
@@ -94,63 +96,72 @@ int is_full(queue *q)
     return(loc == QMAX);
 }
 
-int enqueue(queue *q, int el)
+int enqueue(queue *q, long long int el)
 {
     queue_param newval;
     queue_param oldval;
     int redo = 0;
-
-    do 
-    {
+    int rc;
+    int lastpos;
+    do {
 #ifdef DEBUG
         redo++;
 #endif
         //read front/count at once -- queue_param has same size as int
-        int tmp = __atomic_load_n( (int *) &(q->param), __ATOMIC_SEQ_CST);
+        long long int tmp = __atomic_load_n( (long long int *) &(q->param), __ATOMIC_SEQ_CST);
         oldval = *((queue_param*) &tmp);
         assert(oldval.count <= QMAX);
         if(oldval.count == QMAX) 
             return -1;
 
-        q->arr[(oldval.front + oldval.count ) % QMAX] = el;
-        newval = oldval; //make copy, modify the count part
-        newval.count++;
-    } while(!__atomic_compare_exchange(((queue_param *)&(q->param)), &oldval, &newval, 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST));
+        newval.version = oldval.version + 1;
+        newval.front = oldval.front; 
+        newval.count = oldval.count + 1;
 
+        lastpos = (oldval.front + oldval.count ) % QMAX;
+        q->arr[lastpos] = el;
+        rc = __atomic_compare_exchange(((long long int *)&(q->param)), &oldval, &newval, 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
+    } while(!rc);
+
+    printf("enqueue: tid=%llx, version=%d, val=%lld, to=%d\n", THREADID, oldval.version, el, lastpos);
     //keep statistics of how many were inserted, add 1 to count
-    int inserts = __atomic_add_fetch(&q->inserts, 1, __ATOMIC_SEQ_CST);
+    __atomic_add_fetch(&q->inserts, 1, __ATOMIC_SEQ_CST);
 #ifdef DEBUG
     __atomic_add_fetch(&(q->enqueue_redo), redo, __ATOMIC_SEQ_CST);
 #endif
     return 0;
 }
 
-int dequeue(queue *q)
+long long int dequeue(queue *q)
 {
     queue_param newval;
     queue_param oldval;
-    int saved_back;
+    long long int saved_back;
     int redo = 0;
+    int rc;
 
     do {
 #ifdef DEBUG
         redo++;
 #endif
         //read front/count at once -- queue_param has same size as int
-        int tmp = __atomic_load_n( (int *) &(q->param), __ATOMIC_SEQ_CST);
+        long long int tmp = __atomic_load_n( (long long int *) &(q->param), __ATOMIC_SEQ_CST);
         oldval = *((queue_param*) &tmp);
+        saved_back = q->arr[oldval.front];
 
         if(oldval.count == 0) return -1; //queue empy
 
-        newval = oldval;
-        if( ++newval.front == QMAX) 
+        newval.version = oldval.version + 1;
+        newval.front = oldval.front + 1;
+        if( newval.front == QMAX) 
             newval.front = 0;
-        newval.count--;  
+        newval.count = oldval.count - 1;  
 
-        saved_back = q->arr[oldval.front];
-    } while(!__atomic_compare_exchange(((queue_param *)&(q->param)), &oldval, &newval, 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST));
+        rc = __atomic_compare_exchange(((long long int *)&(q->param)), &oldval, &newval, 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
+    } while(!rc);
 
-    int deletes = __sync_add_and_fetch(&q->deletes, 1);
+    printf("dequeue: tid=%llx, version=%d, val=%lld, from=%d\n", THREADID, oldval.version, saved_back, oldval.front);
+    __atomic_add_fetch(&q->deletes, 1, __ATOMIC_SEQ_CST);
 #ifdef DEBUG
     __atomic_add_fetch(&q->dequeue_redo, redo, __ATOMIC_SEQ_CST);
 #endif
@@ -167,20 +178,22 @@ void * produce_work(void * arg)
     while(!done) {
         int i = __atomic_add_fetch(&counter, 1, __ATOMIC_SEQ_CST);
         if(i < MAX_ITEMS) {
-            bigarr[i] = 1;
-            enqueue(q, i);
+            printf("produce_work: tid=%llx, val=%d\n", THREADID, i);
+            long long int val = __atomic_exchange_n(&bigarr[i], 1, __ATOMIC_SEQ_CST);
+            if(0 != val) printf("Should be 0 but is %lld, i=%d\n", val, i);
+            assert(0 == val); 
+            while( enqueue(q, i) != 0) {}
         }
         else {
             int zero = 0;
             int res = __atomic_compare_exchange(&counter, &i, &zero, 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
             if(res) { //we were the winner thread to perform change
-                if(round++ > MAX_ROUNDS) 
+                if(++round >= MAX_ROUNDS) 
                     done = 1;
             }
             printf("reseting to zero: tid=%llx, res=%d\n", THREADID, res);
         }
-        //printf("produce_work: tid=%llx, val=%d\n", THREADID, val);
-        //usleep(1000*10);
+        //usleep(1);
     }
     return NULL;
 }
@@ -189,15 +202,16 @@ void * produce_work(void * arg)
 void * consume_work(void * arg)
 {
     queue *q = (queue *) arg;
-    int val = 0;
+    long long int val = 0;
     while(val >= 0 || !done) {
         val = dequeue(q);
         if(val < 0) continue;
 
-        //printf("consume_work: tid=%llx, val=%d\n", THREADID, val);
+        printf("consume_work: tid=%llx, val=%lld\n", THREADID, val);
         do_some_work(val);
-        if(done)
-            usleep(10);
+        //if(done) usleep(10);
+
+        //usleep(1);
     }
     return NULL;
 }
@@ -217,7 +231,7 @@ void test_q(queue *q)
     assert(is_empty(q) == 1);
     enqueue(q, 1);
     assert(is_empty(q) == 0);
-    int val = dequeue(q);
+    long long int val = dequeue(q);
     assert(val == 1);
     assert(is_empty(q) == 1);
 
@@ -225,7 +239,7 @@ void test_q(queue *q)
         assert(is_empty(q) == 1);
         enqueue(q, i);
         assert(is_empty(q) == 0);
-        int val = dequeue(q);
+        long long int val = dequeue(q);
         assert(val == i);
     }
     assert(is_empty(q) == 1);
@@ -235,7 +249,7 @@ void test_q(queue *q)
         assert((i < QMAX && val == 0) || (i >= QMAX && val == -1));
     }
     for(int i = 0; i < 30; i++) {
-        int val = dequeue(q);
+        long long int val = dequeue(q);
         assert((i < QMAX && val == i) || (i >= QMAX && val == -1));
     }
 }
@@ -270,25 +284,30 @@ void multithreaded_test()
 
 int main()
 {
+    /*
     {
     queue q0;
     queue_init(&q0);
     test_q(&q0);
-    }
+    } */
 
     multithreaded_test();
 
     return 0;
 }
 
-void do_some_work(int a)
+void do_some_work(long long int val)
 {
     //printf("Doing Work tid=%llx a=%d\n", THREADID, a);
 
     //struct timespec smalltime = { .tv_sec = 0, .tv_nsec = 1 };
-    //nanosleep(smalltime);
+    //nanosleep(&smalltime, NULL);
+    //usleep(100);
 
-    int val = 2; //will put 2
-    __atomic_exchange_n(&val, bigarr[a], __ATOMIC_SEQ_CST);
-    assert(1 == val); //what we read should be 1
+    int tmp = __atomic_exchange_n(&bigarr[val], 2, __ATOMIC_SEQ_CST);
+    if(1 != tmp) printf("Should be 1 but is %d, val=%lld\n", tmp, val);
+    assert(1 == tmp); //what we read should be 1
+    tmp = __atomic_exchange_n(&bigarr[val], 0, __ATOMIC_SEQ_CST);
+    if(2 != tmp) printf("Should be 2 but is %d, val=%lld\n", tmp, val);
+    assert(2 == tmp); //what we read should be 2
 }

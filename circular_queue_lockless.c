@@ -18,16 +18,14 @@
 #define FORL(ii,s,e) for(int ii = s; ii < e; ii++)
 #define THREADNUM 10
 #define THREADID (long long unsigned int) pthread_self()
-#define WORKTOBEDONE 100
-#define QMAX 10
+#define QMAX 100
 
-#define MAX_ITEMS 10000000
+#define MAX_ITEMS 1000
 #define MAX_ROUNDS 2
 
 unsigned char * bigarr;
 
 struct queue_param {
-    int version;
     short int front;
     short int count;
 };
@@ -98,32 +96,32 @@ int is_full(queue *q)
 
 int enqueue(queue *q, long long int el)
 {
-    queue_param newval;
     queue_param oldval;
     int redo = 0;
-    int rc;
-    int lastpos;
-    do {
+
+    //read front/count at once -- queue_param has same size as int
+    //long long int tmp = __atomic_load_n( (long long int *) &(q->param), __ATOMIC_SEQ_CST);
+    int tmp;
+    while((tmp = __atomic_exchange_n((int*)&q->param, -1, __ATOMIC_SEQ_CST)) == -1) 
+    {
 #ifdef DEBUG
         redo++;
 #endif
-        //read front/count at once -- queue_param has same size as int
-        long long int tmp = __atomic_load_n( (long long int *) &(q->param), __ATOMIC_SEQ_CST);
-        oldval = *((queue_param*) &tmp);
-        assert(oldval.count <= QMAX);
-        if(oldval.count == QMAX) 
-            return -1;
+    }
 
-        newval.version = oldval.version + 1;
-        newval.front = oldval.front; 
-        newval.count = oldval.count + 1;
+    oldval = *((queue_param*) &tmp);
+    assert(oldval.count <= QMAX);
+    if(oldval.count == QMAX) {
+        q->param = oldval;
+        return -1;
+    }
 
-        lastpos = (oldval.front + oldval.count ) % QMAX;
-        q->arr[lastpos] = el;
-        rc = __atomic_compare_exchange(((long long int *)&(q->param)), &oldval, &newval, 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
-    } while(!rc);
+    int lastpos = (oldval.front + oldval.count ) % QMAX;
+    q->arr[lastpos] = el;
+    oldval.count++;
+    q->param = oldval;
 
-    printf("enqueue: tid=%llx, version=%d, val=%lld, to=%d\n", THREADID, oldval.version, el, lastpos);
+    printf("enqueue: tid=%llx, val=%lld, to=%d\n", THREADID, el, lastpos);
     //keep statistics of how many were inserted, add 1 to count
     __atomic_add_fetch(&q->inserts, 1, __ATOMIC_SEQ_CST);
 #ifdef DEBUG
@@ -134,33 +132,33 @@ int enqueue(queue *q, long long int el)
 
 long long int dequeue(queue *q)
 {
-    queue_param newval;
     queue_param oldval;
     long long int saved_back;
     int redo = 0;
-    int rc;
 
-    do {
+    int tmp;
+    while((tmp = __atomic_exchange_n((int*)&q->param, -1, __ATOMIC_SEQ_CST)) == -1) 
+    {
 #ifdef DEBUG
         redo++;
 #endif
-        //read front/count at once -- queue_param has same size as int
-        long long int tmp = __atomic_load_n( (long long int *) &(q->param), __ATOMIC_SEQ_CST);
-        oldval = *((queue_param*) &tmp);
-        saved_back = q->arr[oldval.front];
+    }
 
-        if(oldval.count == 0) return -1; //queue empy
+    oldval = *((queue_param*) &tmp);
+    if(oldval.count == 0) {
+        q->param = oldval;
+        return -1; //queue empy
+    }
 
-        newval.version = oldval.version + 1;
-        newval.front = oldval.front + 1;
-        if( newval.front == QMAX) 
-            newval.front = 0;
-        newval.count = oldval.count - 1;  
+    saved_back = q->arr[oldval.front];
 
-        rc = __atomic_compare_exchange(((long long int *)&(q->param)), &oldval, &newval, 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
-    } while(!rc);
+    oldval.front++;
+    if( oldval.front == QMAX) 
+        oldval.front = 0;
+    oldval.count--;
+    q->param = oldval;
 
-    printf("dequeue: tid=%llx, version=%d, val=%lld, from=%d\n", THREADID, oldval.version, saved_back, oldval.front);
+    printf("dequeue: tid=%llx, val=%lld, from=%d\n", THREADID, saved_back, oldval.front);
     __atomic_add_fetch(&q->deletes, 1, __ATOMIC_SEQ_CST);
 #ifdef DEBUG
     __atomic_add_fetch(&q->dequeue_redo, redo, __ATOMIC_SEQ_CST);
@@ -209,7 +207,7 @@ void * consume_work(void * arg)
 
         printf("consume_work: tid=%llx, val=%lld\n", THREADID, val);
         do_some_work(val);
-        //if(done) usleep(10);
+        if(done) usleep(10);
 
         //usleep(1);
     }
@@ -302,7 +300,7 @@ void do_some_work(long long int val)
 
     //struct timespec smalltime = { .tv_sec = 0, .tv_nsec = 1 };
     //nanosleep(&smalltime, NULL);
-    //usleep(100);
+    //usleep(10);
 
     int tmp = __atomic_exchange_n(&bigarr[val], 2, __ATOMIC_SEQ_CST);
     if(1 != tmp) printf("Should be 1 but is %d, val=%lld\n", tmp, val);

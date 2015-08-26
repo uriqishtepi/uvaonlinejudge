@@ -102,8 +102,6 @@ int enqueue(queue *q, long long int el)
     queue_param newparam;
     int redo = 0;
 
-    //read front/count at once -- queue_param has same size as int
-    //long long int tmp = __atomic_load_n( (long long int *) &(q->param), __ATOMIC_SEQ_CST);
     int lastpos;
     do {
         oldparam = newparam = q->param;

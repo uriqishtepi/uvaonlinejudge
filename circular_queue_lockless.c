@@ -1,10 +1,21 @@
-/* this example builds a circular queue and uses conditional variable
- * and a mutex to guard the critical section inside the mutex. 
- * If the queue is full, the producers wait until they receive a msg
- * that there is room in the queue. If the queue is empty the consumers 
- * sleep until they receive a signal that there is something in the queue
- * This way cpu does not get occupied in spinning but rather in doing 
- * useful work.
+/* this example builds a circular queue and uses lockfree method
+ * to guard the critical section where the queue parameters are modified.
+ * We use a global variable as a lock, set it to one via testandset and
+ * if successful we have lock and proceed into the critical section.
+ * To unlock just set it to zero. Before critical section we do much
+ * of the work optimistically, so that we will be for a very short time
+ * inside the section. The advantage of this approach is that we don't 
+ * make an OS call to lock mutex. The disadvantage is that if there is
+ * a lot of contention, this will be slower than using a mutex due to
+ * the fact that we do a lot of the work before finding out that we did
+ * not get the lock. If there is a lot of contention, maybe we can 
+ * simply deferr all the work after testandset.
+ *
+ * If the queue is full, return fail upon insert, and if the queue is empty
+ * return -1 upon pop.
+ * The do some work portion is built to test the validity of the algorithm
+ * by making sure that we dont pop the same location more than once, and 
+ * that we visit all numbers up to max.
  */
 #include <pthread.h>
 #include <stdio.h>
@@ -205,12 +216,19 @@ void * produce_work(void * arg)
         }
         else {
             int zero = 0;
+            //reset counter to zero, starting over -- multiple threads will attempt to do this
             int res = __atomic_compare_exchange(&counter, &i, &zero, 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
             if(res) { //we were the winner thread to perform change
+                for(int j=0; j<MAX_ITEMS) {
+                    int tmp = __atomic_exchange_n(&bigarr[j], 0, __ATOMIC_SEQ_CST);
+                    if(2 != tmp) printf("Should be 2 but is %d, val=%lld\n", tmp, val);
+                    assert(2 == tmp); //what we read should be 2
+                }
                 if(++round >= MAX_ROUNDS) 
                     done = 1;
+                else
+                    printf("reseting to zero: tid=%llx, res=%d\n", THREADID, res);
             }
-            printf("reseting to zero: tid=%llx, res=%d\n", THREADID, res);
         }
         //usleep(1);
     }
@@ -326,7 +344,4 @@ void do_some_work(long long int val)
     int tmp = __atomic_exchange_n(&bigarr[val], 2, __ATOMIC_SEQ_CST);
     if(1 != tmp) printf("Should be 1 but is %d, val=%lld\n", tmp, val);
     assert(1 == tmp); //what we read should be 1
-    tmp = __atomic_exchange_n(&bigarr[val], 0, __ATOMIC_SEQ_CST);
-    if(2 != tmp) printf("Should be 2 but is %d, val=%lld\n", tmp, val);
-    assert(2 == tmp); //what we read should be 2
 }

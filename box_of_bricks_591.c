@@ -6,7 +6,7 @@ int main()
     int h[50];
     int items = 0;
     while( scanf("%d ", &n) && n != 0) {
-        assert(n <= 50);
+        assert(n <= 50 || (printf("Num items can not be %d\n",n) && 0) );
         items++;
         int i;
         int sum = 0;

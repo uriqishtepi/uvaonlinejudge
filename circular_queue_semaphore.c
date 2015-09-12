@@ -1,6 +1,6 @@
-/* this example builds a circular queue and uses conditional variable
- * and a mutex to guard the critical section inside the mutex. 
- * If the queue is full, the producers wait until they receive a msg
+/* this example builds a circular queue and uses a semaphore
+ * to guard the critical section inside the mutex. 
+ * If the queue is full, the producers sem_wait until they receive a msg
  * that there is room in the queue. If the queue is empty the consumers 
  * sleep until they receive a signal that there is something in the queue
  * This way cpu does not get occupied in spinning but rather in doing 
@@ -90,8 +90,8 @@ int enqueue(queue *q, int a)
     q->inserted++;
 
     assert(q->count >=0 && q->count <= QMAX);
-    pthread_mutex_unlock(&q->mutex);
     pthread_cond_signal(&q->consume_more);
+    pthread_mutex_unlock(&q->mutex);
     return 0;
 }
 
@@ -108,8 +108,8 @@ int dequeue(queue *q)
     q->count--;
     q->deleted++;
     assert(q->count >=0 && q->count <= QMAX);
-    pthread_mutex_unlock(&q->mutex);
     pthread_cond_signal(&q->produce_more);
+    pthread_mutex_unlock(&q->mutex);
     return q->arr[oldfront];
 }
 

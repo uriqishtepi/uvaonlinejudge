@@ -27,8 +27,7 @@ struct queue {
     int inserted;
     int deleted;
     pthread_mutex_t mutex;
-    pthread_cond_t produce_more;
-    pthread_cond_t consume_more;
+    pthread_cond_t produce_or_consume;
 };
 
 typedef struct queue queue;
@@ -47,8 +46,7 @@ int done = 0;
 void queue_init(queue *q)
 {
     pthread_mutex_init(&q->mutex, NULL);
-    pthread_cond_init(&q->produce_more, NULL);
-    pthread_cond_init(&q->consume_more, NULL);
+    pthread_cond_init(&q->produce_or_consume, NULL);
 
     q->front = 0;
     q->count = 0;
@@ -82,7 +80,7 @@ int enqueue(queue *q, int a)
 
     int rc = 0;
     while(q->count == QMAX && rc == 0) {
-        rc = pthread_cond_wait(&q->produce_more, &q->mutex);
+        rc = pthread_cond_wait(&q->produce_or_consume, &q->mutex);
     }
     
     q->arr[(q->front + q->count ) % QMAX] = a;
@@ -90,8 +88,8 @@ int enqueue(queue *q, int a)
     q->inserted++;
 
     assert(q->count >=0 && q->count <= QMAX);
+    pthread_cond_signal(&q->produce_or_consume);
     pthread_mutex_unlock(&q->mutex);
-    pthread_cond_signal(&q->consume_more);
     return 0;
 }
 
@@ -100,7 +98,7 @@ int dequeue(queue *q)
     pthread_mutex_lock(&q->mutex);
     int rc = 0;
     while(q->count == 0 && rc == 0) {
-        rc = pthread_cond_wait(&q->consume_more, &q->mutex);
+        rc = pthread_cond_wait(&q->produce_or_consume, &q->mutex);
     }
     int oldfront = q->front;
     if(++q->front == QMAX)
@@ -108,8 +106,8 @@ int dequeue(queue *q)
     q->count--;
     q->deleted++;
     assert(q->count >=0 && q->count <= QMAX);
+    pthread_cond_signal(&q->produce_or_consume);
     pthread_mutex_unlock(&q->mutex);
-    pthread_cond_signal(&q->produce_more);
     return q->arr[oldfront];
 }
 

@@ -44,7 +44,7 @@ void do_some_work(int);
 
 int done = 0;
 
-int queue_init(queue *q)
+void queue_init(queue *q)
 {
     pthread_mutex_init(&q->mutex, NULL);
     pthread_cond_init(&q->produce_more, NULL);
@@ -106,8 +106,37 @@ int dequeue(queue *q)
     q->count--;
     q->deleted++;
     assert(q->count >=0 && q->count <= QMAX);
+    int savedval = q->arr[oldfront];
     pthread_mutex_unlock(&q->mutex);
-    return q->arr[oldfront];
+    return savedval;
+}
+
+void * produce_work(void * arg)
+{
+    queue *q = (queue *) arg;
+    while(!done) {
+        if(!is_full(q)) {
+            int val = rand();
+            enqueue(q, val);
+            //printf("produce_work: tid=%llx, val=%d\n", THREADID, val);
+        }
+        //usleep(1000*10);
+    }
+    return NULL;
+}
+
+void * consume_work(void * arg)
+{
+    queue *q = (queue *) arg;
+    while(!done) {
+        int val = dequeue(q);
+        //printf("consume_work: tid=%llx, val=%d\n", THREADID, val);
+        if(val >= 0) {
+            do_some_work(val);
+        }
+        //usleep(1000*10);
+    }
+    return NULL;
 }
 
 
@@ -140,34 +169,6 @@ void test_q(queue *q)
 }
 
 
-void * produce_work(void * arg)
-{
-    queue *q = (queue *) arg;
-    while(!done) {
-        if(!is_full(q)) {
-            int val = rand();
-            enqueue(q, val);
-            //printf("produce_work: tid=%llx, val=%d\n", THREADID, val);
-        }
-        //usleep(1000*10);
-    }
-    return NULL;
-}
-
-void * consume_work(void * arg)
-{
-    queue *q = (queue *) arg;
-    while(!done) {
-        int val = dequeue(q);
-        //printf("consume_work: tid=%llx, val=%d\n", THREADID, val);
-        if(val >= 0) {
-            do_some_work(val);
-        }
-        //usleep(1000*10);
-    }
-    return NULL;
-}
-
 int main()
 {
     struct timeval now;
@@ -188,7 +189,7 @@ int main()
         pthread_create(&thv[i], NULL, consume_work, &q);
     }
 
-    FORL(j, 0, 2*THREADNUM) {
+    FORL(j, 0, 2*THREADNUM-1) {
         void *val;
         pthread_join(thv[j], &val);
     }

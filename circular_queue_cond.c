@@ -104,8 +104,8 @@ int enqueue(queue *q, int a)
     assert(q->count >=0 && q->count <= QMAX);
     printf("enquey UNLOCK: tid=%llx, val=%d,q->count=%d\n", THREADID, a, q->count);
 
-    pthread_cond_signal(&q->consume_more);
     pthread_mutex_unlock(&q->mutex);
+    pthread_cond_signal(&q->consume_more);
     return 0;
 }
 
@@ -128,10 +128,11 @@ int dequeue(queue *q)
     q->deleted++;
     assert(q->count >=0 && q->count <= QMAX);
     int savedval = q->arr[oldfront];
-    printf("denquey UNLOCK: tid=%llx, savedval=%d,q->count=%d\n", THREADID, savedval, q->count);
+    int savedcount = q->count;
 
-    pthread_cond_signal(&q->produce_more);
     pthread_mutex_unlock(&q->mutex);
+    pthread_cond_signal(&q->produce_more);
+    printf("denquey UNLOCK: tid=%llx, savedval=%d,q->count=%d\n", THREADID, savedval, savedcount);
     return savedval;
 }
 
@@ -145,10 +146,10 @@ void * produce_work(void * arg)
         pthread_mutex_unlock(&gbl_val_mutex);
         if(gbl_exit) break;
         if(i <= MAX_ITEMS) {
-            int val = bigarr[i];
+            int tmp = bigarr[i];
             bigarr[i] = 1;
-            if(0 != val) printf("Should be 0 but is %d, i=%d\n", val, i);
-            assert(0 == val); 
+            if(0 != tmp) printf("Should be 0 but is %d, i=%d\n", tmp, i);
+            assert(0 == tmp); 
             enqueue(q, i);
             usleep(1);
         }
@@ -164,7 +165,7 @@ void * produce_work(void * arg)
             }
             if(++round >= MAX_ROUNDS) {
                 gbl_exit = 1;
-                pthread_cond_broadcast(&q->consume_more);
+                pthread_cond_broadcast(&q->consume_more); //broadcast to have them exit
                 pthread_cond_broadcast(&q->produce_more);
             }
             else
@@ -248,6 +249,7 @@ int main()
     FORL(i, 0, THREADNUM) {
         pthread_cancel(thv[THREADNUM+i]);
     }
+    free (bigarr);
     return 0;
 }
 

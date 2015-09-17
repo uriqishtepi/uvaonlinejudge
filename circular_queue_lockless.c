@@ -321,6 +321,7 @@ void multithreaded_test()
     }
 
     queue_stats(&q);
+    free (bigarr);
 }
 
 int main()

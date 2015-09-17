@@ -17,6 +17,8 @@
 #define THREADID (long long unsigned int) pthread_self()
 #define WORKTOBEDONE 100
 #define QMAX 20
+#define MAX_ITEMS 1000
+#define MAX_ROUNDS 2
 
 struct queue {
     int a;
@@ -27,8 +29,6 @@ struct queue {
     int inserted;
     int deleted;
     pthread_mutex_t mutex;
-    pthread_cond_t produce_more;
-    pthread_cond_t consume_more;
 };
 
 typedef struct queue queue;
@@ -42,13 +42,14 @@ void do_some_work(int);
  */
 
 
-int done = 0;
+unsigned char * bigarr;
+int gbl_exit = 0;
+int gbl_val = 0;
+    pthread_mutex_t gbl_val_mutex;
 
 void queue_init(queue *q)
 {
     pthread_mutex_init(&q->mutex, NULL);
-    pthread_cond_init(&q->produce_more, NULL);
-    pthread_cond_init(&q->consume_more, NULL);
 
     q->front = 0;
     q->count = 0;
@@ -79,10 +80,11 @@ int is_full(queue *q)
 int enqueue(queue *q, int a)
 {
     pthread_mutex_lock(&q->mutex);
-    if(q->count == QMAX) {
+    if(q->count == QMAX || gbl_exit) {
         pthread_mutex_unlock(&q->mutex);
         return -1;
     }
+    printf("enqueue LOCK: tid=%llx, val=%d\n", THREADID, a);
     
     q->arr[(q->front + q->count ) % QMAX] = a;
     q->count++;
@@ -93,10 +95,10 @@ int enqueue(queue *q, int a)
     return 0;
 }
 
-int dequeue(queue *q)
+int dequeue(queue *q, int * val)
 {
     pthread_mutex_lock(&q->mutex);
-    if(q->count == 0) {
+    if(q->count == 0 || gbl_exit) {
         pthread_mutex_unlock(&q->mutex);
         return -1;
     }
@@ -106,21 +108,49 @@ int dequeue(queue *q)
     q->count--;
     q->deleted++;
     assert(q->count >=0 && q->count <= QMAX);
-    int savedval = q->arr[oldfront];
+    *val = q->arr[oldfront];
+    int savedcount = q->count;
     pthread_mutex_unlock(&q->mutex);
-    return savedval;
+    printf("denquey UNLOCK: tid=%llx, val=%d,q->count=%d\n", THREADID, *val, savedcount);
+    return 0;
 }
 
 void * produce_work(void * arg)
 {
     queue *q = (queue *) arg;
-    while(!done) {
-        if(!is_full(q)) {
-            int val = rand();
-            enqueue(q, val);
-            //printf("produce_work: tid=%llx, val=%d\n", THREADID, val);
+    static int round = 0;
+    while(!gbl_exit) {
+        pthread_mutex_lock(&gbl_val_mutex);
+        int i = gbl_val++;
+        pthread_mutex_unlock(&gbl_val_mutex);
+        if(gbl_exit) break;
+        if(i < MAX_ITEMS) {
+            int tmp = bigarr[i];
+            bigarr[i] = 1;
+            if(0 != tmp) printf("Should be 0 but is %d, i=%d\n", tmp, i);
+            assert(0 == tmp); 
+            while(enqueue(q, i) == -1 && !gbl_exit) { } //retry
+            usleep(1);
         }
-        //usleep(1000*10);
+        else if(i == MAX_ITEMS) {
+            usleep(10000); //give a chance to others to finish
+            for(int j=0; j<MAX_ITEMS; j++) {
+                int tmp = bigarr[j];
+                bigarr[j] = 0;
+                if(2 != tmp) printf("Should be 2 but is %d, j=%d\n", tmp, j);
+                assert(2 == tmp); //what we read should be 2
+            }
+            if(++round >= MAX_ROUNDS) {
+                gbl_exit = 1;
+            }
+            else
+                printf("reseting to zero: tid=%llx\n", THREADID);
+
+            pthread_mutex_lock(&gbl_val_mutex);
+            gbl_val =0;
+            pthread_mutex_unlock(&gbl_val_mutex);
+        }
+        else usleep(10000);
     }
     return NULL;
 }
@@ -128,13 +158,15 @@ void * produce_work(void * arg)
 void * consume_work(void * arg)
 {
     queue *q = (queue *) arg;
-    while(!done) {
-        int val = dequeue(q);
-        //printf("consume_work: tid=%llx, val=%d\n", THREADID, val);
-        if(val >= 0) {
+    int val;
+    int rc = dequeue(q, &val);
+    while(!gbl_exit) {
+        if(rc == 0) { 
+            printf("consume_work: tid=%llx, val=%d\n", THREADID, val);
             do_some_work(val);
         }
-        //usleep(1000*10);
+        else usleep(100);
+        rc = dequeue(q, &val);
     }
     return NULL;
 }
@@ -145,7 +177,8 @@ void test_q(queue *q)
     assert(is_empty(q) == 1);
     enqueue(q, 1);
     assert(is_empty(q) == 0);
-    int val = dequeue(q);
+    int val;
+    int rc = dequeue(q, &val);
     assert(val == 1);
     assert(is_empty(q) == 1);
 
@@ -153,8 +186,8 @@ void test_q(queue *q)
         assert(is_empty(q) == 1);
         enqueue(q, i);
         assert(is_empty(q) == 0);
-        int val = dequeue(q);
-        assert(val == i);
+        int rc = dequeue(q, &val);
+        assert(rc == 0 && val == i);
     }
     assert(is_empty(q) == 1);
     
@@ -163,8 +196,8 @@ void test_q(queue *q)
         assert((i < QMAX && val == 0) || (i >= QMAX && val == -1));
     }
     for(int i = 0; i < 30; i++) {
-        int val = dequeue(q);
-        assert((i < QMAX && val == i) || (i >= QMAX && val == -1));
+        int rc = dequeue(q, &val);
+        assert((i < QMAX && val == i) || (i >= QMAX && rc == -1));
     }
 }
 
@@ -179,6 +212,8 @@ int main()
     pthread_t thv[2*THREADNUM];
     queue q;
     queue_init(&q);
+    bigarr = calloc(MAX_ITEMS+1, 1);
+    pthread_mutex_init(&gbl_val_mutex, NULL);
     //test_q(&q);
 
     FORL(i, 0, THREADNUM) {
@@ -186,18 +221,22 @@ int main()
     }
     
     FORL(i, 0, THREADNUM) {
-        pthread_create(&thv[i], NULL, consume_work, &q);
+        pthread_create(&thv[THREADNUM+i], NULL, consume_work, &q);
     }
 
     FORL(j, 0, 2*THREADNUM-1) {
-        void *val;
-        pthread_join(thv[j], &val);
+        pthread_join(thv[j], NULL);
     }
+    free (bigarr);
     return 0;
 }
 
-void do_some_work(int a)
+void do_some_work(int val)
 {
-    printf("Doing Work tid=%llx a=%d\n", THREADID, a);
-    usleep(1000*500);
+    printf("Doing Work tid=%llx a=%d\n", THREADID, val);
+    //usleep(1000*500);
+    int tmp = bigarr[val];
+    bigarr[val] = 2;
+    if(1 != tmp) printf("Should be 1 but is %d, val=%d\n", tmp, val);
+    assert(1 == tmp); //what we read should be 1
 }

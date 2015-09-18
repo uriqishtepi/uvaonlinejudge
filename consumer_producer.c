@@ -85,6 +85,7 @@ void * lock_work(void *arg)
  */
 void * cond_work(void *arg)
 {
+    printf("Starting thread %lx\n",  pthread_self());
     thrd_param *p = (thrd_param *) arg;
     int a;
     int rc;

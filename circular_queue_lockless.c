@@ -26,6 +26,8 @@
 #include <time.h>
 #include <unistd.h>
 
+extern void usleep(int);
+
 #define FORL(ii,s,e) for(int ii = s; ii < e; ii++)
 #define THREADNUM 10
 #define THREADID (long long unsigned int) pthread_self()
@@ -38,6 +40,8 @@
 #endif
 
 unsigned char * bigarr;
+
+enum { UNSEEN, ENQUEUED, PROCESSED };
 
 struct queue_param {
     short int front;
@@ -143,7 +147,7 @@ int enqueue(queue *q, long long int el)
     /* the following two lines are the critical section */
     q->arr[lastpos] = el;
     q->param = newparam;
-    q->locked = 0; //allow other threads to go in
+    q->locked = 0; /* end of the critical section */
 
     printf("enqueue: tid=%llx, val=%lld, to=%d\n", THREADID, el, lastpos);
     //keep statistics of how many were inserted, add 1 to count
@@ -191,7 +195,7 @@ long long int dequeue(queue *q)
     /* next two lines are the critical section */
     saved_back = q->arr[q->param.front];
     q->param = newparam;
-    q->locked = 0;
+    q->locked = 0; /* end of the critical section */
 
     printf("dequeue: tid=%llx, oldparam=%lld, from=%d\n", THREADID, saved_back, oldparam.front);
     __atomic_add_fetch(&q->deletes, 1, __ATOMIC_SEQ_CST);
@@ -208,44 +212,52 @@ void * produce_work(void * arg)
     queue *q = (queue *) arg;
     static int counter = 0;
     static int round = 0;
+    static int finishers = 0;
     while(!done) {
-        int i = __atomic_add_fetch(&counter, 1, __ATOMIC_SEQ_CST);
-        if(i <= MAX_ITEMS) {
-            printf("produce_work: tid=%llx, val=%d\n", THREADID, i);
-            long long int val = __atomic_exchange_n(&bigarr[i], 1, __ATOMIC_SEQ_CST);
-            if(0 != val) printf("Should be 0 but is %lld, i=%d\n", val, i);
-            assert(0 == val); 
-            while( enqueue(q, i) != 0) {}
+        int val = __atomic_add_fetch(&counter, 1, __ATOMIC_SEQ_CST);
+        if(val <= MAX_ITEMS) {
+            printf("produce_work: tid=%llx, val=%d counter=%d\n", THREADID, val, counter);
+            //inline void checkloc(bigarr, offset, newtowrite, shouldhavebeen)
+            long long int tmp = __atomic_exchange_n(&bigarr[val], ENQUEUED, __ATOMIC_SEQ_CST);
+            if(UNSEEN != tmp) printf("Should be %d but is %lld, val=%d\n", UNSEEN, tmp, val);
+            assert(UNSEEN == tmp); 
+            while( enqueue(q, val) != 0) {} //enqueue can fail on full queue
         }
         else {
-            done = 1;
+            int locfin = __atomic_add_fetch(&finishers, 1, __ATOMIC_SEQ_CST);
+            printf("produce_work: tid=%llx, locfin=%d\n", THREADID, locfin);
+                
+            while( finishers < THREADNUM ) {
+                 printf("produce_work: tid=%llx, finishers=%d\n", THREADID, finishers);
+                 sleep(1); //wait for all other threads to be done
+            }
             
-/*
-            //reset counter to zero, starting over -- multiple threads may attempt to do this
-            int oldround = round;
-            int nextround = round + 1;
-            int res =__atomic_compare_exchange(&round, &oldround, &nextround, 
-                            0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
-            if(res) { //we were the winner thread to perform change
-                //first make sure that all the entries of the arrah have been enqueued and dequeued
-                usleep(10000);
-                for(int j=1; j<=MAX_ITEMS; j++) {
-                    int tmp = __atomic_exchange_n(&bigarr[j], 0, __ATOMIC_SEQ_CST);
-                    if(2 != tmp) printf("Should be 2 but is %d, j=%lld\n", tmp, j);
-                    assert(2 == tmp); //what we read should be 2
+            if(locfin < THREADNUM) {
+                while( finishers != 0 ) { // stop until one thread has cleared
+                    printf("waiting for check: tid=%llx\n", THREADID);
+                    sleep(1);
                 }
-                if(round >= MAX_ROUNDS) 
+                continue;
+            }
+
+            //who was the last to increment finishers will do more work
+            while( !is_empty(q))
+                    sleep(1);   //wait for dequeuers
+            sleep(1);   //wait for dequeuers
+            {   //check that all elements are visited
+                for(int j=1; j<=MAX_ITEMS; j++) {
+                    int tmp = __atomic_exchange_n(&bigarr[j], UNSEEN, __ATOMIC_SEQ_CST);
+                    if(PROCESSED != tmp) printf("Should be %d but is %d, j=%d\n", PROCESSED, tmp, j);
+                    assert(PROCESSED == tmp); //what we read should be 2
+                }
+                if(++round >= MAX_ROUNDS) 
                     done = 1;
                 else {
-                    printf("reseting to zero: tid=%llx, res=%d\n", THREADID, res);
+                    printf("reseting to zero: tid=%llx\n", THREADID);
                     counter = 0;
                 }
+                finishers = 0; /* allow others to go to top of while loop */
             }
-            else{
-                printf("waiting for check: tid=%llx, res=%d\n", THREADID, res);
-                usleep(10000);
-            }
-*/
         }
     }
     return NULL;
@@ -358,7 +370,7 @@ void do_some_work(long long int val)
     //nanosleep(&smalltime, NULL);
     //usleep(10);
 
-    int tmp = __atomic_exchange_n(&bigarr[val], 2, __ATOMIC_SEQ_CST);
-    if(1 != tmp) printf("Should be 1 but is %d, val=%lld\n", tmp, val);
-    assert(1 == tmp); //what we read should be 1
+    int tmp = __atomic_exchange_n(&bigarr[val], PROCESSED, __ATOMIC_SEQ_CST);
+    if(ENQUEUED != tmp) printf("Should be %d but is %d, val=%lld\n", ENQUEUED, tmp, val);
+    assert(ENQUEUED == tmp); //what we read should be 1
 }

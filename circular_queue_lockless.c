@@ -34,7 +34,7 @@ extern void usleep(int);
 #define QMAX 10
 
 #define MAX_ITEMS 10000
-#define MAX_ROUNDS 1
+#define MAX_ROUNDS 3
 #ifndef __ATOMIC_SEQ_CST
 #define __ATOMIC_SEQ_CST 2
 #endif
@@ -205,7 +205,15 @@ long long int dequeue(queue *q)
     return saved_back; //need saved val, otherwise there's no guarantee
 }
 
+inline void checkloc(int offset, int newtowrite, int shouldhavebeen);
 
+void checkloc(int offset, int newtowrite, int shouldhavebeen)
+{
+    long long int tmp = __atomic_exchange_n(&bigarr[offset], newtowrite, __ATOMIC_SEQ_CST);
+    if(shouldhavebeen != tmp) 
+        printf("Should be %d but is %lld, offset=%d\n", shouldhavebeen, tmp, offset);
+    assert(shouldhavebeen == tmp); 
+}
 
 void * produce_work(void * arg)
 {
@@ -217,11 +225,9 @@ void * produce_work(void * arg)
         int val = __atomic_add_fetch(&counter, 1, __ATOMIC_SEQ_CST);
         if(val <= MAX_ITEMS) {
             printf("produce_work: tid=%llx, val=%d counter=%d\n", THREADID, val, counter);
-            //inline void checkloc(bigarr, offset, newtowrite, shouldhavebeen)
-            long long int tmp = __atomic_exchange_n(&bigarr[val], ENQUEUED, __ATOMIC_SEQ_CST);
-            if(UNSEEN != tmp) printf("Should be %d but is %lld, val=%d\n", UNSEEN, tmp, val);
-            assert(UNSEEN == tmp); 
-            while( enqueue(q, val) != 0) {} //enqueue can fail on full queue
+            checkloc(val, ENQUEUED, UNSEEN);
+
+            while( !done && enqueue(q, val) != 0) {} //enqueue can fail on full queue
         }
         else {
             int locfin = __atomic_add_fetch(&finishers, 1, __ATOMIC_SEQ_CST);
@@ -244,11 +250,10 @@ void * produce_work(void * arg)
             while( !is_empty(q))
                     sleep(1);   //wait for dequeuers
             sleep(1);   //wait for dequeuers
+
             {   //check that all elements are visited
                 for(int j=1; j<=MAX_ITEMS; j++) {
-                    int tmp = __atomic_exchange_n(&bigarr[j], UNSEEN, __ATOMIC_SEQ_CST);
-                    if(PROCESSED != tmp) printf("Should be %d but is %d, j=%d\n", PROCESSED, tmp, j);
-                    assert(PROCESSED == tmp); //what we read should be 2
+                    checkloc(j, UNSEEN, PROCESSED);
                 }
                 if(++round >= MAX_ROUNDS) 
                     done = 1;
@@ -370,7 +375,5 @@ void do_some_work(long long int val)
     //nanosleep(&smalltime, NULL);
     //usleep(10);
 
-    int tmp = __atomic_exchange_n(&bigarr[val], PROCESSED, __ATOMIC_SEQ_CST);
-    if(ENQUEUED != tmp) printf("Should be %d but is %d, val=%lld\n", ENQUEUED, tmp, val);
-    assert(ENQUEUED == tmp); //what we read should be 1
+    checkloc(val, PROCESSED, ENQUEUED);
 }

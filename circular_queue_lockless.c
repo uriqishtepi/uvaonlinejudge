@@ -32,7 +32,7 @@
 #define QMAX 10
 
 #define MAX_ITEMS 10000
-#define MAX_ROUNDS 2
+#define MAX_ROUNDS 1
 #ifndef __ATOMIC_SEQ_CST
 #define __ATOMIC_SEQ_CST 2
 #endif
@@ -218,23 +218,35 @@ void * produce_work(void * arg)
             while( enqueue(q, i) != 0) {}
         }
         else {
-            int zero = 0;
-            //reset counter to zero, starting over -- multiple threads will attempt to do this
-            int res = __atomic_compare_exchange(&counter, &i, &zero, 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
+            done = 1;
+            
+/*
+            //reset counter to zero, starting over -- multiple threads may attempt to do this
+            int oldround = round;
+            int nextround = round + 1;
+            int res =__atomic_compare_exchange(&round, &oldround, &nextround, 
+                            0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
             if(res) { //we were the winner thread to perform change
                 //first make sure that all the entries of the arrah have been enqueued and dequeued
+                usleep(10000);
                 for(int j=1; j<=MAX_ITEMS; j++) {
                     int tmp = __atomic_exchange_n(&bigarr[j], 0, __ATOMIC_SEQ_CST);
                     if(2 != tmp) printf("Should be 2 but is %d, j=%lld\n", tmp, j);
                     assert(2 == tmp); //what we read should be 2
                 }
-                if(++round >= MAX_ROUNDS) 
+                if(round >= MAX_ROUNDS) 
                     done = 1;
-                else
+                else {
                     printf("reseting to zero: tid=%llx, res=%d\n", THREADID, res);
+                    counter = 0;
+                }
             }
+            else{
+                printf("waiting for check: tid=%llx, res=%d\n", THREADID, res);
+                usleep(10000);
+            }
+*/
         }
-        //usleep(1);
     }
     return NULL;
 }

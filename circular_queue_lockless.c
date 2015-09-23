@@ -34,7 +34,7 @@ extern void usleep(int);
 #define QMAX 10
 
 #define MAX_ITEMS 10000
-#define MAX_ROUNDS 3
+#define MAX_ROUNDS 10
 #ifndef __ATOMIC_SEQ_CST
 #define __ATOMIC_SEQ_CST 2
 #endif
@@ -220,48 +220,36 @@ void * produce_work(void * arg)
     queue *q = (queue *) arg;
     static int counter = 0;
     static int round = 0;
-    static int finishers = 0;
     while(!done) {
         int val = __atomic_add_fetch(&counter, 1, __ATOMIC_SEQ_CST);
+        printf("produce_work: tid=0x%llx, val=%d counter=%d\n", THREADID, val, counter);
         if(val <= MAX_ITEMS) {
-            printf("produce_work: tid=0x%llx, val=%d counter=%d\n", THREADID, val, counter);
             checkloc(val, ENQUEUED, UNSEEN);
-
             while( !done && enqueue(q, val) != 0) {} //enqueue returns -1 on queue full
         }
-        else {
-            int locfin = __atomic_add_fetch(&finishers, 1, __ATOMIC_SEQ_CST);
-            printf("produce_work: tid=0x%llx, locfin=%d\n", THREADID, locfin);
-                
-            while( finishers < THREADNUM ) {
-                 printf("produce_work: tid=0x%llx, finishers=%d\n", THREADID, finishers);
+        else if(val == MAX_ITEMS + 1) {
+            while( (counter - MAX_ITEMS) < THREADNUM || !is_empty(q) ) {
+                 printf("produce_work: waiting for enquers and dequers tid=0x%llx, counter=%d\n", 
+                               THREADID, counter);
                  sleep(1); //wait for all other threads to be done
             }
-            
-            if(locfin < THREADNUM) {
-                while( finishers != 0 ) { // wait until finishers is set back to 0
-                    printf("waiting for check: tid=0x%llx\n", THREADID);
-                    usleep(1000);
-                }
-                continue;
-            }
-
-            //who was the last to increment finishers will do more work
-            while( !is_empty(q))
-                    sleep(1);   //wait for dequeuers
             sleep(1);   //wait for dequeuers
 
-            {   //check that all elements are visited
-                for(int j=1; j<=MAX_ITEMS; j++) 
+            //check that all elements are visited
+            for(int j=1; j<=MAX_ITEMS; j++) 
                     checkloc(j, UNSEEN, PROCESSED);
 
-                if(++round >= MAX_ROUNDS) 
-                    done = 1;
-                else {
-                    printf("reseting to zero: tid=0x%llx\n", THREADID);
-                    counter = 0;
-                }
-                finishers = 0; /* allow others to go to top of while loop */
+            if(++round >= MAX_ROUNDS) 
+                done = 1;
+            else {
+                printf("produce_work: starting new round %d: tid=0x%llx\n", round, THREADID);
+            }
+            counter = 0; /* allow others to go to top of while loop */
+        }
+        else {
+            while (counter > MAX_ITEMS) {
+                printf("produce_work: waiting for counter to reset: tid=0x%llx\n", THREADID);
+                usleep(10000);
             }
         }
     }
@@ -279,7 +267,6 @@ void * consume_work(void * arg)
 
         printf("consume_work: tid=0x%llx, val=%lld\n", THREADID, val);
         do_some_work(val);
-        //if(done) usleep(10);
 
         //usleep(1);
     }

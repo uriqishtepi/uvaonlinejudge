@@ -129,8 +129,8 @@ int enqueue(queue *q, long long int el)
         lastpos = (newparam.front + newparam.count ) % QMAX;
         newparam.count++;
     } while( __atomic_exchange_n((volatile char*) &q->locked, 1, __ATOMIC_SEQ_CST) == 1);
-
-    /* if data has changed, need to redo that work */
+    /* now i have lock: 
+     * if data has changed, need to redo that work */
     if( *(int*) &oldparam != *(int*) &q->param) 
     {
         newparam = q->param;
@@ -144,12 +144,12 @@ int enqueue(queue *q, long long int el)
         newparam.count++;
     }
 
-    /* the following two lines are the critical section */
+    /* the following two lines are the crucial piece of the critical section */
     q->arr[lastpos] = el;
     q->param = newparam;
     q->locked = 0; /* end of the critical section */
 
-    printf("enqueue: tid=%llx, val=%lld, to=%d\n", THREADID, el, lastpos);
+    printf("enqueue: tid=0x%llx, val=%lld, to=%d\n", THREADID, el, lastpos);
     //keep statistics of how many were inserted, add 1 to count
     __atomic_add_fetch(&q->inserts, 1, __ATOMIC_SEQ_CST);
 #ifdef DEBUG
@@ -192,12 +192,12 @@ long long int dequeue(queue *q)
         newparam.count--;
     }
 
-    /* next two lines are the critical section */
+    /* next two lines are the crucial piece of the critical section */
     saved_back = q->arr[q->param.front];
     q->param = newparam;
     q->locked = 0; /* end of the critical section */
 
-    printf("dequeue: tid=%llx, oldparam=%lld, from=%d\n", THREADID, saved_back, oldparam.front);
+    printf("dequeue: tid=0x%llx, oldparam=%lld, from=%d\n", THREADID, saved_back, oldparam.front);
     __atomic_add_fetch(&q->deletes, 1, __ATOMIC_SEQ_CST);
 #ifdef DEBUG
     __atomic_add_fetch(&q->dequeue_redo, redo, __ATOMIC_SEQ_CST);
@@ -224,24 +224,24 @@ void * produce_work(void * arg)
     while(!done) {
         int val = __atomic_add_fetch(&counter, 1, __ATOMIC_SEQ_CST);
         if(val <= MAX_ITEMS) {
-            printf("produce_work: tid=%llx, val=%d counter=%d\n", THREADID, val, counter);
+            printf("produce_work: tid=0x%llx, val=%d counter=%d\n", THREADID, val, counter);
             checkloc(val, ENQUEUED, UNSEEN);
 
-            while( !done && enqueue(q, val) != 0) {} //enqueue can fail on full queue
+            while( !done && enqueue(q, val) != 0) {} //enqueue returns -1 on queue full
         }
         else {
             int locfin = __atomic_add_fetch(&finishers, 1, __ATOMIC_SEQ_CST);
-            printf("produce_work: tid=%llx, locfin=%d\n", THREADID, locfin);
+            printf("produce_work: tid=0x%llx, locfin=%d\n", THREADID, locfin);
                 
             while( finishers < THREADNUM ) {
-                 printf("produce_work: tid=%llx, finishers=%d\n", THREADID, finishers);
+                 printf("produce_work: tid=0x%llx, finishers=%d\n", THREADID, finishers);
                  sleep(1); //wait for all other threads to be done
             }
             
             if(locfin < THREADNUM) {
-                while( finishers != 0 ) { // stop until one thread has cleared
-                    printf("waiting for check: tid=%llx\n", THREADID);
-                    sleep(1);
+                while( finishers != 0 ) { // wait until finishers is set back to 0
+                    printf("waiting for check: tid=0x%llx\n", THREADID);
+                    usleep(1000);
                 }
                 continue;
             }
@@ -258,7 +258,7 @@ void * produce_work(void * arg)
                 if(++round >= MAX_ROUNDS) 
                     done = 1;
                 else {
-                    printf("reseting to zero: tid=%llx\n", THREADID);
+                    printf("reseting to zero: tid=0x%llx\n", THREADID);
                     counter = 0;
                 }
                 finishers = 0; /* allow others to go to top of while loop */
@@ -274,10 +274,10 @@ void * consume_work(void * arg)
     queue *q = (queue *) arg;
     long long int val = 0;
     while(val >= 0 || !done) {
-        val = dequeue(q);
+        val = dequeue(q); //dequeue returns -1 on queue empty
         if(val < 0) continue;
 
-        printf("consume_work: tid=%llx, val=%lld\n", THREADID, val);
+        printf("consume_work: tid=0x%llx, val=%lld\n", THREADID, val);
         do_some_work(val);
         //if(done) usleep(10);
 
@@ -369,7 +369,7 @@ int main()
 
 void do_some_work(long long int val)
 {
-    //printf("Doing Work tid=%llx a=%d\n", THREADID, a);
+    //printf("Doing Work tid=0x%llx a=%d\n", THREADID, a);
 
     //struct timespec smalltime = { .tv_sec = 0, .tv_nsec = 1 };
     //nanosleep(&smalltime, NULL);

@@ -252,9 +252,9 @@ void * produce_work(void * arg)
             sleep(1);   //wait for dequeuers
 
             {   //check that all elements are visited
-                for(int j=1; j<=MAX_ITEMS; j++) {
+                for(int j=1; j<=MAX_ITEMS; j++) 
                     checkloc(j, UNSEEN, PROCESSED);
-                }
+
                 if(++round >= MAX_ROUNDS) 
                     done = 1;
                 else {

@@ -11,14 +11,16 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <sys/time.h>
+extern void usleep(int);
 
 #define FORL(ii,s,e) for(int ii = s; ii < e; ii++)
 #define THREADNUM 10
 #define THREADID (long long unsigned int) pthread_self()
 #define WORKTOBEDONE 100
 #define QMAX 20
-#define MAX_ITEMS 1000
-#define MAX_ROUNDS 2
+#define MAX_ITEMS 10000
+#define MAX_ROUNDS 10
+enum { UNSEEN, ENQUEUED, PROCESSED };
 
 struct queue {
     int a;
@@ -136,6 +138,19 @@ int dequeue(queue *q)
     return savedval;
 }
 
+
+inline void checkloc(int offset, int newtowrite, int shouldhavebeen);
+
+void checkloc(int offset, int newtowrite, int shouldhavebeen)
+{
+    int tmp = bigarr[offset];
+    bigarr[offset] = newtowrite;
+    if(shouldhavebeen != tmp) 
+        printf("Should be %d but is %d, offset=%d\n", shouldhavebeen, tmp, offset);
+    assert(shouldhavebeen == tmp); 
+}
+
+
 void * produce_work(void * arg)
 {
     queue *q = (queue *) arg;
@@ -146,22 +161,20 @@ void * produce_work(void * arg)
         pthread_mutex_unlock(&gbl_val_mutex);
         if(gbl_exit) break;
         if(i <= MAX_ITEMS) {
-            int tmp = bigarr[i];
-            bigarr[i] = 1;
-            if(0 != tmp) printf("Should be 0 but is %d, i=%d\n", tmp, i);
-            assert(0 == tmp); 
-            enqueue(q, i);
+            checkloc(i, ENQUEUED, UNSEEN);
+            enqueue(q, i); //blocks till can insert
             usleep(1);
         }
         else {
             pthread_mutex_lock(&gbl_val_mutex);
+	    if(gbl_val < MAX_ITEMS) { //another thread did this part of work
+                pthread_mutex_unlock(&gbl_val_mutex);
+		continue;
+	    }
             usleep(10000); //give a chance to others to finish
             gbl_val =0;
             for(int j=1; j<=MAX_ITEMS; j++) {
-                int tmp = bigarr[j];
-                bigarr[j] = 0;
-                if(2 != tmp) printf("Should be 2 but is %d, j=%d\n", tmp, j);
-                assert(2 == tmp); //what we read should be 2
+	        checkloc(j, UNSEEN, PROCESSED);
             }
             if(++round >= MAX_ROUNDS) {
                 gbl_exit = 1;
@@ -257,8 +270,5 @@ void do_some_work(int val)
 {
     printf("Doing Work tid=%llx a=%d\n", THREADID, val);
     //usleep(1000*500);
-    int tmp = bigarr[val];
-    bigarr[val] = 2;
-    if(1 != tmp) printf("Should be 1 but is %d, val=%d\n", tmp, val);
-    assert(1 == tmp); //what we read should be 1
+    checkloc(val, PROCESSED, ENQUEUED);
 }

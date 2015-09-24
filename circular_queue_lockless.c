@@ -31,7 +31,7 @@ extern void usleep(int);
 #define FORL(ii,s,e) for(int ii = s; ii < e; ii++)
 #define THREADNUM 10
 #define THREADID (long long unsigned int) pthread_self()
-#define QMAX 10
+#define QMAX 20
 
 #define MAX_ITEMS 10000
 #define MAX_ROUNDS 10
@@ -72,7 +72,7 @@ void do_some_work(long long int);
  */
 
 
-int done = 0;
+int gbl_exit = 0;
 
 void queue_init(queue *q)
 {
@@ -220,12 +220,12 @@ void * produce_work(void * arg)
     queue *q = (queue *) arg;
     static int counter = 0;
     static int round = 0;
-    while(!done) {
+    while(!gbl_exit) {
         int val = __atomic_add_fetch(&counter, 1, __ATOMIC_SEQ_CST);
         printf("produce_work: tid=0x%llx, val=%d counter=%d\n", THREADID, val, counter);
         if(val <= MAX_ITEMS) {
             checkloc(val, ENQUEUED, UNSEEN);
-            while( !done && enqueue(q, val) != 0) {} //enqueue returns -1 on queue full
+            while( !gbl_exit && enqueue(q, val) != 0) {} //enqueue returns -1 on queue full
         }
         else if(val == MAX_ITEMS + 1) {
             while( (counter - MAX_ITEMS) < THREADNUM || !is_empty(q) ) {
@@ -240,7 +240,7 @@ void * produce_work(void * arg)
                     checkloc(j, UNSEEN, PROCESSED);
 
             if(++round >= MAX_ROUNDS) 
-                done = 1;
+                gbl_exit = 1;
             else {
                 printf("produce_work: starting new round %d: tid=0x%llx\n", round, THREADID);
             }
@@ -261,7 +261,7 @@ void * consume_work(void * arg)
 {
     queue *q = (queue *) arg;
     long long int val = 0;
-    while(val >= 0 || !done) {
+    while(val >= 0 || !gbl_exit) {
         val = dequeue(q); //dequeue returns -1 on queue empty
         if(val < 0) continue;
 

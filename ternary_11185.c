@@ -18,4 +18,5 @@ int main()
         }
         printf("%s\n", &tn[i+1]);
     }
+    return 0;
 }

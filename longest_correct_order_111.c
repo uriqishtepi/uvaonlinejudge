@@ -1,13 +1,23 @@
 /*
-change ordering:
- 1  2  3  4
+change ordering of letters a b c d:
+
+ 3 1 4 2 
+
+ does NOT mean:
+ c a d b
+
+ but it means:
+ b d a c
+
+ that means that a goes to 3rd position, etc
+
 */
+
 #include<stdio.h>
 #include<string.h>
 #include<sys/param.h>
 #include<assert.h>
 
-#define out 
 #define MAXS 1000
 
 /* longest common substring */
@@ -20,8 +30,9 @@ void readLine(char *v, int n)
             if(i != 0 ) printf("Too few numbers for this entr\n");
             exit(0);
         }
-        assert(num >= 1 && num <= 20);
-        v[i] = num + 'a';
+        assert(num >= 1 && num <= n);
+        /* Not this way: v[i] = num + 'a'; */
+        v[num-1] = i + 'a';
         i++;
     }
 }
@@ -37,7 +48,6 @@ int main()
     readLine(v1, n);
     while(--m > 0) {
         readLine(v2, n);
-out("'%s' and '%s' \n", v1, v2);
 
         int C[MAXS+300][MAXS+300] = {{0}};
 
@@ -49,9 +59,7 @@ out("'%s' and '%s' \n", v1, v2);
                     C[i][j] = C[i-1][j-1] + 1;
                 else
                     C[i][j] = MAX(C[i-1][j], C[i][j-1]);
-out("%d ", C[i][j]);
             }
-out("\n");
         }
         printf("%d\n", C[n][n]);
     }

@@ -8,6 +8,7 @@ int main()
         char tn[33] = {0};
         int i = 31;
         if(N == 0) { printf("0\n"); continue; }
+        if(N < 0) { printf("?\n"); continue; }
 
         while(N > 0) {
             int q = N / 3;

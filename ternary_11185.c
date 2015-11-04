@@ -4,7 +4,7 @@
 int main()
 {
     int N;
-    while(scanf("%d", &N) != EOF && N != -1) {
+    while(scanf("%d", &N) != EOF && N >= 0) {
         char tn[33] = {0};
         int i = 31;
         if(N == 0) { printf("0\n"); continue; }

@@ -1,4 +1,6 @@
 /* similar to coin change
+ * find the number of combinations to change up to $300.00 in
+ * 5c,10c,...,100$
  */
 
 #include <stdio.h>
@@ -23,6 +25,7 @@ void findM(unsigned long long int M[][LVLS], int curr, int lvl)
     /* printf("%llu ", M[curr][lvl]); */
 }
 
+
 int main()
 {
     float fval;
@@ -41,8 +44,9 @@ int main()
     }
 
     /* printf("300.00%17llu\n", M[30000/5][LVLS-1]); */
-    while(scanf("%f", &fval) != EOF && (ival = fval * 100) != 0) {
+    while(scanf("%f", &fval) != EOF && (ival = (int) (fval * 10000) / 100) != 0) {
         int md10 = (ival % 10);
+        /* printf("md10 %d ival %d ", md10, ival); */
         assert(md10 == 0 || md10 == 5);
         int offset = ival/5;
         assert(offset >= 0 && offset <= MAXIT);

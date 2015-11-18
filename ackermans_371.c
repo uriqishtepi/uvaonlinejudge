@@ -18,21 +18,23 @@ int ackerman(unsigned long long x)
     return answ;
 }
 
+
 int main()
 {
     unsigned int a, b;
     while(scanf("%u %u", &a, &b) != EOF && !(a == 0 && b == 0)) {
         long long int i;
-        long long int min = a;
-        long long int max = b;
+        long long int L = a;
+        long long int H = b;
         if(a > b) {
-            min = b;
-            max = a;
+            L = b;
+            H = a;
         }
-        int maxansw = 0;
-        unsigned int maxval = 0;
-        if(debug) printf("finding Between %lld and %lld\n", min, max);
-        for(i = min; i <= max; i++) {
+        assert(L <= H);
+        int S = 0;
+        long long int V = 0;
+        if(debug) printf("finding Between %lld and %lld\n", L, H);
+        for(i = L; i <= H; i++) {
             int answ;
             if(i == 0) answ = 0;
             else if(i == 1) answ = 4;
@@ -43,12 +45,12 @@ int main()
             }
 
             /* printf("A(%d): %d\n", i, answ); */
-            if(maxansw < answ) {
-                maxansw = answ;
-                maxval = i;
+            if(S < answ) {
+                S = answ;
+                V = i;
             }
         }
-        printf("Between %u and %u, %u generates the longest sequence of %d values.\n", a, b, maxval, maxansw);
+        printf("Between %lld and %lld, %lld generates the longest sequence of %d values.\n", L, H, V, S);
     }
 
     return 0;

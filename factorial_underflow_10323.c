@@ -6,9 +6,10 @@
 int main()
 {
     int n;
-    while(scanf("%d", &n) != EOF && n != 0) {
+    while(scanf("%d", &n) != EOF) {
+        if(n < 0) continue;
         long long int fact = 1;
-        while(n > 0) {
+        while(n > 1) {
             fact *= n;
             --n;
             if(fact > HIGH) { break; }

@@ -1,18 +1,41 @@
 #include<stdio.h>
 #include<assert.h>
+#include<limits.h>
 #define debug 0
+
+/*
+ * ex...6 steps for 10
+ * 10 5 16 8 4 2 1
+ * issue here is that x can go up and down and it may go beyond long long?
+ *
+ */
 
 int ackerman(unsigned long long x)
 {
     if(debug) printf("%llu ", x);
+    long long int threshold = (ULONG_MAX - 1) / 3;
     int answ = 0;
     while(x > 1) {
-        if(x & 0x1) { /* odd */
+        assert(x < threshold); /* should stop from wrapping around */
+        long long isOdd = x & 0x1;
+        long long mIsOdd = -isOdd;
+        long long nex = (mIsOdd & (3*x+1) ) | ((~mIsOdd) & (x>>1));
+        /*
+        printf("x %lld\n", x);
+        printf("isodd %lld\n", isOdd);
+        printf("misodd %lld\n", mIsOdd);
+        printf("(mIsOdd | (3*x+1) ) %lld\n", (mIsOdd & (3*x+1) ));
+
+
+        if(x & 0x1) { 
             x = 3*x+1;
         }
         else {
             x = x >> 1;
         }
+        printf("nex %lld vs x %llu\n", nex, x);
+        */
+        x = nex;
         answ++;
     }
     return answ;

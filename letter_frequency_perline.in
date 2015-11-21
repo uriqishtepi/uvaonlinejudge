@@ -6,7 +6,7 @@ int main()
 {
     char * str = NULL;
     int n;
-    while(getline(&str, &n, stdin) > 0) {
+    while(getline(&str, &n, stdin) != EOF) {
         int arr[256] = {0};
         int len = strlen(str);
         int mx = 0;
@@ -16,6 +16,13 @@ int main()
             arr[str[i]]++;
             mx = MAX(mx, arr[str[i]]);
         }
+        /*
+        l = 'I'; printf("%d ", arr[l]);
+        l = 'V'; printf("%d ", arr[l]);
+        l = 'X'; printf("%d ", arr[l]);
+        l = 'L'; printf("%d ", arr[l]);
+        l = 'C'; printf("%d", arr[l]);
+        */
         int l;
         for(l = 0; l < 256; l++) { 
             if(arr[l] > 0)

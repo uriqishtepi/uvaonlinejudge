@@ -14,7 +14,8 @@
 void populate_arr(int * arr, char * str) {
     char * p = str;
     while(*p) {
-        arr[ (*p) - 'a' ] ++;
+        if(*p >= 'a' && *p <= 'z')
+            arr[ (*p) - 'a' ]++;
         p++;
     }
 }
@@ -22,10 +23,12 @@ void populate_arr(int * arr, char * str) {
 
 int main()
 {
-    char a[1001] = {0};
-    char b[1001] = {0};
+    char * a = NULL;
+    char * b = NULL;
+    int n;
 
-    while( scanf("%s %s", a, b) != EOF) {
+    while( (getline(&a, &n, stdin) > 0) &&
+           (getline(&b, &n, stdin) > 0) ) {
         int arr1[26] = {0};
         int arr2[26] = {0};
         populate_arr(arr1, a);

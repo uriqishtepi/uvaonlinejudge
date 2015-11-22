@@ -17,10 +17,10 @@ int ackerman(unsigned long long x)
     int answ = 0;
     while(x > 1) {
         assert(x < threshold); /* should stop from wrapping around */
+        /*
         long long isOdd = x & 0x1;
         long long mIsOdd = -isOdd;
         long long nex = (mIsOdd & (3*x+1) ) | ((~mIsOdd) & (x>>1));
-        /*
         printf("x %lld\n", x);
         printf("isodd %lld\n", isOdd);
         printf("misodd %lld\n", mIsOdd);
@@ -35,7 +35,7 @@ int ackerman(unsigned long long x)
         }
         printf("nex %lld vs x %llu\n", nex, x);
         */
-        x = nex;
+        x = (x&0x1) ? (3*x+1) : (x>>1);
         answ++;
     }
     return answ;
@@ -60,7 +60,7 @@ int main()
         for(i = L; i <= H; i++) {
             int answ;
             if(i == 0) answ = 0;
-            else if(i == 1) answ = 4;
+            else if(i == 1) answ = 3;
             else { 
                 if(debug) printf("A(%lld) ", i);
                 answ = ackerman(i);

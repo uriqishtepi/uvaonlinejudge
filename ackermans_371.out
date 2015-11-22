@@ -1,2 +1,7 @@
 Between 1 and 20, 18 generates the longest sequence of 20 values.
 Between 35 and 55, 54 generates the longest sequence of 112 values.
+Between 1 and 12345678, 11200681 generates the longest sequence of 688 values.
+Between 1234567890 and 1234567891, 1234567890 generates the longest sequence of 351 values.
+Between 3060399405 and 3060399406, 3060399405 generates the longest sequence of 236 values.
+Between 4294967241 and 4294967261, 4294967243 generates the longest sequence of 482 values.
+Between 4294967276 and 4294967295, 4294967288 generates the longest sequence of 451 values.

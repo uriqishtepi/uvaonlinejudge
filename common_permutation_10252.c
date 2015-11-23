@@ -23,12 +23,11 @@ void populate_arr(int * arr, char * str) {
 
 int main()
 {
-    char * a = NULL;
-    char * b = NULL;
-    int n;
+    char a[1002];
+    char b[1002];
 
-    while( (getline(&a, &n, stdin) > 0) &&
-           (getline(&b, &n, stdin) > 0) ) {
+    while( (fgets(a, 1001, stdin) != NULL) &&
+           (fgets(b, 1001, stdin) != NULL) ) {
         int arr1[26] = {0};
         int arr2[26] = {0};
         populate_arr(arr1, a);

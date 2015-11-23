@@ -7,7 +7,11 @@ int main()
 {
     int n;
     while(scanf("%d", &n) != EOF) {
-        if(n < 0) continue;
+        if(n <= 0) { /* absurd computing of factorial of negative */
+            if(n & 0x1 ) printf("Overflow!\n");
+            else printf("Underflow!\n");
+            continue;
+        }
         long long int fact = 1;
         while(n > 1) {
             fact *= n;

@@ -69,11 +69,13 @@ int main()
         }
         for(i=0;i<m;i++) {
             int one, two;
-            scanf("%d %d", &one, &two); //two is be after one: from one to two
+            scanf("%d %d", &one, &two); //two is after one: from one to two
+            assert(one > 0 && one <= n);
+            assert(two > 0 && two <= n);
             befores[two].push_back(one);//before two is one
         }
 
-        int visited[100] = {0};
+        int visited[101] = {0};
         firstinline = true;
         int j = 1;
         while (j <= n) {

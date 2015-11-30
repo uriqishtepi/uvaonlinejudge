@@ -1,4 +1,5 @@
 /*
+ longest common substring 
 change ordering of letters a b c d:
 
  3 1 4 2 
@@ -14,13 +15,13 @@ change ordering of letters a b c d:
 */
 
 #include<stdio.h>
+#include<stdlib.h>
 #include<string.h>
 #include<sys/param.h>
 #include<assert.h>
 
-#define MAXS 1000
+#define MAXS 20
 
-/* longest common substring */
 void readLine(char *v, int n)
 {
     int i = 0;
@@ -44,12 +45,14 @@ int main()
     char v2[21] = {0};
     int m;
     scanf("%d\n", &m);
+    assert(m >= 1 && m <= 21);
+
     int n = m;
     readLine(v1, n);
     while(--m > 0) {
         readLine(v2, n);
 
-        int C[MAXS+300][MAXS+300] = {{0}};
+        int C[MAXS+2][MAXS+2] = {{0}};
 
         int i;
         int j;

@@ -7,9 +7,9 @@
 #include<assert.h>
 #define MAX 100
 #define pi std::pair<int, int>
-#define mi std::multimap<float, pi >
+#define mi std::multimap<double, pi >
 
-float mst(float arr[][2], float D[][MAX+1], int n)
+double mst(double arr[][2], double D[][MAX+1], int n)
 {
     //start from any point, will connect to the nearest only
     //need a priority queue here
@@ -18,18 +18,18 @@ float mst(float arr[][2], float D[][MAX+1], int n)
     for(int i = 1; i < n; i++)
         q.insert(std::make_pair(D[0][i] , std::make_pair(0,i)));
     visited[0] = 1;
-    float tot = 0;
+    double tot = 0.0;
     while(! q.empty() )
     {
         pi p = q.begin()->second;
-        float d = sqrt(q.begin()->first);
+        double d = sqrt(q.begin()->first);
         q.erase(q.begin());
 
         int curr = p.second;
         if(visited[curr]) continue;
 
         tot += d;
-        printf("getting link %d-%d with d=%f\n", p.first, p.second, d);
+        //printf("getting link %d-%d with d=%lf, res=%lf\n", p.first, p.second, d, tot);
         visited[curr] = 1;
         for(int i = 1; i < n; i++) {
             if(!visited[i])
@@ -42,28 +42,42 @@ float mst(float arr[][2], float D[][MAX+1], int n)
 int main() 
 {
     int cases;
-    scanf("%d", &cases);
+    char buff[2048];
+    fgets(buff, 2047, stdin);
+    sscanf(buff, "%d", &cases);
+    assert(cases > 0);
+
     while(cases-- > 0) {
-        float arr[MAX+1][2] = {{0}};
-        float D[MAX+1][MAX+1] = {{0}};
+        double arr[MAX+1][2] = {{0}};
+        double D[MAX+1][MAX+1] = {{0}};
+        fgets(buff, 2047, stdin); //empty line
+
+        fgets(buff, 2047, stdin); 
         int n;
-        scanf("%d", &n);
+        sscanf(buff, "%d", &n);
         assert(n > 0 && n <= MAX);
-        int i;
+        int i = 0;
         while(i < n) {
-            scanf("%f %f", &arr[i][0], &arr[i][1]);
+            double a, b;
+            fgets(buff, 2047, stdin); 
+            int offset;
+            sscanf(buff, "%lf%n", &a, &offset);
+            sscanf(buff+offset, "%lf", &b);
+            arr[i][0] = a;
+            arr[i][1] = b;
+            //printf("read %lf %lf\n", a, b);
             int j;
             for(j=0;j<i;j++) {
-                float dx = arr[i][0] - arr[j][0];
-                float dy = arr[i][1] - arr[j][1];
-                float d = dx*dx + dy*dy;
+                double dx = arr[i][0] - arr[j][0];
+                double dy = arr[i][1] - arr[j][1];
+                double d = dx*dx + dy*dy;
                 D[j][i] = d;
                 D[i][j] = d;
             }
 
             i++;
         }
-        printf("%.2f\n", mst(arr, D, n));
+        printf("%.2lf\n", mst(arr, D, n));
     }
     return 1;
 }

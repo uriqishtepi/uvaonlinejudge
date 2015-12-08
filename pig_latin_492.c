@@ -2,61 +2,81 @@
 #include<string.h>
 #include<stdlib.h>
 
-#define MAXL 1024
+#define MAXL 10
+enum ty {none, vowel, consonant};
+
+
+void print_end_of_word(int * type, char start_char) 
+{
+    if(*type == consonant)
+        printf("%c", start_char);
+    printf("a");
+    printf("y");
+    *type = none;
+}
+
+int get_type(char start_char) 
+{
+    switch(start_char) {
+        case 'a':
+        case 'A':
+        case 'e':
+        case 'E':
+        case 'i':
+        case 'I':
+        case 'o':
+        case 'O':
+        case 'u':
+        case 'U':
+            return vowel;
+            break;
+        default:
+            return consonant;
+            break;
+    };
+}
 
 int main()
 {
     char str[MAXL+1];
-    int type;
-    enum ty {vowel, consonant};
+    int type = none;
+    char start_char = 0;
 
-    while(fgets(str, MAXL, stdin) != NULL) {
-        char * start = str;
-        char * end;
-        while(start !=NULL && *start != '\0') {
-            if( !((*start >= 'a' && *start <= 'z' ) || 
-                        (*start >= 'A' && *start <= 'Z' )  )) 
+    while(fgets(str, MAXL, stdin) != NULL) 
+    {
+        char * sptr = str;
+        while(sptr !=NULL && *sptr != '\0') 
+        {
+            if( !((*sptr >= 'a' && *sptr <= 'z' ) || 
+                        (*sptr >= 'A' && *sptr <= 'Z' )  )) 
             {
-                printf("%c", *start);
-                start++;
+                if(type != none) print_end_of_word(&type, start_char);
+                printf("%c", *sptr);
+                sptr++;
                 continue;
             }
 
-            switch(*start) {
-                case 'a':
-                case 'A':
-                case 'e':
-                case 'E':
-                case 'i':
-                case 'I':
-                case 'o':
-                case 'O':
-                case 'u':
-                case 'U':
-                    type = vowel;
-                    printf("%c", *start);
-                    break;
-                default:
-                    type = consonant;
-                    break;
-            };
+            /* else this char is the beginning of a word */
 
-            end = start+1;
-            while(end != NULL && *end != '\0' && 
-                    ((*end >= 'a' && *end <= 'z' ) || 
-                    (*end >= 'A' && *end <= 'Z' ) ) ) 
-            {
-                printf("%c", *end);
-                end++;
+            if(type == none) {
+                start_char = *sptr;
+                type = get_type(start_char);
+                if(type == vowel)
+                    printf("%c", start_char);
+
+                sptr++;
             }
 
-            if(type == consonant)
-                printf("%c", *start);
-            printf("a");
-            printf("y");
-            start = end;
+            while(sptr != NULL && *sptr != '\0' && 
+                    ((*sptr >= 'a' && *sptr <= 'z' ) || 
+                    (*sptr >= 'A' && *sptr <= 'Z' ) ) ) 
+            {
+                printf("%c", *sptr);
+                sptr++;
+            }
         }
     }
+    if(type != none) print_end_of_word(&type, start_char);
 
     return 0;
 }

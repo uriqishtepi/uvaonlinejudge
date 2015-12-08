@@ -2,39 +2,60 @@
 #include<string.h>
 #include<stdlib.h>
 
+#define MAXL 1024
+
 int main()
 {
-    char str[2048];
-    int len;
+    char str[MAXL+1];
+    int type;
+    enum ty {vowel, consonant};
 
-    while(scanf("%s", str) != EOF) {
-        len = strlen(str);
-        if(len > sizeof(str)-3) exit(1);
+    while(fgets(str, MAXL, stdin) != NULL) {
+        char * start = str;
+        char * end;
+        while(start !=NULL && *start != '\0') {
+            if( !((*start >= 'a' && *start <= 'z' ) || 
+                        (*start >= 'A' && *start <= 'Z' )  )) 
+            {
+                printf("%c", *start);
+                start++;
+                continue;
+            }
 
-        switch(str[0]) {
-            case 'a':
-            case 'A':
-            case 'e':
-            case 'E':
-            case 'i':
-            case 'I':
-            case 'o':
-            case 'O':
-            case 'u':
-            case 'U':
-                str[len] = 'a';
-                str[len+1] = 'y';
-                str[len+2] = '\0';
-                printf("%s\n", str);
-                break;
-            default:
-                str[len] = str[0];
-                str[len+1] = 'a';
-                str[len+2] = 'y';
-                str[len+3] = '\0';
-                printf("%s\n", str+1);
-                break;
-        };
+            switch(*start) {
+                case 'a':
+                case 'A':
+                case 'e':
+                case 'E':
+                case 'i':
+                case 'I':
+                case 'o':
+                case 'O':
+                case 'u':
+                case 'U':
+                    type = vowel;
+                    printf("%c", *start);
+                    break;
+                default:
+                    type = consonant;
+                    break;
+            };
+
+            end = start+1;
+            while(end != NULL && *end != '\0' && 
+                    ((*end >= 'a' && *end <= 'z' ) || 
+                    (*end >= 'A' && *end <= 'Z' ) ) ) 
+            {
+                printf("%c", *end);
+                end++;
+            }
+
+            if(type == consonant)
+                printf("%c", *start);
+            printf("a");
+            printf("y");
+            start = end;
+        }
     }
 
     return 0;

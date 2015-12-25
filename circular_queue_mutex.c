@@ -5,6 +5,13 @@
  * Thus the issue with this approach is the wasted cpu cycles while 
  * we are waiting for work to be done and for the queue to become 
  * empty. 
+ *
+ * I'm complicating the condition because i want to have it do some work, 
+ * stop doing work, do some more work, stop doing work, until some max 
+ * is reached. To do that, i need to have finishing conditions to go thru 
+ * state machine with the states: 
+ * ready -> running -> producer_done -> consumer_done -> {exit, running}
+ *
  */
 #include <pthread.h>
 #include <stdio.h>
@@ -13,7 +20,7 @@
 #include <sys/time.h>
 
 #define FORL(ii,s,e) for(int ii = s; ii < e; ii++)
-#define THREADNUM 10
+#define THREADNUM 3
 #define THREADID (long long unsigned int) pthread_self()
 #define WORKTOBEDONE 100
 #define QMAX 20
@@ -43,9 +50,13 @@ void do_some_work(int);
 
 
 unsigned char * bigarr;
-int gbl_exit = 0;
+enum state { s_running, s_doneproducing, s_doneconsuming, s_exit };
+int gbl_state = 0;
 int gbl_val = 0;
-    pthread_mutex_t gbl_val_mutex;
+int gbl_doneproducers = 0;
+int gbl_doneconsumers = 0;
+pthread_mutex_t gbl_val_mutex;
+pthread_mutex_t gbl_state_mutex;
 
 void queue_init(queue *q)
 {
@@ -79,26 +90,30 @@ int is_full(queue *q)
 
 int enqueue(queue *q, int a)
 {
+    if(q->count == QMAX || gbl_state == s_exit) 
+        return -1; //shortcut
     pthread_mutex_lock(&q->mutex);
-    if(q->count == QMAX || gbl_exit) {
+    if(q->count == QMAX || gbl_state == s_exit) {
         pthread_mutex_unlock(&q->mutex);
         return -1;
     }
-    printf("enqueue LOCK: tid=%llx, val=%d\n", THREADID, a);
-    
     q->arr[(q->front + q->count ) % QMAX] = a;
     q->count++;
     q->inserted++;
 
     assert(q->count >=0 && q->count <= QMAX);
     pthread_mutex_unlock(&q->mutex);
+    printf("enqueue LOCK: tid=%llx, val=%d\n", THREADID, a);
+    
     return 0;
 }
 
 int dequeue(queue *q, int * val)
 {
+    if(q->count == 0 || gbl_state == s_exit)
+        return -1; //shortcut
     pthread_mutex_lock(&q->mutex);
-    if(q->count == 0 || gbl_exit) {
+    if(q->count == 0 || gbl_state == s_exit) {
         pthread_mutex_unlock(&q->mutex);
         return -1;
     }
@@ -115,58 +130,110 @@ int dequeue(queue *q, int * val)
     return 0;
 }
 
+void check_and_reset_bigarr(int * round) 
+{
+    while(gbl_state != s_doneconsuming)
+        usleep(100); //give a chance to others to finish
+
+    usleep(100); //give a chance to others to finish
+    for(int j=0; j<MAX_ITEMS; j++) {
+        int tmp = bigarr[j];
+        bigarr[j] = 0;
+        if(2 != tmp) printf("Should be 2 but is %d, j=%d\n", tmp, j);
+        assert(2 == tmp); //what we read should be 2
+    }
+    if(++(*round) >= MAX_ROUNDS) {
+        gbl_state = s_exit;
+    }
+    else {
+        printf("reseting to zero: tid=%llx\n", THREADID);
+        gbl_val = 0;
+        gbl_state = s_running;
+    }
+}
+
+
 void * produce_work(void * arg)
 {
-    queue *q = (queue *) arg;
-    static int round = 0;
-    while(!gbl_exit) {
-        pthread_mutex_lock(&gbl_val_mutex);
-        int i = gbl_val++;
-        pthread_mutex_unlock(&gbl_val_mutex);
-        if(gbl_exit) break;
-        if(i < MAX_ITEMS) {
-            int tmp = bigarr[i];
-            bigarr[i] = 1;
-            if(0 != tmp) printf("Should be 0 but is %d, i=%d\n", tmp, i);
-            assert(0 == tmp); 
-            while(enqueue(q, i) == -1 && !gbl_exit) { } //retry
-            usleep(1);
-        }
-        else if(i == MAX_ITEMS) {
-            usleep(10000); //give a chance to others to finish
-            for(int j=0; j<MAX_ITEMS; j++) {
-                int tmp = bigarr[j];
-                bigarr[j] = 0;
-                if(2 != tmp) printf("Should be 2 but is %d, j=%d\n", tmp, j);
-                assert(2 == tmp); //what we read should be 2
-            }
-            if(++round >= MAX_ROUNDS) {
-                gbl_exit = 1;
-            }
-            else
-                printf("reseting to zero: tid=%llx\n", THREADID);
-
-            pthread_mutex_lock(&gbl_val_mutex);
-            gbl_val =0;
-            pthread_mutex_unlock(&gbl_val_mutex);
-        }
-        else usleep(10000);
+  queue *q = (queue *) arg;
+  static int round = 0;
+  while(gbl_state != s_exit) {
+    if(gbl_state != s_running) {
+        usleep(10000);
+        continue;
     }
-    return NULL;
+
+    pthread_mutex_lock(&gbl_val_mutex);
+    int loc_val = gbl_val++;
+    pthread_mutex_unlock(&gbl_val_mutex);
+    if(gbl_state == s_exit) break;
+
+    if( __builtin_expect(loc_val < MAX_ITEMS, 1) ) {
+        int tmp = bigarr[loc_val];
+        bigarr[loc_val] = 1;
+        if(0 != tmp) printf("Should be 0 but is %d, loc_val=%d\n", tmp, loc_val);
+        assert(0 == tmp); 
+        while(enqueue(q, loc_val) == -1 && gbl_state != s_exit) { sched_yield(); } //retry
+        usleep(1);
+    }
+    else {
+        pthread_mutex_lock(&gbl_state_mutex);
+        int ndone = ++gbl_doneproducers;
+        pthread_mutex_unlock(&gbl_state_mutex);
+
+        if(ndone == THREADNUM) {
+            pthread_mutex_lock(&gbl_state_mutex);
+            gbl_state = s_doneproducing;
+            gbl_doneproducers = 0;
+            pthread_mutex_unlock(&gbl_state_mutex);
+        }
+
+        if(loc_val == MAX_ITEMS) { //only one thread will come here
+            check_and_reset_bigarr(&round);
+        }
+    }
+  }
+  return NULL;
 }
 
 void * consume_work(void * arg)
 {
     queue *q = (queue *) arg;
-    int val;
-    int rc = dequeue(q, &val);
-    while(!gbl_exit) {
+    int n_done = 0;
+    while(gbl_state != s_exit) 
+    {
+        if(gbl_state != s_running && gbl_state != s_doneproducing) {
+            usleep(10000);
+            continue;
+        }
+
+        int val;
+        int rc = dequeue(q, &val);
         if(rc == 0) { 
             printf("consume_work: tid=%llx, val=%d\n", THREADID, val);
             do_some_work(val);
+            continue;
         }
-        else usleep(100);
-        rc = dequeue(q, &val);
+        else {
+
+            //else there was nothing to retrieve
+            if(gbl_state != s_doneproducing) {
+                usleep(1); //give chance to producers
+                continue;
+            }
+
+            // nothing in queue and state is done producing: producers are done
+            if(n_done == 0) {
+                pthread_mutex_lock(&gbl_state_mutex);
+                n_done = ++gbl_doneconsumers;
+                pthread_mutex_unlock(&gbl_state_mutex);
+            }
+
+            if(n_done == THREADNUM) {
+                gbl_doneconsumers = 0;
+                gbl_state = s_doneconsuming;
+            }
+        }
     }
     return NULL;
 }
@@ -214,7 +281,9 @@ int main()
     queue_init(&q);
     bigarr = calloc(MAX_ITEMS+1, 1);
     pthread_mutex_init(&gbl_val_mutex, NULL);
+    pthread_mutex_init(&gbl_state_mutex, NULL);
     //test_q(&q);
+    gbl_state = s_running; //initial state
 
     FORL(i, 0, THREADNUM) {
         pthread_create(&thv[i], NULL, produce_work, &q);

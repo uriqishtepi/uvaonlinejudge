@@ -36,3 +36,7 @@ circular_queue_lockless: circular_queue_lockless.c
 compare_atomics: compare_atomics.c
 	$(CC) $< -pthread $(NOANSIFLAGS) -std=c99 -o $@
 
+pipe_threads_com: pipe_threads_com.c
+	$(CC) $< -pthread $(NOANSIFLAGS) -std=c99 -o $@
+
+

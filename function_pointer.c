@@ -6,6 +6,11 @@ int blah(int a)
     return a+1;
 }
 
+int set_ptr(char **cptr)
+{
+    *cptr = "blah";
+}
+
 int main()
 {
     /* can call printf indirectly:  
@@ -18,5 +23,10 @@ int main()
         fptr = blah;
 
     fptr(5);
+
+    char **cptr = NULL;
+    set_ptr(cptr);
+    printf("cptr = %s\n", cptr);
+
     return 0;
 }

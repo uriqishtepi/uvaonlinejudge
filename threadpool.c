@@ -89,33 +89,35 @@ void *(listener) (void * arg)
     */
 
 
-    int sfd, cfd;
-    struct sockaddr_un my_addr, peer_addr;
+    int tcp_socket, cfd;
+    //struct sockaddr_un my_addr, peer_addr;
+    sockaddr_in a_in;
     socklen_t peer_addr_size;
 
-    sfd = socket(AF_UNIX, SOCK_STREAM, 0);
-    if (sfd == -1)
+    tcp_socket = socket(AF_INET, SOCK_STREAM, 0);
+    //sfd = socket(AF_UNIX, SOCK_STREAM, 0);
+    if (tcp_socket == -1)
         handle_error("socket");
 
-    memset(&my_addr, 0, sizeof(struct sockaddr_un));
+    memset(&a_in, 0, sizeof(a_in));
     /* Clear structure */
-    my_addr.sun_family = AF_UNIX;
+    a_in.sun_family = AF_UNIX;
     strncpy(my_addr.sun_path, "/tmp/az.socket",
             sizeof(my_addr.sun_path) - 1);
 
     unlink(my_addr.sun_path);
-    if (bind(sfd, (struct sockaddr *) &my_addr,
+    if (bind(tcp_socket, (struct sockaddr *) &my_addr,
                 sizeof(struct sockaddr_un)) == -1)
         handle_error("bind");
 
-    if (listen(sfd, LISTEN_BACKLOG) == -1)
+    if (listen(tcp_socket, LISTEN_BACKLOG) == -1)
         handle_error("listen");
 
     /* Now we can accept incoming connections one
        at a time using accept(2) */
 
     peer_addr_size = sizeof(struct sockaddr_un);
-    cfd = accept(sfd, (struct sockaddr *) &peer_addr,
+    cfd = accept(tcp_socket, (struct sockaddr *) &peer_addr,
             &peer_addr_size);
 
     char buf[256];

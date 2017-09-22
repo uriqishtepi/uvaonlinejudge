@@ -19,7 +19,7 @@ circular_queue: circular_queue.c
 	$(CC) $< -pthread -std=c99 $(NOANSIFLAGS) -o $@
 
 circular_queue_mutex: circular_queue_mutex.c
-	$(CC) $< -pthread -std=c99 $(NOANSIFLAGS) -o $@
+	$(CC) $< -pthread -std=gnu11 $(NOANSIFLAGS) -o $@
 
 circular_queue_cond: circular_queue_cond.c
 	$(CC) $< -pthread -std=c99 $(NOANSIFLAGS) -o $@
@@ -36,7 +36,6 @@ circular_queue_lockless: circular_queue_lockless.c
 compare_atomics: compare_atomics.c
 	$(CC) $< -pthread $(NOANSIFLAGS) -std=c99 -o $@
 
-pipe_threads_com: pipe_threads_com.c
+threadpool: threadpool.c
 	$(CC) $< -pthread $(NOANSIFLAGS) -std=c99 -o $@
-
 

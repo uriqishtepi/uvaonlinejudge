@@ -15,7 +15,8 @@ if [ x${2}x == "x-ox" ]; then
     CPPFLAGS="${CPPFLAGS} -O3"
 fi
 
-make CPPFLAGS="$CPPFLAGS" ${task}
+#make CPPFLAGS="$CPPFLAGS" ${task}
+make ${task}
 
 if [ $? -ne 0 ] ; then 
     exit

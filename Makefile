@@ -39,3 +39,6 @@ compare_atomics: compare_atomics.c
 threadpool: threadpool.c
 	$(CC) $< -pthread $(NOANSIFLAGS) -std=c99 -o $@
 
+useuuid: useuuid.c
+	$(CC) $< -pthread -luuid $(NOANSIFLAGS) -std=c99 -o $@
+

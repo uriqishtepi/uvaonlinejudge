@@ -4,6 +4,7 @@
  */
 #include <stdio.h>
 #include <stdlib.h>
+#include <pthread.h>
 
 void f(char * line)
 {
@@ -13,13 +14,22 @@ void f(char * line)
 int main(void)
 {
     int i = 0;
+    short a = -4;
+    unsigned short b = a;
+    printf("a = %d b = %d\n", a, b);
+    b = 65521;
+    printf("a = %d b = %d\n", a, b);
+
+    a = 65535;
+    b = 65535;
+    printf("a = %d b = %d\n", a, b);
     const int H = 10000000;
     for (i = 0; i < H; i++)
     {
         char line[1024];
         line[0] = 0;
         line[1023] = 0;
-        f(line); //avoid compiler optimization by calling f()
+        f(line); /* avoid compiler optimization by calling f() */
     }
 
     /*
@@ -29,5 +39,6 @@ int main(void)
         f(line);
     }
     */
+    printf(" pthread_self() %x\n", pthread_self() );
     return 0;
 }

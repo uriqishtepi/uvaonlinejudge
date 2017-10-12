@@ -51,7 +51,7 @@ int main()
     for(int i = 7; i < MAXN; i+= 2) {
         if(is_prime(primes, i)) {
             primes.push_back(i);
-            //printf("add %d\n", i);
+            printf("add %d\n", i);
         }
     }
     //printf("primes up to %d are %d\n", MAXN, primes.size());

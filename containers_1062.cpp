@@ -18,9 +18,9 @@ c b a
 c b a
 c b a
 
-aaaa
-bbbb
-cccc
+a
+bb
+ccc
 
 
 z
@@ -56,73 +56,53 @@ struct greater_equals : public std::unary_function<bool, char> {
 
 void process_word(int cases, std::string word)
 {
-    ss combinations;
     std::set<char> uniq_chars;
 
     for(std::string::iterator it = word.begin(); it!=word.end(); ++it)
         uniq_chars.insert(*it);
 
     std::string::iterator it = word.begin(); 
-    std::string tmp;
-    tmp += *it;
-    combinations.insert(tmp);
+
+    std::string order;
+    order += *it;
     int smallest = 1;
-out("0 inserting %c \n", tmp);
+out("0 inserting %c \n", *it);
     it++;
-    while(it!=word.end()) {
-        smallest = 27;
+    while(it != word.end()) {
 
         char c = *it;
 out("processing char %c\n", c);
-        ss new_combinations;
+out("order %s\n", order);
 
-        for(ss::iterator sit = combinations.begin(); sit != combinations.end(); sit++) {
-            std::string curr_str = *sit;
-out("processing curr_str %s\n", curr_str);
-            std::string::iterator locit = find_if(curr_str.begin(), curr_str.end(), std::bind2nd(std::greater_equal<char>(), c) );
-            //int loc = find(curr_str.begin(), curr_str.end(), c, greater_equals(c));
-            int loc = locit - curr_str.begin();
-out("found locit %c  >=  %c loc %d, curr_str[loc] %c \n", *locit, c, loc, curr_str[loc]);
-            if(locit == curr_str.end()) {
-out("goto append \n");
-                goto append;
-            }
+        std::string::iterator locit = find_if(order.begin(), order.end(), 
+                std::bind2nd(std::greater_equal<char>(), c) );
 
-            assert(curr_str[loc] >= c);
-            if(curr_str[loc] == c) {
-out("1 inserting %s\n", curr_str);
-                new_combinations.insert(curr_str);
-                if(curr_str.size() < smallest) smallest = curr_str.size();
-                continue;
-            }
-            for(; loc < curr_str.size(); loc++) {
-                std::string copy = curr_str;
-                copy[loc] = c;
-                std::sort(copy.begin(), copy.end());
-out("2 inserting %s\n", copy);
-                new_combinations.insert(copy);
-                if(copy.size() < smallest) smallest = copy.size();
-            }
-append:
-            if(curr_str.size() < uniq_chars.size()) {
-                curr_str += c;
-out("3 inserting %s\n", curr_str);
-                new_combinations.insert(curr_str);
-                if(curr_str.size() < smallest) smallest = curr_str.size();
-            }
+        //int loc = find(order.begin(), order.end(), c, greater_equals(c));
+        int loc = locit - order.begin();
+out("found locit %c  >=  %c loc %d, order[loc] %c \n", *locit, c, loc, order[loc]);
+        if(locit == order.end()) { /* not found, need to add to end */
+            assert(order.size() < uniq_chars.size());
+            order += c;
+out("3 inserting %s\n", order);
         }
-        if(smallest >= 26) break;
-        combinations = new_combinations;
+        else {
+            assert(loc < order.size());
+            assert(order[loc] >= c);
+            order[loc] = c;
+            std::sort(order.begin(), order.end());
+        }
+
+        if(order.size() >= uniq_chars.size()) break;
         it++;
     }
 
-    std::cout << "Case  " << cases << ":  " << smallest << std::endl;
+    std::cout << "Case  " << cases << ":  " << order.size() << std::endl;
 }
 
 int main()
 {
     std::string word;
-    int cases;
+    int cases = 0;
     while(1) {
         std::cin >> word;
         if(word == "end")

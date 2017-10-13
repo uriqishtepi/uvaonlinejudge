@@ -96,7 +96,7 @@ out("3 inserting %s\n", order);
         it++;
     }
 
-    std::cout << "Case  " << cases << ":  " << order.size() << std::endl;
+    std::cout << "Case " << cases << ": " << order.size() << std::endl;
 }
 
 int main()

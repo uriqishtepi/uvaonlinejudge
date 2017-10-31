@@ -15,13 +15,16 @@
 
 
 #define BUF_SIZE 500
-
-
-
-
-
 #define THR_CNT 5
 #define LISTEN_BACKLOG 50
+
+//#define DEBUG true
+#ifdef DEBUG
+#define out printf
+#else
+#define out
+#endif
+
 
 int *queue;
 int queuesz;
@@ -29,16 +32,18 @@ int qhead;
 int qnumitems;
 pthread_cond_t qcond = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t qmut = PTHREAD_MUTEX_INITIALIZER;
+int server_up;
 
 void *(client_loop) (void * arg)
 {
-    sleep(1);
+    while(!server_up) usleep(10);
+
     int sfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sfd == -1) {
         perror("client socket:");
         return NULL;
     }
-    fprintf(stderr, "client socket ok\n");
+    out("client socket ok\n");
 
     int port = 7500;
     struct sockaddr_in bindaddr = {0};
@@ -51,9 +56,9 @@ void *(client_loop) (void * arg)
         perror("client bind: ");
         return NULL;
     }
-    fprintf(stderr, "client bind ok\n");
+    out("client bind ok\n");
 
-    char *msg = "hello";
+    char *msg = "hello message, make longer message to see difference in timing";
     int len = strlen(msg) + 1;
     /* +1 for terminating null byte */
 
@@ -62,20 +67,22 @@ void *(client_loop) (void * arg)
         return NULL;
     }
 
-    if (write(sfd, msg, len) != len) {
-        fprintf(stderr, "partial/failed write\n");
-        exit(EXIT_FAILURE);
-    }
+    for(int ii = 0; ii < 100000; ii++) {
+        if (write(sfd, msg, len) != len) {
+            fprintf(stderr, "client partial/failed write\n");
+            exit(EXIT_FAILURE);
+        }
 
-    char buf[128];
-    int nread = read(sfd, buf, sizeof(buf));
-printf("AZ: client nread %d\n", nread);
-    if (nread == -1) {
-        perror("client reading");
-        //exit(EXIT_FAILURE);
+        char buf[128];
+        int nread = read(sfd, buf, sizeof(buf));
+        if (nread == -1) {
+            perror("client reading");
+            exit(EXIT_FAILURE);
+        }
+        out("Received %zd bytes: %s\n", nread, buf);
     }
-    else 
-        printf("Received %zd bytes: %s\n", nread, buf);
+    if (write(sfd, "exit", 5) != len) {
+    }
     return NULL;
 }
 
@@ -85,12 +92,13 @@ printf("AZ: client nread %d\n", nread);
 
 void *(server_loop) (void * arg)
 {
+    server_up = 1;
     int listenfd = socket(AF_INET, SOCK_STREAM, 0);
     if (listenfd == -1) {
         perror("server socket:");
         return NULL;
     }
-    fprintf(stderr, "server socket ok\n");
+    out("server socket ok\n");
 
     int port = 7500;
     struct sockaddr_in bindaddr = {0};
@@ -102,29 +110,35 @@ void *(server_loop) (void * arg)
         perror("server bind: ");
         return NULL;
     }
-    fprintf(stderr, "server bind ok\n");
+    out("server bind ok\n");
 
     rc = listen(listenfd, SOMAXCONN);
     if (rc == -1) {
         perror("server listen: ");
         return NULL;
     }
-    fprintf(stderr, "server listen ok\n");
+    out("server listen ok\n");
+
+    struct sockaddr_un client_addr;
+    socklen_t clilen = sizeof(client_addr);
+
+    int fd = accept(listenfd, (struct sockaddr *)&client_addr, &clilen);
+    if (fd == -1) {
+        perror("server accept:");
+        exit(1);
+    }
 
     while (1) {
-        struct sockaddr_un client_addr;
-        socklen_t clilen = sizeof(client_addr);
-
-        int fd = accept(listenfd, (struct sockaddr *)&client_addr, &clilen);
-        if (fd == -1) {
-            perror("server accept:");
-            exit(1);
-        }
         char buf[128];
         int listenfd = fd;
-        fprintf(stderr, "server read\n");
+
         ssize_t n = read(listenfd, buf, sizeof(buf));
-        fprintf(stderr, "server read %s\n", buf);
+        out("server read %s\n", buf);
+
+        int len = write(listenfd, buf, n);
+        if (len != n) {
+            out("server partial/failed write\n");
+        }
 
         if (strcmp(buf, "exit") == 0) break;
     }
@@ -143,10 +157,10 @@ int main ()
     if (s != 0)
         handle_error("pthread_attr_init");
 
-    rc = pthread_create(&client, &attr, client_loop, NULL );
+    rc = pthread_create(&server, &attr, server_loop, NULL );
     if (rc) abort();
 
-    rc = pthread_create(&server, &attr, server_loop, NULL );
+    rc = pthread_create(&client, &attr, client_loop, NULL );
     if (rc) abort();
 
     rc = pthread_join(client, NULL);

@@ -90,8 +90,8 @@ void *(listener) (void * arg)
 
 
     int tcp_socket, cfd;
-    //struct sockaddr_un my_addr, peer_addr;
-    sockaddr_in a_in;
+    struct sockaddr_un my_addr, peer_addr;
+    struct sockaddr_un a_in;
     socklen_t peer_addr_size;
 
     tcp_socket = socket(AF_INET, SOCK_STREAM, 0);
@@ -122,7 +122,7 @@ void *(listener) (void * arg)
 
     char buf[256];
     int len = 256;
-    //while(read(cfd, buf, len)) printf("buf=%s\n", buf);
+    while(read(cfd, buf, len)) printf("buf=%s\n", buf);
 
 
     return NULL;

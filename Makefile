@@ -37,7 +37,10 @@ compare_atomics: compare_atomics.c
 	$(CC) $< -pthread $(NOANSIFLAGS) -std=c99 -o $@
 
 threadpool: threadpool.c
-	$(CC) $< -pthread $(NOANSIFLAGS) -std=c99 -o $@
+	$(CC) $< -pthread $(NOANSIFLAGS) -o $@
+
+client_server: client_server.c
+	$(CC) $< -pthread -luuid $(NOANSIFLAGS) -o $@
 
 useuuid: useuuid.c
 	$(CC) $< -pthread -luuid $(NOANSIFLAGS) -std=c99 -o $@

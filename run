@@ -9,7 +9,7 @@ task=$(echo ${1} | sed 's/.cpp$// ; s/.c$//')
 echo "task is $task "
 
 export CFLAGS+='-g ' 
-export CPPFLAGS='-g -lm -lcrypt -O2 -pipe -ansi -DONLINE_JUDGE ' 
+export CPPFLAGS='-g -lm -lcrypt -pipe -ansi -DONLINE_JUDGE ' 
 
 #check if -o is passed
 if [ x${2}x == "x-ox" ]; then

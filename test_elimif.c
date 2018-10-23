@@ -13,6 +13,15 @@ int main()
     int i;
     #define MAX 20000000
 
+    int a = 2;
+    int rc;
+    int b = 7;
+    if(rc = a != 0)
+        b++;
+    printf("rc=%d b=%d\n", rc, b);
+    if (1 != a)
+        return;
+
     for(i = 0; i < MAX; i++) {
         count = (-increment) & oldcount; 
         count += nretries;

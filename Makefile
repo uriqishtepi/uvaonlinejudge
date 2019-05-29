@@ -34,7 +34,7 @@ circular_queue_lockless: circular_queue_lockless.c
 	$(CC) $< -pthread -DDEBUG $(NOANSIFLAGS) -std=c99 -o $@
 
 compare_atomics: compare_atomics.c
-	$(CC) $< -pthread $(NOANSIFLAGS) -std=c99 -o $@
+	$(CC) $< -lpthread -o $@
 
 threadpool: threadpool.c
 	$(CC) $< -pthread $(NOANSIFLAGS) -o $@
@@ -47,4 +47,7 @@ client: client.c
 
 useuuid: useuuid.c
 	$(CC) $< -pthread -luuid $(NOANSIFLAGS) -std=c99 -o $@
+
+test_thread_local: test_thread_local.c
+	$(CC) $< -pthread $(NOANSIFLAGS) -std=c99 -o $@
 

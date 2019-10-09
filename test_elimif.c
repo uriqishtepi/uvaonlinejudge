@@ -1,4 +1,5 @@
 #include<stdio.h>
+#include<inttypes.h>
 
 /* there is no advantage to beat the if stmt 
  * valgrind and timing info show that it is faster with the if */
@@ -6,6 +7,13 @@
 
 int main()
 {
+
+    uint64_t a;
+    long b;
+    printf("sizeof unsigned long long = %"PRId64" %"PRId64" \n", sizeof(a), a);
+    printf("sizeof unsigned long = %"PRId64" %"PRId64" \n", sizeof(b), b);
+
+
     int count = 0;
     int oldcount = 2;
     int nretries = 2;

@@ -1,4 +1,4 @@
-CFLAGS+=-Wall -g -lm -lcrypt -pipe -ansi
+CFLAGS+=-Wall -g -lm -lcrypt -pipe #-ansi
 NOANSIFLAGS+=-Wall -g -lm -lcrypt -pipe 
 #CFLAGS+=-Wall -g -lm -lcrypt -O2 -pipe -ansi
 

@@ -68,6 +68,17 @@ int main()
     thrd_param p;
     p.a = 0;
     pthread_mutex_init(&p.mutex, NULL);
+    /* 1M locking/unlocking takes 0.030s on my laptop
+     * vs 0.012 of doing just the a++ and the printf
+    int a;
+    FORL(i,0,1000000) {
+        pthread_mutex_lock(&p.mutex);
+        a++;
+        pthread_mutex_unlock(&p.mutex);
+    }
+    printf("a = %d\n\n\n", a);
+    return 0;
+    */
     pthread_t thv[THREADNUM];
 
     FORL(i, 0, THREADNUM) {

@@ -1,4 +1,4 @@
-/* This example hows the timings of using different atomic primitives 
+/* This example shows the timings of using different atomic primitives 
  * with respect to no locking, mutex locking, rwlocking.
  * It seems that __atomic_add_fetch is only twice as slow as no atomics
  * and cmpxch is four times cheaper than mutex, here is from my laptop:

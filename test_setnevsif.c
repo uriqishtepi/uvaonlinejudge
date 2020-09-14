@@ -1,5 +1,12 @@
 #include<stdio.h>
+#include<strings.h>
+#include<stdint.h>
 #define MAX 10000000
+
+
+#define STRINGIFY(x) #x
+#define TOSTRING(x) STRINGIFY(x) 
+#define LOC __FILE__":"TOSTRING(__LINE__)
 
 /* testing advantage of setting a = ((b&0x3) > 0) vs using if
  * same number of instructions, so it is possible to not have
@@ -55,16 +62,45 @@ void faa( locker_info * ptr_idarr, volatile int * flag)
     }
 }
 
+struct st {
+    int a;
+    int b;
+    int c;
+};
+
+#include <string.h>
+static const char ev_str[][6] = { "unset", "txn", "sql", "sp" };
+const char *txn = "txn";
+
 int main()
 {
-    int count = 0;
-    int oldcount = 2;
-    volatile int res = 0;
-    volatile int res2 = 0;
-    int i;
+    for (int i = 0; i < sizeof(ev_str)/sizeof(char*); i++)
+        printf("%d: ev_str[i] = %s, sizeof(ev_str[i]) = %ld strlen = %d\n",
+                i, ev_str[i], sizeof(ev_str[i]), strlen(ev_str[i]));
+    printf("sizeof(txn) %ld\n", sizeof(txn));
+    printf("LOC %s\n", LOC);
+    int ef = 3;
+    int *efp = &ef;
+    printf("&ef=0x%p efp=0x%p &*efp=0x%p\n", &ef, efp, &(*efp));
     locker_info id_array[3] = {{0}};
     volatile int offset = 2;
+    int a = 0xaaaaaaaa;
+    int b = 0xbbbbbbbb;
+    uint64_t c = (int64_t) a;
 
+    printf("a: 0x%x\n", a);
+    printf("b: 0x%x\n", b);
+    printf("lx(a): 0x%lx\n", c);
+
+    /*
+    char * abc = "abc";
+    char * bcd = NULL;
+    int rc = strcasecmp(abc, bcd); // this will crash, parameter is NULL
+    printf("rc = strcasecmp(abc, bcd); = %d\n", rc);
+    */
+
+    struct st s1 = {.b = 1, .c = 3};
+    printf("s1: %d %d %d\n", s1.a,s1.b,s1.c);
 
     /*
      */

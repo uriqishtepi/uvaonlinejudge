@@ -1,20 +1,23 @@
+/* threadpool example to connect via network and send a msg to process
+ * connect via 'echo "blah" | nc 0.0.0.0 7500' or telnet.
+ */
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-
-
+#include <assert.h>
 #include <sys/types.h>
+#include <netdb.h>
 #include <sys/socket.h>
 #include <pthread.h>
 
-
 #define THR_CNT 5
 #define LISTEN_BACKLOG 50
+#define QSIZE 50
 
-int *queue;
+char **queue;
 int queuesz;
 int qhead;
 int qnumitems;
@@ -23,30 +26,36 @@ pthread_mutex_t qmut = PTHREAD_MUTEX_INITIALIZER;
 
 void init_queue()
 {
-    queuesz = 10;
-    queue = malloc(10);
+    queuesz = QSIZE;
+    queue = malloc(queuesz * sizeof(char *));
     qhead = 0;
     qnumitems = 0;
 }
 
 
-int insert_q_back(int item)
+// insert to queue back
+// call with mutex held
+int enqueue(char *item, size_t cnt)
 {
     if(qnumitems >= queuesz) {
         return - 1;
     }
     int qend = (qhead + qnumitems) % queuesz;
-    queue[qend] = item;
+    char *itemcpy = malloc(cnt);
+    memcpy(itemcpy, item, cnt);
+    queue[qend] = itemcpy;
     qnumitems++;
 
     return 0;
 }
 
-
-int get_q_front()
+// return the front element if there is one
+// caller takes ownership and needs to eventually free the element returned
+// call with mutex held
+char *dequeue()
 {
     if(qnumitems == 0) {
-        return - 1;
+        return NULL;
     }
     int oldhead = qhead;
     qnumitems--;
@@ -56,12 +65,18 @@ int get_q_front()
 
 void *(thrpool_loop) (void * arg)
 {
-    pthread_mutex_lock(&qmut);
-    while(pthread_cond_wait(&qcond, &qmut) == 0)
+    int done = 0;
+    while(!done)
     {
-        int a = get_q_front();
+        pthread_mutex_lock(&qmut);
+        int rc = pthread_cond_wait(&qcond, &qmut);
+        assert(rc == 0 && "Error with cont wait");
+        char *item = dequeue();
         pthread_mutex_unlock(&qmut);
-        printf("%lx: processing %d\n", pthread_self(), a);
+        if (item == NULL)
+            continue;
+        printf("%lx: processing %s\n", pthread_self(), item);
+        free(item);
     }
     return NULL;
 }
@@ -72,59 +87,53 @@ void *(thrpool_loop) (void * arg)
 
 void *(listener) (void * arg)
 {
-
-    /*
-    while(1) {
-        pthread_mutex_lock(&qmut);
-        int r = rand();
-        printf("listener insert %d\n", r);
-        int rc = insert_q_back(r);
-        pthread_mutex_unlock(&qmut);
-        if(rc == 0)
-            pthread_cond_signal(&qcond);
-        else
-            printf("could not insert into queue\n");
-        usleep(rand() % 10000);
-    }
-    */
-
-
-    int tcp_socket, cfd;
-    struct sockaddr_un my_addr, peer_addr;
-    struct sockaddr_un a_in;
-    socklen_t peer_addr_size;
-
-    tcp_socket = socket(AF_INET, SOCK_STREAM, 0);
-    //sfd = socket(AF_UNIX, SOCK_STREAM, 0);
+    printf("listener starting, getting a socket\n");
+    int tcp_socket = socket(AF_INET, SOCK_STREAM, 0);
     if (tcp_socket == -1)
         handle_error("socket");
 
-    memset(&a_in, 0, sizeof(a_in));
-    /* Clear structure */
-    a_in.sun_family = AF_UNIX;
-    strncpy(my_addr.sun_path, "/tmp/az.socket",
-            sizeof(my_addr.sun_path) - 1);
+    int port = 7500;
+    struct sockaddr_in bindaddr = {0};
+    bindaddr.sin_family = AF_INET;
+    bindaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+    bindaddr.sin_port = htons(port);
 
-    unlink(my_addr.sun_path);
-    if (bind(tcp_socket, (struct sockaddr *) &my_addr,
-                sizeof(struct sockaddr_un)) == -1)
+    printf("binding\n");
+    struct sockaddr_un peer_addr;
+    socklen_t peer_addr_size = sizeof(struct sockaddr_un);
+    if (bind(tcp_socket, (struct sockaddr *) &bindaddr, sizeof(struct sockaddr_un)) == -1)
         handle_error("bind");
 
     if (listen(tcp_socket, LISTEN_BACKLOG) == -1)
         handle_error("listen");
 
-    /* Now we can accept incoming connections one
-       at a time using accept(2) */
+    // Accept incoming connections one at a time
+    while (1) {
+        printf("accepting\n");
+        int fd = accept(tcp_socket, (struct sockaddr *) &peer_addr, &peer_addr_size);
+        if (fd == -1) {
+            handle_error("server accept");
+        }
 
-    peer_addr_size = sizeof(struct sockaddr_un);
-    cfd = accept(tcp_socket, (struct sockaddr *) &peer_addr,
-            &peer_addr_size);
+        printf("reading\n");
+        char buf[256];
+        int len = 256;
+        while(read(fd, buf, len)) {
+            if (strcmp(buf, "exit") == 0) {
+                printf("Exiting...\n");
+                exit(1);
+            }
+            printf("listener insert in q buf %s\n", buf);
+            pthread_mutex_lock(&qmut);
+            int rc = enqueue(buf, strlen(buf) + 1);
+            pthread_mutex_unlock(&qmut);
 
-    char buf[256];
-    int len = 256;
-    while(read(cfd, buf, len)) printf("buf=%s\n", buf);
-
-
+            if(rc == 0)
+                pthread_cond_signal(&qcond);
+            else
+                printf("could not insert into queue, dropping msg\n");
+        }
+    }
     return NULL;
 }
 

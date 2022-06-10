@@ -53,4 +53,3 @@ test_thread_local: test_thread_local.c
 
 mt_global_var_update: mt_global_var_update.c
 	$(CC) $< -pthread $(NOANSIFLAGS) -std=c99 -o $@
-

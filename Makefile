@@ -2,9 +2,9 @@ CFLAGS+=-Wall -g -lm -lcrypt -pipe #-ansi
 NOANSIFLAGS+=-Wall -g -lm -lcrypt -pipe 
 #CFLAGS+=-Wall -g -lm -lcrypt -O2 -pipe -ansi
 
-threaded_example: threaded_example.c
+race_multithreaded: race_multithreaded.c
 	$(CC) $< -pthread -std=c99 $(NOANSIFLAGS) -o $@
-	#cc -std=c99 -pthread  -Wall -g   threaded_example.c   -o threaded_example
+	#cc -std=c99 -pthread  -Wall -g race_multithreaded.c -o race_multithreaded
 
 deadlock: deadlock.c
 	$(CC) $< -pthread -std=c99 $(NOANSIFLAGS) -o $@

@@ -46,10 +46,10 @@ void do_some_work(int);
  */
 
 
-unsigned char * bigarr;
+unsigned char *bigarr;
 int gbl_exit = 0;
 int gbl_val = 0;
-    pthread_mutex_t gbl_val_mutex;
+pthread_mutex_t gbl_val_mutex;
 
 void queue_init(queue *q)
 {
@@ -98,7 +98,7 @@ int enqueue(queue *q, int a)
         }
     }
     printf("enqueue LOCK: tid=%llx, val=%d\n", THREADID, a);
-    
+
     q->arr[(q->front + q->count ) % QMAX] = a;
     q->count++;
     q->inserted++;
@@ -151,7 +151,7 @@ void checkloc(int offset, int newtowrite, int shouldhavebeen)
 }
 
 
-void * produce_work(void * arg)
+void *produce_work(void *arg)
 {
     queue *q = (queue *) arg;
     static int round = 0;
@@ -167,14 +167,14 @@ void * produce_work(void * arg)
         }
         else {
             pthread_mutex_lock(&gbl_val_mutex);
-	    if(gbl_val < MAX_ITEMS) { //another thread did this part of work
+            if(gbl_val < MAX_ITEMS) { //another thread did this part of work
                 pthread_mutex_unlock(&gbl_val_mutex);
-		continue;
-	    }
-            usleep(10000); //give a chance to others to finish
+                continue;
+            }
+            usleep(10000); //give a chance to others to finish !!holding lock!!
             gbl_val =0;
             for(int j=1; j<=MAX_ITEMS; j++) {
-	        checkloc(j, UNSEEN, PROCESSED);
+                checkloc(j, UNSEEN, PROCESSED);
             }
             if(++round >= MAX_ROUNDS) {
                 gbl_exit = 1;
@@ -190,7 +190,7 @@ void * produce_work(void * arg)
     return NULL;
 }
 
-void * consume_work(void * arg)
+void *consume_work(void *arg)
 {
     queue *q = (queue *) arg;
     int val = dequeue(q);
@@ -222,7 +222,7 @@ void test_q(queue *q)
         assert(val == i);
     }
     assert(is_empty(q) == 1);
-    
+
     for(int i = 0; i < 30; i++) {
         int val = enqueue(q, i);
         assert((i < QMAX && val == 0) || (i >= QMAX && val == -1));
@@ -251,7 +251,7 @@ int main()
     FORL(i, 0, THREADNUM) {
         pthread_create(&thv[i], NULL, produce_work, &q);
     }
-    
+
     FORL(i, 0, THREADNUM) {
         pthread_create(&thv[THREADNUM+i], NULL, consume_work, &q);
     }

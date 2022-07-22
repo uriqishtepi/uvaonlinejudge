@@ -1,5 +1,6 @@
 /* threadpool example to connect via network and send a msg to process
  * connect via 'echo "blah" | nc 0.0.0.0 7500' or telnet.
+ * Example uses a queue to save and retrieve work to be performed,
  */
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -118,14 +119,21 @@ void *(listener) (void * arg)
         printf("reading\n");
         char buf[256];
         int len = 256;
-        while(read(fd, buf, len)) {
+        int rd;
+        while((rd = read(fd, buf, len))) {
             if (strcmp(buf, "exit") == 0) {
                 printf("Exiting...\n");
                 exit(1);
             }
-            printf("listener insert in q buf %s\n", buf);
+            write(fd, "0", 1);
+            printf("listener insert in q buf:");
+            for(int i=0;i<rd;i++){
+                printf("%x.", buf[i]);
+            }
+            printf("\n");
+
             pthread_mutex_lock(&qmut);
-            int rc = enqueue(buf, strlen(buf) + 1);
+            int rc = enqueue(buf, rd);
             pthread_mutex_unlock(&qmut);
 
             if(rc == 0)

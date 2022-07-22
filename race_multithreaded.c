@@ -18,7 +18,7 @@ typedef struct thrd_param thrd_param;
  * correctly. It takes several thousand iterations before we can 
  * catch a differnt thread updating p->a while we were not looking.
  */
-void * try_race(void *arg)
+void *try_race(void *arg)
 {
     thrd_param *p = (thrd_param *) arg;
     while(1) {
@@ -33,7 +33,7 @@ void * try_race(void *arg)
 }
 
 
-void * lock_no_race(void *arg)
+void *lock_no_race(void *arg)
 {
     thrd_param *p = (thrd_param *) arg;
     while(1) {

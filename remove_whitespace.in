@@ -1,0 +1,19 @@
+// example comment
+@123
+A = D; JE
+
+  
+   // example comment
+   @123 //blah
+   A = D; JE
+(L1)
+   A = D
+   A; JE
+
+
+(LOOP)
+        @L1
+        D; JMP
+        @var1
+        @LOOP
+        D=A;JE
